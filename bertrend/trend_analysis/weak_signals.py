@@ -539,6 +539,7 @@ def analyze_signal(
             )
 
             # First prompt: Generate summary
+            logger.debug("First prompt - generate summary")
             summary_prompt = get_prompt(
                 language,
                 "topic_summary",
@@ -553,6 +554,7 @@ def analyze_signal(
             )
 
             # Second prompt: Analyze weak signal
+            logger.debug("Second prompt - analyze weak signal")
             weak_signal_prompt = get_prompt(
                 language, "weak_signal", summary_from_first_prompt=summary
             )
@@ -564,9 +566,10 @@ def analyze_signal(
             )
 
             # Third prompt: Generate HTML format
+            logger.debug("Third prompt - generate html format")
             html_format_prompt = get_prompt(
-                language,
-                "html_format",
+                language=language,
+                prompt_type="html_format",
                 topic_summary=summary,
                 weak_signal_analysis=weak_signal_analysis,
             )
