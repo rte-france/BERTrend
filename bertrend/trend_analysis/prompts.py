@@ -235,6 +235,7 @@ def get_prompt(
 
 
 # Function to parse the model's output and save as HTML
+# FIXME: default path of file!
 def save_html_output(model_output, output_file="signal_llm.html"):
     # Clean the HTML content
     cleaned_html = model_output.strip()  # Remove leading/trailing whitespace

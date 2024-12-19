@@ -13,7 +13,7 @@ from bertrend.demos.topic_analysis.state_utils import (
     save_widget_state,
 )
 from bertrend.metrics.metrics import TIME_WEIGHT, TopicMetrics
-from bertrend.trend_analysis.visualizations import PLOTLY_BUTTON_SAVE_CONFIG
+from bertrend.demos.weak_signals.visualizations_utils import PLOTLY_BUTTON_SAVE_CONFIG
 from bertrend.utils.data_loading import TIMESTAMP_COLUMN
 
 # Restore widget state

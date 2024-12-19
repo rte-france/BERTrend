@@ -20,7 +20,7 @@ from bertrend.demos.topic_analysis.app_utils import (
     plot_2d_topics,
 )
 from bertrend.demos.topic_analysis.state_utils import restore_widget_state
-from bertrend.trend_analysis.visualizations import PLOTLY_BUTTON_SAVE_CONFIG
+from bertrend.demos.weak_signals.visualizations_utils import PLOTLY_BUTTON_SAVE_CONFIG
 from bertrend.utils.data_loading import TEXT_COLUMN
 
 # Set locale for French date names

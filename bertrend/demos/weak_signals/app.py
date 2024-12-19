@@ -52,15 +52,17 @@ from bertrend.utils.data_loading import (
 from bertrend.parameters import *
 from session_state_manager import SessionStateManager
 from bertrend.trend_analysis.visualizations import (
-    plot_num_topics_and_outliers,
     plot_topics_per_timestamp,
     plot_topic_size_evolution,
     create_topic_size_evolution_figure,
     plot_newly_emerged_topics,
-    create_sankey_diagram,
-    PLOTLY_BUTTON_SAVE_CONFIG,
+    plot_size_outliers,
+    plot_num_topics,
 )
-
+from bertrend.demos.weak_signals.visualizations_utils import (
+    PLOTLY_BUTTON_SAVE_CONFIG,
+    display_sankey_diagram,
+)
 
 # UI Settings
 PAGE_TITLE = "BERTrend - Trend Analysis"
@@ -595,7 +597,19 @@ def main():
         else:
             topic_models = SessionStateManager.get("bertrend").topic_models
             st.subheader("Topic Overview")
-            plot_num_topics_and_outliers(topic_models)
+            # Number of Topics Detected for each topic model
+            st.plotly_chart(
+                plot_num_topics(topic_models),
+                config=PLOTLY_BUTTON_SAVE_CONFIG,
+                use_container_width=True,
+            )
+            # Size of Outlier Topic for each topic model
+            st.plotly_chart(
+                plot_size_outliers(topic_models),
+                config=PLOTLY_BUTTON_SAVE_CONFIG,
+                use_container_width=True,
+            )
+
             plot_topics_per_timestamp(topic_models)
 
             # Display zeroshot signal trend
@@ -722,7 +736,9 @@ def main():
                     )
 
                     plot_topic_size_evolution(
-                        create_topic_size_evolution_figure(),
+                        create_topic_size_evolution_figure(
+                            st.session_state["bertrend"].topic_sizes
+                        ),
                         window_size,
                         SessionStateManager.get("granularity_select"),
                         current_date,
@@ -821,7 +837,7 @@ def main():
 
                 # Create the Sankey Diagram
                 st.subheader("Topic Evolution")
-                create_sankey_diagram(
+                display_sankey_diagram(
                     SessionStateManager.get("bertrend").all_merge_histories_df
                 )
 

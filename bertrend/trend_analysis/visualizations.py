@@ -12,22 +12,14 @@ import streamlit as st
 from bertopic import BERTopic
 from plotly_resampler import FigureWidgetResampler
 
+from bertrend.demos.weak_signals.visualizations_utils import PLOTLY_BUTTON_SAVE_CONFIG
 from bertrend.parameters import SIGNAL_CLASSIF_LOWER_BOUND, SIGNAL_CLASSIF_UPPER_BOUND
 from bertrend.trend_analysis.weak_signals import classify_signals
 
-PLOTLY_BUTTON_SAVE_CONFIG = {
-    "toImageButtonOptions": {
-        "format": "svg",
-        # 'height': 500,
-        # 'width': 1500,
-        "scale": 1,
-    }
-}
 
-
-def plot_num_topics_and_outliers(topic_models: Dict[pd.Timestamp, BERTopic]) -> None:
+def plot_num_topics(topic_models: Dict[pd.Timestamp, BERTopic]) -> go.Figure:
     """
-    Plot the number of topics detected and the size of the outlier topic for each model.
+    Plot the number of topics detected for each model.
 
     Args:
         topic_models (Dict[pd.Timestamp, BERTopic]): A dictionary of BERTopic models, where the key is the timestamp and the value is the corresponding model.
@@ -39,10 +31,16 @@ def plot_num_topics_and_outliers(topic_models: Dict[pd.Timestamp, BERTopic]) -> 
         xaxis_title="Time Period",
         yaxis_title="Number of Topics",
     )
-    st.plotly_chart(
-        fig_num_topics, config=PLOTLY_BUTTON_SAVE_CONFIG, use_container_width=True
-    )
+    return fig_num_topics
 
+
+def plot_size_outliers(topic_models: Dict[pd.Timestamp, BERTopic]) -> go.Figure:
+    """
+    Plot the size of the outlier topic for each model.
+
+    Args:
+        topic_models (Dict[pd.Timestamp, BERTopic]): A dictionary of BERTopic models, where the key is the timestamp and the value is the corresponding model.
+    """
     outlier_sizes = [
         (
             model.get_topic_info()
@@ -61,12 +59,10 @@ def plot_num_topics_and_outliers(topic_models: Dict[pd.Timestamp, BERTopic]) -> 
         xaxis_title="Time Period",
         yaxis_title="Size of Outlier Topic",
     )
-    st.plotly_chart(
-        fig_outlier_sizes, config=PLOTLY_BUTTON_SAVE_CONFIG, use_container_width=True
-    )
+    return fig_outlier_sizes
 
 
-def prepare_source_topic_data(doc_info_df: pd.DataFrame) -> pd.DataFrame:
+def _prepare_source_topic_data(doc_info_df: pd.DataFrame) -> pd.DataFrame:
     """
     Prepare data for plotting topics per source by counting the number of unique documents for each source and topic combination.
 
@@ -107,7 +103,7 @@ def plot_topics_per_timestamp(topic_models: Dict[pd.Timestamp, BERTopic]) -> Non
         )
         selected_model = topic_models[selected_model_period]
 
-        source_topic_counts = prepare_source_topic_data(selected_model.doc_info_df)
+        source_topic_counts = _prepare_source_topic_data(selected_model.doc_info_df)
 
         fig = go.Figure()
 
@@ -143,10 +139,8 @@ def plot_topics_per_timestamp(topic_models: Dict[pd.Timestamp, BERTopic]) -> Non
         st.dataframe(selected_model.topic_info_df, use_container_width=True)
 
 
-def create_topic_size_evolution_figure(topic_ids=None) -> go.Figure:
+def create_topic_size_evolution_figure(topic_sizes, topic_ids=None) -> go.Figure:
     fig = go.Figure()
-
-    topic_sizes = st.session_state["bertrend"].topic_sizes
 
     if topic_ids is None:
         # If topic_ids is not provided, include all topics
@@ -333,7 +327,7 @@ def plot_topic_size_evolution(
     return window_start, window_end
 
 
-def plot_newly_emerged_topics(all_new_topics_df: pd.DataFrame) -> None:
+def plot_newly_emerged_topics(all_new_topics_df: pd.DataFrame) -> go.Figure:
     """
     Plot the newly emerged topics over time.
 
@@ -372,28 +366,10 @@ def plot_newly_emerged_topics(all_new_topics_df: pd.DataFrame) -> None:
         showlegend=False,
     )
 
-    with st.expander("Newly Emerged Topics", expanded=False):
-        st.dataframe(
-            all_new_topics_df[
-                [
-                    "Topic",
-                    "Count",
-                    "Document_Count",
-                    "Representation",
-                    "Documents",
-                    "Timestamp",
-                ]
-            ].sort_values(by=["Timestamp", "Document_Count"], ascending=[True, False])
-        )
-        st.plotly_chart(
-            fig_new_topics, config=PLOTLY_BUTTON_SAVE_CONFIG, use_container_width=True
-        )
+    return fig_new_topics
 
 
-########################################################################################################################
-
-
-def transform_merge_histories_for_sankey(df: pd.DataFrame) -> pd.DataFrame:
+def _transform_merge_histories_for_sankey(df: pd.DataFrame) -> pd.DataFrame:
     """
     Transform the merge histories DataFrame to prepare it for creating a Sankey diagram.
 
@@ -534,9 +510,6 @@ def transform_merge_histories_for_sankey(df: pd.DataFrame) -> pd.DataFrame:
     return transformed_df_new
 
 
-########################################################################################################################
-
-
 def create_sankey_diagram_plotly(
     all_merge_histories_df: pd.DataFrame, search_term: str = None, max_pairs: int = None
 ):
@@ -552,15 +525,18 @@ def create_sankey_diagram_plotly(
         go.Figure: The Plotly figure representing the Sankey diagram.
     """
 
+    # Transform the merge histories DataFrame to prepare it for creating a Sankey diagram
+    transformed_df = _transform_merge_histories_for_sankey(all_merge_histories_df)
+
     # Filter the dataframe based on the search term if provided
     if search_term:
         # Perform recursive search to find connected nodes
         def find_connected_nodes(node, connected_nodes):
             if node not in connected_nodes:
                 connected_nodes.add(node)
-                connected_df = all_merge_histories_df[
-                    (all_merge_histories_df["Source"] == node)
-                    | (all_merge_histories_df["Destination"] == node)
+                connected_df = transformed_df[
+                    (transformed_df["Source"] == node)
+                    | (transformed_df["Destination"] == node)
                 ]
                 for _, row in connected_df.iterrows():
                     find_connected_nodes(row["Source"], connected_nodes)
@@ -568,8 +544,8 @@ def create_sankey_diagram_plotly(
 
         # Find nodes that match the search term
         matching_nodes = set(
-            all_merge_histories_df[
-                all_merge_histories_df["Representation"].apply(
+            transformed_df[
+                transformed_df["Representation"].apply(
                     lambda x: search_term.lower() in str(x).lower()
                 )
             ]["Source"]
@@ -581,9 +557,9 @@ def create_sankey_diagram_plotly(
             find_connected_nodes(node, connected_nodes)
 
         # Filter the dataframe based on connected nodes
-        all_merge_histories_df = all_merge_histories_df[
-            (all_merge_histories_df["Source"].isin(connected_nodes))
-            | (all_merge_histories_df["Destination"].isin(connected_nodes))
+        transformed_df = transformed_df[
+            (transformed_df["Source"].isin(connected_nodes))
+            | (transformed_df["Destination"].isin(connected_nodes))
         ]
 
     # Create nodes and links for the Sankey Diagram
@@ -602,7 +578,7 @@ def create_sankey_diagram_plotly(
         "#17becf",
     ]
 
-    for _, row in all_merge_histories_df.iterrows():
+    for _, row in transformed_df.iterrows():
         source_node = row["Source"]
         target_node = row["Destination"]
         timestamp = row["Timestamp"]
@@ -718,43 +694,3 @@ def create_sankey_diagram_plotly(
     fig.update_layout(title_text="Topic Merging Process", font_size=15, height=1500)
 
     return fig
-
-
-########################################################################################################################
-
-
-def create_sankey_diagram(all_merge_histories_df: pd.DataFrame) -> go.Figure:
-    """
-    Create a Sankey diagram to visualize the topic merging process.
-
-    Args:
-        all_merge_histories_df (pd.DataFrame): The DataFrame containing all merge histories.
-
-    Returns:
-        go.Figure: The Plotly figure representing the Sankey diagram.
-    """
-
-    with st.expander("Topic Merging Process", expanded=False):
-        # Create search box and slider using Streamlit
-        search_term = st.text_input("Search topics by keyword:")
-        max_pairs = st.slider(
-            "Max number of topic pairs to display",
-            min_value=1,
-            max_value=1000,
-            value=20,
-        )
-
-        # Transform the dataframe
-        transformed_df = transform_merge_histories_for_sankey(all_merge_histories_df)
-
-        # Create the Sankey diagram
-        sankey_diagram = create_sankey_diagram_plotly(
-            transformed_df, search_term, max_pairs
-        )
-
-        # Display the diagram using Streamlit in an expander
-        st.plotly_chart(
-            sankey_diagram, config=PLOTLY_BUTTON_SAVE_CONFIG, use_container_width=True
-        )
-
-    return sankey_diagram

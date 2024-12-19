@@ -21,7 +21,7 @@ from loguru import logger
 from bertrend import LLM_CONFIG
 from bertrend.demos.topic_analysis.state_utils import restore_widget_state
 from bertrend.llm_utils.openai_client import OpenAI_Client
-from bertrend.trend_analysis.visualizations import PLOTLY_BUTTON_SAVE_CONFIG
+from bertrend.demos.weak_signals.visualizations_utils import PLOTLY_BUTTON_SAVE_CONFIG
 from bertrend.utils.data_loading import TIMESTAMP_COLUMN, TEXT_COLUMN
 from bertrend_apps.newsletters.newsletter_features import get_most_representative_docs
 from bertrend.demos.topic_analysis.app_utils import (
