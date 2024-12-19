@@ -14,7 +14,7 @@ import arxiv
 from loguru import logger
 import requests
 
-from bertrend.utils import TEXT_COLUMN
+from bertrend.utils.data_loading import TEXT_COLUMN
 from bertrend_apps.data_provider.data_provider import DataProvider
 from bertrend_apps.data_provider.utils import wait
 

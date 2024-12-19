@@ -5,6 +5,15 @@
 import os
 from pathlib import Path
 
+from bertrend.utils.config_utils import load_toml_config
+
+BERTREND_CONFIG_PATH = Path(__file__).parent / "bertrend.toml"
+
+# Read config
+BERTREND_CONFIG = load_toml_config(BERTREND_CONFIG_PATH)
+EMBEDDING_CONFIG = BERTREND_CONFIG["embedding_service"]
+LLM_CONFIG = BERTREND_CONFIG["llm_service"]
+
 # Linux command to find the index of the GPU device currently less used than the others
 BEST_CUDA_DEVICE = (
     "\`nvidia-smi --query-gpu=index,memory.used --format=csv,nounits | tail -n +2 | sort -t',' -k2 -n  "
@@ -33,12 +42,10 @@ OUTPUT_PATH = BASE_OUTPUT_PATH / "bertrend"
 CACHE_PATH = BASE_CACHE_PATH / "bertrend"
 
 # Weak signals
-WEAK_SIGNALS_CACHE_PATH = BASE_CACHE_PATH / "weak_signals"
-MODELS_DIR = WEAK_SIGNALS_CACHE_PATH / "models"
-ZEROSHOT_TOPICS_DATA_DIR = WEAK_SIGNALS_CACHE_PATH / "zeroshot_topics_data"
-SIGNAL_EVOLUTION_DATA_DIR = WEAK_SIGNALS_CACHE_PATH / "signal_evolution_data"
+MODELS_DIR = CACHE_PATH / "models"
+ZEROSHOT_TOPICS_DATA_DIR = CACHE_PATH / "zeroshot_topics_data"
+SIGNAL_EVOLUTION_DATA_DIR = CACHE_PATH / "signal_evolution_data"
 
 # Create directories if they do not exist
 DATA_PATH.mkdir(parents=True, exist_ok=True)
 CACHE_PATH.mkdir(parents=True, exist_ok=True)
-WEAK_SIGNALS_CACHE_PATH.mkdir(parents=True, exist_ok=True)
