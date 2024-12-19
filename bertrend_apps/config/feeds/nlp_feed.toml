@@ -1,0 +1,15 @@
+[data-feed]
+id = "feed_nlp"
+query = "NLP OR intelligence artificielle"
+provider = "google"
+# maximum number of results *per day*
+max_results = 50
+# number of days to retrieve (better if aligned with update-frequency if automated retrieval is activated)
+number_of_days = 7
+# output_directory is a relative path - base_data_dir_path/data_dir_path; the base_data_dir_path is controlled by the application
+feed_dir_path = "feed_nlp"
+# language filter
+language = "fr"
+# Frequency at which new data shall be gathered (in crontab format, cf https://crontab.guru/)
+# “At 22:00 on every day-of-week from Monday through Friday.”
+update_frequency = "0 3 * * 2"

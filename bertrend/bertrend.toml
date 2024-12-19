@@ -1,0 +1,27 @@
+#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  See AUTHORS.txt
+#  SPDX-License-Identifier: MPL-2.0
+#  This file is part of BERTrend.
+
+# Configuration for BERTrend
+
+[embedding_service]
+# Indicates if BERTrend shall use local embedding service (run by BERTrend) or if the embedding service
+# is delegated to an external service. If set to false, the other properties shall be set properly.
+# It is generally more efficient to use a dedicated service for embeddings.
+use_local = false
+local_embedding_name = "OrdalieTech/Solon-embeddings-large-0.1"
+host = "localhost"
+port = 6464
+
+[llm_service]
+# Specifies here the information about the LLM to be used to benefit from some LLM features such as
+# improved topic description and topic analysis over time
+# If empty, these features will not be available
+# BERTrend can use any kind of openai-compatible deployment such as:
+# - local LLM deployed with VLLM or similar libraries
+# - the official OpenAI endpoint
+# - models deployed on a Azure cloud
+api_key = "$AZURE_SE_WATTELSE_OPENAI_API_KEY_DEV"
+endpoint = "$AZURE_SE_WATTELSE_OPENAI_ENDPOINT_DEV"
+model = "$AZURE_SE_WATTELSE_OPENAI_DEFAULT_MODEL_NAME_DEV"

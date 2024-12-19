@@ -3,7 +3,6 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import configparser
 import os
 import tempfile
 from datetime import timedelta, datetime
@@ -12,7 +11,7 @@ import typer
 from loguru import logger
 from pathlib import Path
 
-from bertrend import FEED_BASE_PATH
+from bertrend import FEED_BASE_PATH, load_toml_config
 from bertrend_apps.common.crontab_utils import schedule_scrapping
 from bertrend_apps.data_provider.arxiv_provider import ArxivProvider
 from bertrend_apps.data_provider.bing_news_provider import BingNewsProvider
@@ -182,21 +181,20 @@ if __name__ == "__main__":
         feed_cfg: str = typer.Argument(help="Path of the data feed config file"),
     ):
         """Scrape data from Arxiv, Google, Bing news or NewsCatcher on the basis of a feed configuration file"""
-        data_feed_cfg = configparser.ConfigParser()
-        data_feed_cfg.read(feed_cfg)
+        data_feed_cfg = load_toml_config(feed_cfg)
         current_date = datetime.today()
         current_date_str = current_date.strftime("%Y-%m-%d")
-        days_to_subtract = data_feed_cfg.getint("data-feed", "number_of_days")
-        provider = data_feed_cfg.get("data-feed", "provider")
-        keywords = data_feed_cfg.get("data-feed", "query")
-        max_results = data_feed_cfg.getint("data-feed", "max_results")
+        days_to_subtract = data_feed_cfg["data-feed"].get("number_of_days")
+        provider = data_feed_cfg["data-feed"].get("provider")
+        keywords = data_feed_cfg["data-feed"].get("query")
+        max_results = data_feed_cfg["data-feed"].get("max_results")
         before = current_date_str
         after = (current_date - timedelta(days=days_to_subtract)).strftime("%Y-%m-%d")
-        language = data_feed_cfg.get("data-feed", "language")
+        language = data_feed_cfg["data-feed"].get("language")
         save_path = (
             FEED_BASE_PATH
-            / data_feed_cfg.get("data-feed", "feed_dir_path")
-            / f"{current_date_str}_{data_feed_cfg.get('data-feed', 'id')}.jsonl"
+            / data_feed_cfg["data-feed"].get("feed_dir_path")
+            / f"{current_date_str}_{data_feed_cfg['data-feed'].get('id')}.jsonl"
         )
         save_path.parent.mkdir(parents=True, exist_ok=True)
 

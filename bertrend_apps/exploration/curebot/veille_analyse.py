@@ -12,14 +12,15 @@ import streamlit as st
 from loguru import logger
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
-from bertrend.summary.chatgpt_summarizer import GPTSummarizer
+from bertrend.services.summary.chatgpt_summarizer import GPTSummarizer
 from bertrend.train import train_BERTopic
-from bertrend.utils import (
+from bertrend.utils.data_loading import (
     load_data,
     TIMESTAMP_COLUMN,
     split_df_by_paragraphs,
     clean_dataset,
 )
+
 from bertrend_apps.data_provider.curebot_provider import CurebotProvider
 from bertrend_apps.newsletters.newsletter_features import generate_newsletter, md2html
 
