@@ -3,7 +3,6 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import configparser
 import glob
 import os
 from pydoc import locate
@@ -24,18 +23,19 @@ from sklearn.feature_extraction.text import CountVectorizer
 from umap import UMAP
 
 from bertrend import FEED_BASE_PATH, BEST_CUDA_DEVICE, OUTPUT_PATH
-from bertrend_apps.common.config_utils import parse_literal, EnvInterpolation
+from bertrend.parameters import BERTOPIC_SERIALIZATION
+from bertrend.utils.config_utils import load_toml_config
+from bertrend.utils.data_loading import (
+    split_df_by_paragraphs,
+    TIMESTAMP_COLUMN,
+    TEXT_COLUMN,
+    load_data,
+)
 from bertrend_apps.newsletters.newsletter_features import (
     generate_newsletter,
     export_md_string,
 )
 from bertrend.train import EmbeddingModel, train_BERTopic
-from bertrend.utils import (
-    load_data,
-    TEXT_COLUMN,
-    TIMESTAMP_COLUMN,
-    split_df_by_paragraphs,
-)
 from bertrend_apps.common.mail_utils import get_credentials, send_email
 from bertrend_apps.common.crontab_utils import schedule_newsletter
 
@@ -59,23 +59,22 @@ if __name__ == "__main__":
 
     @app.command("newsletters")
     def newsletter_from_feed(
-        newsletter_cfg_path: Path = typer.Argument(
-            help="Path to newsletters config file"
+        newsletter_toml_path: Path = typer.Argument(
+            help="Path to newsletters toml config file"
         ),
-        data_feed_cfg_path: Path = typer.Argument(help="Path to data feed config file"),
+        data_feed_toml_path: Path = typer.Argument(
+            help="Path to data feed toml config file"
+        ),
     ):
         """
         Creates a newsletters associated to a data feed.
         """
-        logger.info(f"Reading newsletters configuration file: {newsletter_cfg_path}")
+        logger.info(f"Reading newsletters configuration file: {newsletter_toml_path}")
 
         # read newsletters & data feed configuration
-        config = configparser.ConfigParser(
-            converters={"literal": parse_literal}, interpolation=EnvInterpolation()
-        )
-        config.read(newsletter_cfg_path)
-        data_feed_cfg = configparser.ConfigParser()
-        data_feed_cfg.read(data_feed_cfg_path)
+        config = load_toml_config(newsletter_toml_path)
+        data_feed_cfg = load_toml_config(data_feed_toml_path)
+
         learning_strategy = config[LEARNING_STRATEGY_SECTION]
         newsletter_params = config[NEWSLETTER_SECTION]
 
@@ -199,29 +198,25 @@ if __name__ == "__main__":
         except RefreshError as re:
             logger.error(f"Problem with token for email, please regenerate it: {re}")
 
-    def _train_topic_model(config: configparser.ConfigParser, dataset: pd.DataFrame):
+    def _train_topic_model(config: dict, dataset: pd.DataFrame):
         # Step 1 - Embedding model
-        embedding_model_name = config.get("topic_model.embedding", "model_name")
+        embedding_model_name = config["topic_model"]["embedding"].get("model_name")
         # Step 2 - Dimensionality reduction algorithm
-        umap_model = UMAP(**parse_literal(dict(config["topic_model.umap"])))
+        umap_model = UMAP(**config["topic_model"]["umap"])
         # Step 3 - Clustering algorithm
-        hdbscan_model = HDBSCAN(**parse_literal(dict(config["topic_model.hdbscan"])))
+        hdbscan_model = HDBSCAN(**config["topic_model"]["hdbscan"])
         # Step 4 - Count vectorizer
         vectorizer_model = CountVectorizer(
             stop_words=stopwords.words(
-                config.get("topic_model.count_vectorizer", "stop_words")
+                config["topic_model"]["count_vectorizer"].get("stop_words")
             ),
-            ngram_range=config.getliteral(
-                "topic_model.count_vectorizer", "ngram_range"
-            ),
-            min_df=config.getint("topic_model.count_vectorizer", "min_df"),
+            ngram_range=config["topic_model.count_vectorizer"]["ngram_range"],
+            min_df=config["topic_model.count_vectorizer"]["min_df"],
         )
         # Step 5 - c-TF-IDF model
-        ctfidf_model = ClassTfidfTransformer(
-            **parse_literal(dict(config["topic_model.c_tf_idf"]))
-        )
+        ctfidf_model = ClassTfidfTransformer(**config["topic_model.c_tf_idf"])
         # Step 6 - nb topic params
-        topic_params = parse_literal(dict(config["topic_model.topics"]))
+        topic_params = config["topic_model.topics"]
         if topic_params.get("nr_topics") == 0:
             topic_params["nr_topics"] = None
 
@@ -238,9 +233,7 @@ if __name__ == "__main__":
 
         return topics, topic_model
 
-    def _load_feed_data(
-        data_feed_cfg: configparser.ConfigParser, learning_strategy: str
-    ) -> pd.DataFrame:
+    def _load_feed_data(data_feed_cfg: dict, learning_strategy: str) -> pd.DataFrame:
         data_dir = data_feed_cfg.get("data-feed", "feed_dir_path")
         logger.info(f"Loading data from feed dir: {FEED_BASE_PATH / data_dir}")
         # filter files according to extension and pattern
@@ -274,38 +267,24 @@ if __name__ == "__main__":
         # Serialization using safetensors
         topic_model.save(
             full_model_path_dir,
-            serialization="safetensors",
+            serialization=BERTOPIC_SERIALIZATION,
             save_ctfidf=True,
             save_embedding_model=embedding_model,
         )
 
     @app.command("schedule-newsletters")
     def automate_newsletter(
-        newsletter_cfg_path: Path = typer.Argument(
-            help="Path to newsletters config file"
+        newsletter_toml_cfg_path: Path = typer.Argument(
+            help="Path to newsletters toml config file"
         ),
-        data_feed_cfg_path: Path = typer.Argument(help="Path to data feed config file"),
+        data_feed_toml_cfg_path: Path = typer.Argument(
+            help="Path to data feed toml config file"
+        ),
         cuda_devices: str = typer.Option(
             BEST_CUDA_DEVICE, help="CUDA_VISIBLE_DEVICES parameters"
         ),
     ):
         """Schedule data scrapping on the basis of a feed configuration file"""
-        schedule_newsletter(newsletter_cfg_path, data_feed_cfg_path, cuda_devices)
-
-    @app.command("list-newsletters")
-    def list_newsletters():
-        """
-        List from crontab existing automatic newsletters
-        """
-        logger.error("Not implemented yet!")
-
-    @app.command("remove-newsletters")
-    def remove_newsletter(
-        newsletter_cfg: Path = typer.Argument(help="Path to newsletters config file"),
-    ):
-        """
-        Removes from crontab an automatic newsletters creation
-        """
-        logger.error("Not implemented yet!")
-
-    app()
+        schedule_newsletter(
+            newsletter_toml_cfg_path, data_feed_toml_cfg_path, cuda_devices
+        )

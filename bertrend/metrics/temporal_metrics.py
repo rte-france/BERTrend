@@ -138,9 +138,9 @@ class TempTopic:
         self.tts_scores_df = None
         self.ttc_scores_df = None
 
-    def _topics_over_time(self) -> pd.DataFrame:
+    def _topics_over_time(self):
         """
-        Calculates and returns a DataFrame containing topics over time with their respective words and frequencies.
+        Calculates and sets as a property a DataFrame containing topics over time with their respective words and frequencies.
 
         Returns:
         - pd.DataFrame: Topics, their top words, frequencies, and timestamps.

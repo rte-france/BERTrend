@@ -3,9 +3,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import json
 import os
-from pathlib import Path
 from typing import List, Tuple, Union
 
 import numpy as np
@@ -24,17 +22,16 @@ from sklearn.feature_extraction.text import CountVectorizer
 from tqdm import tqdm
 from umap import UMAP
 
-from bertrend import BASE_CACHE_PATH
-from bertrend.common.openai_client import OpenAI_Client
-from bertrend.common.prompts import FRENCH_TOPIC_REPRESENTATION_PROMPT
-from bertrend.utils import (
-    TEXT_COLUMN,
-)
-from bertrend.common.cache_utils import load_embeddings, save_embeddings, get_hash
+from bertrend import BASE_CACHE_PATH, LLM_CONFIG
+from bertrend.parameters import STOPWORDS
+from bertrend.llm_utils.openai_client import OpenAI_Client
+from bertrend.utils.data_loading import TEXT_COLUMN
+from bertrend_apps.newsletters.prompts import FRENCH_TOPIC_REPRESENTATION_PROMPT
+
+from bertrend.utils.cache_utils import load_embeddings, save_embeddings, get_hash
 
 # Parameters:
 DEFAULT_EMBEDDING_MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
-DEFAULT_TOP_N_WORDS = 10
 DEFAULT_NR_TOPICS = 10
 DEFAULT_NGRAM_RANGE = (1, 1)
 DEFAULT_MIN_DF = 2
@@ -47,55 +44,8 @@ DEFAULT_HDBSCAN_MODEL = HDBSCAN(
     prediction_data=True,
 )
 
-STOP_WORDS_RTE = [
-    "w",
-    "kw",
-    "mw",
-    "gw",
-    "tw",
-    "wh",
-    "kwh",
-    "mwh",
-    "gwh",
-    "twh",
-    "volt",
-    "volts",
-    "000",
-]
-COMMON_NGRAMS = [
-    "éléctricité",
-    "RTE",
-    "France",
-    "électrique",
-    "projet",
-    "année",
-    "transport électricité",
-    "réseau électrique",
-    "gestionnaire réseau",
-    "réseau transport",
-    "production électricité",
-    "milliards euros",
-    "euros",
-    "2022",
-    "2023",
-    "2024",
-    "électricité RTE",
-    "Réseau transport",
-    "RTE gestionnaire",
-    "électricité France",
-    "système électrique",
-]
-
-# Define the path to extended list of french stopwords JSON file
-stopwords_fr_file = Path(__file__).parent / "weak_signals" / "stopwords-fr.json"
-
-# Read the JSON data from the file and directly assign it to the list
-with open(stopwords_fr_file, "r", encoding="utf-8") as file:
-    FRENCH_STOPWORDS = json.load(file)
-
-DEFAULT_STOP_WORDS = FRENCH_STOPWORDS + STOP_WORDS_RTE + COMMON_NGRAMS
 DEFAULT_VECTORIZER_MODEL = CountVectorizer(
-    stop_words=DEFAULT_STOP_WORDS,
+    stop_words=STOPWORDS,
     ngram_range=DEFAULT_NGRAM_RANGE,
     min_df=DEFAULT_MIN_DF,
 )
@@ -107,10 +57,12 @@ DEFAULT_REPRESENTATION_MODEL: List[RepresentationModelType] = [
     MaximalMarginalRelevance(diversity=0.3)
 ]
 
+# TODO - a lot of duplicate code with weak_signals - to be unified
+
 
 class EmbeddingModel(BaseEmbedder):
     """
-    Custom class for the embedding model. Currently supports SentenceBert models (model_name should refer to a SentenceBert model).
+    Custom class for the embedding model. Currently, supports SentenceBert models (model_name should refer to a SentenceBert model).
     Implements batch processing for efficient memory usage and handles different input types.
     """
 
@@ -273,7 +225,7 @@ def train_BERTopic(
     vectorizer_model: CountVectorizer = DEFAULT_VECTORIZER_MODEL,
     ctfidf_model: ClassTfidfTransformer = DEFAULT_CTFIDF_MODEL,
     representation_model: List[RepresentationModelType] = DEFAULT_REPRESENTATION_MODEL,
-    top_n_words: int = DEFAULT_TOP_N_WORDS,
+    top_n_words: int = STOPWORDS,
     nr_topics: Union[str, int] = DEFAULT_NR_TOPICS,
     use_cache: bool = True,
     cache_base_name: str = None,
@@ -350,7 +302,7 @@ def train_BERTopic(
         stop_words = (
             stopwords.words("english")
             if form_parameters["countvectorizer_stop_words"] == "english"
-            else DEFAULT_STOP_WORDS
+            else STOPWORDS
         )
         vectorizer_model = CountVectorizer(
             stop_words=stop_words,
@@ -385,7 +337,11 @@ def train_BERTopic(
             elif model == "OpenAI":
                 representation_model.append(
                     OpenAI(
-                        client=OpenAI_Client().llm_client,
+                        client=OpenAI_Client(
+                            api_key=LLM_CONFIG["api_key"],
+                            endpoint=LLM_CONFIG["endpoint"],
+                            model=LLM_CONFIG["model"],
+                        ).llm_client,
                         model=os.environ["OPENAI_DEFAULT_MODEL_NAME"],
                         nr_docs=form_parameters["OpenAI_nr_docs"],
                         prompt=(

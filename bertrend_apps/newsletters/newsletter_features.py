@@ -14,15 +14,16 @@ import pandas as pd
 import tldextract
 from loguru import logger
 
-from bertrend.common.openai_client import OpenAI_Client
-from bertrend.common.prompts import (
+from bertrend import LLM_CONFIG
+from bertrend.llm_utils.openai_client import OpenAI_Client
+from bertrend_apps.newsletters.prompts import (
     FR_USER_SUMMARY_MULTIPLE_DOCS,
     EN_USER_SUMMARY_MULTIPLE_DOCS,
     FR_USER_GENERATE_TOPIC_LABEL_SUMMARIES_V2,
     EN_USER_GENERATE_TOPIC_LABEL_SUMMARIES_V2,
 )
-from bertrend.summary.summarizer import Summarizer
-from bertrend.summary.abstractive_summarizer import AbstractiveSummarizer
+from bertrend.services.summarizer import Summarizer
+from bertrend.services.summary.abstractive_summarizer import AbstractiveSummarizer
 from bertopic._bertopic import BERTopic
 from tqdm import tqdm
 
@@ -71,7 +72,12 @@ def generate_newsletter(
         str: Newsletter in Markdown format
     """
     logger.debug("Generating newsletters...")
-    openai_api = OpenAI_Client()
+    openai_api = OpenAI_Client(
+        api_key=LLM_CONFIG["api_key"],
+        endpoint=LLM_CONFIG["endpoint"],
+        model=LLM_CONFIG["model"],
+    )
+
     # Adapt language for date
     current_local = locale.getlocale()
     if prompt_language == "en":
