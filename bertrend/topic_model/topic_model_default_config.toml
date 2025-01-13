@@ -1,0 +1,48 @@
+# Default configuration file to be used for topic model
+
+# Global parameters
+[global]
+language = "French"
+
+# BERTopic parameters: https://maartengr.github.io/BERTopic/api/bertopic.html#bertopic._bertopic.BERTopic.__init__
+[bertopic_model]
+top_n_words = 10
+verbose = true
+representation_model = ["MaximalMarginalRelevance"] # KeyBERTInspired, OpenAI
+zeroshot_topic_list = []
+zeroshot_min_similarity = 0
+
+# UMAP parameters: https://umap-learn.readthedocs.io/en/latest/api.html
+[umap_model]
+n_neighbors = 5
+n_components = 5
+min_dist = 0.0
+metric = "cosine"
+random_state = 42
+
+# HDBSCAN parameters: https://hdbscan.readthedocs.io/en/latest/api.html
+[hdbscan_model]
+min_cluster_size = 5
+min_samples = 5
+metric = "euclidean"
+cluster_selection_method = "eom"
+prediction_data = true
+
+# CountVectorizer: https://scikit-learn.org/1.5/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
+[vectorizer_model]
+ngram_range = [1, 1]
+stop_words = true # If true, will check `language` parameter and load associated stopwords file
+min_df = 2
+
+# ClassTfidfTransformer: https://maartengr.github.io/BERTopic/api/ctfidf.html
+[ctfidf_model]
+bm25_weighting = false
+reduce_frequent_words = true
+
+# MaximalMarginalRelevance: https://maartengr.github.io/BERTopic/api/representation/mmr.html
+[mmr_model]
+diversity = 0.3
+
+# Reduce outliers: https://maartengr.github.io/BERTopic/api/bertopic.html#bertopic._bertopic.BERTopic.reduce_outliers
+[reduce_outliers]
+strategy = "c-tf-idf"

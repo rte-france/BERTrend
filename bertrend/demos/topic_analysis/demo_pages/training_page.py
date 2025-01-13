@@ -43,7 +43,7 @@ from bertrend.demos.weak_signals.visualizations_utils import PLOTLY_BUTTON_SAVE_
 from bertrend.metrics.topic_metrics import compute_cluster_metrics
 from bertrend.parameters import BERTOPIC_SERIALIZATION
 from bertrend.topic_analysis.visualizations import plot_docs_repartition_over_time
-from bertrend.topic_model import TopicModel
+from bertrend.topic_model.topic_model import TopicModel
 from bertrend.utils.data_loading import (
     TEXT_COLUMN,
 )
@@ -131,22 +131,7 @@ def train_model():
         # indices = full_dataset.index.tolist()
 
         # Initialize topic model
-        topic_model = TopicModel(
-            umap_n_components=SessionStateManager.get("umap_n_components"),
-            umap_n_neighbors=SessionStateManager.get("umap_n_neighbors"),
-            hdbscan_min_cluster_size=SessionStateManager.get(
-                "hdbscan_min_cluster_size"
-            ),
-            hdbscan_min_samples=SessionStateManager.get("hdbscan_min_samples"),
-            hdbscan_cluster_selection_method=SessionStateManager.get(
-                "hdbscan_cluster_selection_method"
-            ),
-            vectorizer_ngram_range=SessionStateManager.get("vectorizer_ngram_range"),
-            min_df=SessionStateManager.get("min_df"),
-            top_n_words=SessionStateManager.get("top_n_words"),
-            language=SessionStateManager.get("language"),
-            representation_models=SessionStateManager.get("representation_models"),
-        )
+        topic_model = TopicModel(st.session_state["bertopic_config"])
         embeddings = st.session_state["embeddings"]
         topic_model_output = topic_model.fit(
             docs=dataset,
@@ -190,7 +175,6 @@ def main():
     # In the sidebar form
     with st.sidebar:
         st.header(SETTINGS_ICON + " Settings")
-        st.subheader("BERTopic Hyperparameters")
         display_bertopic_hyperparameters()
 
     # Load data

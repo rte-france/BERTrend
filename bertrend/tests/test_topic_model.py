@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 
 from bertopic import BERTopic
 
-from bertrend.topic_model import TopicModel, TopicModelOutput
+from bertrend.topic_model.topic_model import TopicModel, TopicModelOutput
 from bertrend.parameters import (
     DEFAULT_UMAP_N_COMPONENTS,
     DEFAULT_UMAP_N_NEIGHBORS,

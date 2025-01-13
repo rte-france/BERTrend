@@ -17,7 +17,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from bertrend import MODELS_DIR, CACHE_PATH
 
-from bertrend.topic_model import TopicModel
+from bertrend.topic_model.topic_model import TopicModel
 from bertrend.parameters import (
     DEFAULT_MIN_SIMILARITY,
     DEFAULT_GRANULARITY,

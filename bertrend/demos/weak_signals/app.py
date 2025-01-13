@@ -44,7 +44,7 @@ from bertrend.demos.demos_utils.parameters_component import (
     display_bertopic_hyperparameters,
     display_bertrend_hyperparameters,
 )
-from bertrend.topic_model import TopicModel
+from bertrend.topic_model.topic_model import TopicModel
 from bertrend.demos.weak_signals.messages import (
     MODEL_MERGING_COMPLETE_MESSAGE,
     NO_CACHE_WARNING,

@@ -22,10 +22,20 @@ def _resolve_env_variables(config_dict: dict) -> dict:
     return config_dict
 
 
-def load_toml_config(config_file_path: Path) -> dict:
+def load_toml_config(config_file: str | Path) -> dict:
     """
     Load a TOML configuration file and resolve environment variables.
+    TOML `config_file` can be:
+            - a `str` representing the TOML file
+            - a `Path` to a TOML file
     """
-    with open(config_file_path, "rb") as f:
-        config_dict = tomllib.load(f)
+    if isinstance(config_file, str):
+        config_dict = tomllib.loads(config_file)
+    elif isinstance(config_file, Path):
+        with open(config_file, "rb") as f:
+            config_dict = tomllib.load(f)
+    else:
+        raise TypeError(
+            f"`config_file` must be `str` or `Path`, found {type(config_file)}"
+        )
     return _resolve_env_variables(config_dict)
