@@ -4,7 +4,6 @@
 #  This file is part of BERTrend.
 
 import urllib.parse
-from typing import List, Dict, Optional
 
 import dateparser
 from loguru import logger
@@ -39,7 +38,7 @@ class GoogleNewsProvider(DataProvider):
         before: str = None,
         max_results: int = 50,
         language: str = "fr",
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Requests the news data provider, collects a set of URLs to be parsed, return results as json lines"""
         # FIXME: this may be blocked by google
         if language and language != "en":
@@ -65,7 +64,7 @@ class GoogleNewsProvider(DataProvider):
 
         return query
 
-    def _parse_entry(self, entry: Dict) -> Optional[Dict]:
+    def _parse_entry(self, entry: dict) -> dict | None:
         """Parses a Google News entry"""
         try:
             # NB. we do not use the title from Gnews as it is sometimes truncated

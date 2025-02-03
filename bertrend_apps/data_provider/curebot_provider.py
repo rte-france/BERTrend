@@ -3,7 +3,6 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 from pathlib import Path
-from typing import List, Dict, Optional
 
 import pandas as pd
 from loguru import logger
@@ -29,7 +28,7 @@ class CurebotProvider(DataProvider):
         before: str = None,
         max_results: int = None,
         language: str = "fr",
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Requests the news data provider, collects a set of URLs to be parsed, return results as json lines"""
         if self.feed_url:
             return self.parse_ATOM_feed()
@@ -42,7 +41,7 @@ class CurebotProvider(DataProvider):
             res for res in results if res is not None
         ]  # sanity check to remove errors
 
-    def parse_ATOM_feed(self) -> List[Dict]:
+    def parse_ATOM_feed(self) -> list[dict]:
         feed = feedparser.parse(self.feed_url)
         # Initialize an empty list to store the entries
         entries = []
@@ -69,7 +68,7 @@ class CurebotProvider(DataProvider):
 
         return entries
 
-    def _parse_entry(self, entry: Dict) -> Optional[Dict]:
+    def _parse_entry(self, entry: dict) -> dict | None:
         """Parses a Curebot news entry"""
         try:
             # NB. we do not use the title from Gnews as it is sometimes truncated

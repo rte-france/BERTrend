@@ -6,7 +6,6 @@
 import io
 import re
 import zipfile
-from typing import List
 
 import pandas as pd
 import streamlit as st
@@ -174,7 +173,7 @@ def get_representative_documents(top_n_docs: int):
 
 
 def display_source_distribution(
-    representative_df: pd.DataFrame, selected_sources: List[str]
+    representative_df: pd.DataFrame, selected_sources: list[str]
 ):
     """Display the distribution of sources in a pie chart."""
 
@@ -305,7 +304,9 @@ def _display_topic_description(filtered_df: pd.DataFrame):
                 language_code=language_code,
             )
         with st.container(border=True):
-            st.markdown(gpt_description)
+            st.markdown(
+                f"### {gpt_description['title']}\n{gpt_description['description']}"
+            )
 
 
 def main():

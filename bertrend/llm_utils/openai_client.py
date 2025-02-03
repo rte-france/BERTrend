@@ -4,7 +4,6 @@
 #  This file is part of BERTrend.
 
 import os
-from typing import List, Dict
 
 from openai import OpenAI, AzureOpenAI, Timeout, Stream
 from loguru import logger
@@ -100,7 +99,7 @@ class OpenAI_Client:
 
     def generate_from_history(
         self,
-        messages: List[Dict],
+        messages: list[dict],
         **kwargs,
     ) -> ChatCompletion | Stream[ChatCompletionChunk] | str:
         """Call openai model for generation.

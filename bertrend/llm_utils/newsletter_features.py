@@ -6,7 +6,6 @@ import inspect
 from pathlib import Path
 import os
 import locale
-from typing import List, Tuple, Any
 
 # from md2pdf.core import md2pdf
 import markdown
@@ -23,7 +22,6 @@ from bertrend.llm_utils.prompts import (
     USER_GENERATE_TOPIC_LABEL_SUMMARIES,
 )
 from bertrend.services.summarizer import Summarizer
-from bertrend.services.summary.abstractive_summarizer import AbstractiveSummarizer
 from bertopic._bertopic import BERTopic
 from tqdm import tqdm
 
@@ -39,7 +37,7 @@ DEFAULT_SUMMARY_MODE = "document"
 def generate_newsletter(
     topic_model: BERTopic,
     df: pd.DataFrame,
-    topics: List[int],
+    topics: list[int],
     df_split: pd.DataFrame = None,
     top_n_topics: int = DEFAULT_TOP_N_TOPICS,
     top_n_docs: int = DEFAULT_TOP_N_DOCS,
@@ -51,7 +49,7 @@ def generate_newsletter(
     improve_topic_description: bool = False,
     openai_model_name: str = None,
     nb_sentences: int = 3,
-) -> Tuple[str, str, str]:
+) -> tuple[str, str, str]:
     """Generates a newsletters based on a trained BERTopic model.
 
     Args:

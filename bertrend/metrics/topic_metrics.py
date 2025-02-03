@@ -3,7 +3,6 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-from typing import List
 from itertools import combinations
 
 import pandas as pd
@@ -15,8 +14,8 @@ from loguru import logger
 
 def get_coherence_value(
     topic_model: BERTopic,
-    topics: List[int],
-    docs: List[str],
+    topics: list[int],
+    docs: list[str],
     coherence_score_type: str = "c_npmi",
 ) -> float:
     """
@@ -72,8 +71,8 @@ def get_coherence_value(
 
 def get_diversity_value(
     topic_model: BERTopic,
-    topics: List[List[str]],
-    docs: List[str],
+    topics: list[list[str]],
+    docs: list[str],
     diversity_score_type: str = "puw",
     topk: int = 5,
 ) -> float:
@@ -160,7 +159,7 @@ def compute_cluster_metrics(bertopic: BERTopic, topics: list[int], dataset: list
         )
 
 
-def proportion_unique_words(topics: List[List[str]], top_k: int) -> float:
+def proportion_unique_words(topics: list[list[str]], top_k: int) -> float:
     """
     Compute the proportion of unique words.
 
@@ -178,7 +177,7 @@ def proportion_unique_words(topics: List[List[str]], top_k: int) -> float:
     return puw
 
 
-def pairwise_jaccard_diversity(topics: List[List[str]], top_k: int) -> float:
+def pairwise_jaccard_diversity(topics: list[list[str]], top_k: int) -> float:
     """
     Compute the average pairwise Jaccard distance between the topics.
 

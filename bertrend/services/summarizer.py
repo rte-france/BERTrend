@@ -4,7 +4,6 @@
 #  This file is part of BERTrend.
 
 from abc import ABC, abstractmethod
-from typing import List
 
 DEFAULT_SUMMARIZATION_RATIO = 0.2
 DEFAULT_MAX_SENTENCES = 3
@@ -25,13 +24,13 @@ class Summarizer(ABC):
 
     def summarize_batch(
         self,
-        article_texts: List[str],
+        article_texts: list[str],
         max_sentences: int = DEFAULT_MAX_SENTENCES,
         max_words: int = DEFAULT_MAX_WORDS,
         max_length_ratio: float = DEFAULT_SUMMARIZATION_RATIO,
         prompt_language="fr",
         model_name=None,
-    ) -> List[str]:
+    ) -> list[str]:
         """Basic implementation of batch summarization. Can be overridden by subclasses."""
         return [
             self.generate_summary(

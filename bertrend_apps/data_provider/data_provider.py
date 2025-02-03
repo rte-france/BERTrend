@@ -6,7 +6,6 @@
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
 
 import jsonlines
 import langdetect
@@ -55,7 +54,7 @@ class DataProvider(ABC):
         before: str,
         max_results: int,
         language: str = None,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Requests the news data provider, collects a set of URLs to be parsed, return results as json lines.
 
         Parameters
@@ -79,8 +78,8 @@ class DataProvider(ABC):
         pass
 
     def get_articles_batch(
-        self, queries_batch: List[List], max_results: int, language: str = None
-    ) -> List[Dict]:
+        self, queries_batch: list[list], max_results: int, language: str = None
+    ) -> list[dict]:
         """Requests the news data provider for a list of queries, collects a set of URLs to be parsed,
         return results as json lines"""
         articles = []
@@ -103,7 +102,7 @@ class DataProvider(ABC):
         article = self.article_parser.extract(url=url)
         return article
 
-    def store_articles(self, data: List[Dict], file_path: Path):
+    def store_articles(self, data: list[dict], file_path: Path):
         """Store articles to a specific path as json lines"""
         if not data:
             logger.error("No data to be stored!")
@@ -121,7 +120,7 @@ class DataProvider(ABC):
                 return pd.DataFrame(data)
 
     @wait_if_seen_url(0.2)
-    def _get_text(self, url: str) -> Tuple[str, str]:
+    def _get_text(self, url: str) -> tuple[str, str]:
         """Extracts text and (clean) title from an article URL"""
         if any(ele in url for ele in BLACKLISTED_URL):
             logger.warning(f"Source of {url} is blacklisted!")
@@ -136,7 +135,7 @@ class DataProvider(ABC):
             logger.warning("Parsing of text failed with Goose3, trying newspaper3k")
             return self._get_text_alternate(url)
 
-    def _get_text_alternate(self, url: str) -> Tuple[str, str]:
+    def _get_text_alternate(self, url: str) -> tuple[str, str]:
         """Extracts text from an article URL"""
         logger.debug(f"Extracting text from {url} with newspaper3k")
         article = Article(url)
@@ -156,11 +155,11 @@ class DataProvider(ABC):
         return text
 
     @abstractmethod
-    def _parse_entry(self, entry: Dict) -> Optional[Dict]:
+    def _parse_entry(self, entry: dict) -> dict | None:
         """Parses a NewsCatcher news entry"""
         pass
 
-    def process_entries(self, entries: List, lang_filter: str = None):
+    def process_entries(self, entries: list, lang_filter: str = None):
         # Number of parallel jobs you want to run (adjust as needed)
         num_jobs = -1  # all available cpus
 

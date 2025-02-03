@@ -3,7 +3,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import json
-from typing import List, Tuple, Union, Literal
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -52,10 +52,10 @@ class EmbeddingService(BaseEmbedder):
         self.embedding_model_name = model_name
         self.embedding_dtype = embedding_dtype
 
-    def embed(self, texts: Union[List[str], pd.Series], verbose: bool = False) -> Tuple[
+    def embed(self, texts: list[str] | pd.Series, verbose: bool = False) -> tuple[
         np.ndarray,
-        List[List[str]] | None,
-        List[np.ndarray] | None,
+        list[list[str]] | None,
+        list[np.ndarray] | None,
     ]:
         """
         Embed a list of documents using a Sentence Transformer model.
@@ -84,11 +84,11 @@ class EmbeddingService(BaseEmbedder):
 
     def _local_embed_documents(
         self,
-        texts: List[str],
+        texts: list[str],
         embedding_device: str = EMBEDDING_DEVICE,
         batch_size: int = EMBEDDING_BATCH_SIZE,
         max_seq_length: int = EMBEDDING_MAX_SEQ_LENGTH,
-    ) -> Tuple[np.ndarray, List[List[str]], List[np.ndarray]]:
+    ) -> tuple[np.ndarray, list[list[str]], list[np.ndarray]]:
         """
         Embed a list of documents using a Sentence Transformer model.
 
@@ -181,8 +181,8 @@ class EmbeddingService(BaseEmbedder):
         return embeddings, token_strings, token_embeddings
 
     def _remote_embed_documents(
-        self, texts: List[str], show_progress_bar: bool = True
-    ) -> Tuple[np.ndarray, None, None]:
+        self, texts: list[str], show_progress_bar: bool = True
+    ) -> tuple[np.ndarray, None, None]:
         """
         Embed a list of documents using a Sentence Transformer model.
 

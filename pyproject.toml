@@ -23,7 +23,7 @@ bertopic = "0.16.2"
 black = "^24.10.0"
 datamapplot = "0.3.0"
 dateparser = "^1.2.0"
-dask = "2024.9.1" # issues with >=2025.x (https://github.com/dask/dask/issues/11678)
+dask = "2024.12.0" # issues with >=2025.x (https://github.com/dask/dask/issues/11678)
 gensim = "4.3.2"
 hdbscan = "^0.8.40"
 joblib = "^1.4.2"
@@ -38,6 +38,7 @@ markdown = "^3.7"
 nltk = "^3.9.1"
 numpy = "<2"
 openai = "^1.58.1"
+opentelemetry-exporter-otlp-proto-grpc = "1.25.0" # to avoid error chroma with protobuf
 pandas = "^2.2.2"
 plotly = "^5.24.1"
 plotly-resampler = "^0.10.0"

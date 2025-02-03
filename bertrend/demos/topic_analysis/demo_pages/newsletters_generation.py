@@ -3,7 +3,6 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import inspect
-from typing import Tuple
 
 import pandas as pd
 import streamlit as st
@@ -37,7 +36,7 @@ SUMMARIZER_OPTIONS_MAPPER = {
 
 def generate_newsletter_wrapper(
     df: pd.DataFrame, df_split: pd.DataFrame
-) -> Tuple[str, str, str]:
+) -> tuple[str, str, str]:
     """Wrapper function to generate newsletter based on user settings."""
     top_n_topics = (
         None

@@ -6,7 +6,7 @@
 import hashlib
 import pickle
 from pathlib import Path
-from typing import List, Any
+from typing import Any
 
 import os
 
@@ -20,7 +20,7 @@ def load_embeddings(cache_path: Path):
         return pickle.load(f_in)
 
 
-def save_embeddings(embeddings: List, cache_path: Path):
+def save_embeddings(embeddings: list, cache_path: Path):
     """Save embeddings as pickle"""
     with open(cache_path, "wb") as f_out:
         pickle.dump(embeddings, f_out)

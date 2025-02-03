@@ -4,7 +4,6 @@
 #  This file is part of BERTrend.
 
 import urllib.parse
-from typing import List, Dict, Optional
 
 import dateparser
 import feedparser
@@ -36,7 +35,7 @@ class BingNewsProvider(DataProvider):
         before: str,
         max_results: int,
         language: str = None,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Requests the news data provider, collects a set of URLs to be parsed, return results as json lines"""
         q = self._build_query(query, after, before)
         logger.info(f"Querying Bing: {q}")
@@ -58,7 +57,7 @@ class BingNewsProvider(DataProvider):
             # fallback (the URL does not match the expected pattern)
             return bing_url
 
-    def _parse_entry(self, entry: Dict) -> Optional[Dict]:
+    def _parse_entry(self, entry: dict) -> dict | None:
         """Parses a Bing news entry, uses wait decorator to force delay between 2 successive calls"""
         try:
             link = entry["link"]

@@ -5,7 +5,6 @@
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import List
 
 import pandas as pd
 import streamlit as st
@@ -49,8 +48,8 @@ FORMAT_ICONS = {
 
 
 def _process_uploaded_files(
-    files: List[UploadedFile],
-) -> List[pd.DataFrame]:
+    files: list[UploadedFile],
+) -> list[pd.DataFrame]:
     """Read a list of uploaded files and return a list of dataframes containing the associated data"""
     dataframes = []
     with TemporaryDirectory() as tmpdir:
@@ -68,8 +67,8 @@ def _process_uploaded_files(
 
 
 def _load_files(
-    files: List[Path],
-) -> List[pd.DataFrame]:
+    files: list[Path],
+) -> list[pd.DataFrame]:
     """Read a list of files from storage and return a list of dataframes containing the associated data"""
     dfs = []
     for selected_file in files:

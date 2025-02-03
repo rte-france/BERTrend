@@ -2,8 +2,6 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-from typing import List
-
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -47,7 +45,7 @@ def compute_topics_over_time(
 
 
 def print_docs_for_specific_topic(
-    df: pd.DataFrame, topics: List[int], topic_number: int
+    df: pd.DataFrame, topics: list[int], topic_number: int
 ):
     """
     Print documents for a specific topic

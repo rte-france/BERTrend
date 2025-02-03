@@ -3,7 +3,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-from typing import List, Optional, Callable
+from typing import Callable
 
 import nltk
 import numpy as np
@@ -33,7 +33,7 @@ DEFAULT_CHUNKS_NUMBER_SUMMARY = 6
 nltk.download("punkt")
 
 
-def _summarize_based_on_cos_scores(cos_scores, summary_size: int) -> List[int]:
+def _summarize_based_on_cos_scores(cos_scores, summary_size: int) -> list[int]:
     """Summarizes "something" on the basis of a cosine similarity matrix.
     This approach may apply to text or a set of chunks.
 
@@ -65,7 +65,7 @@ def _summarize_based_on_cos_scores(cos_scores, summary_size: int) -> List[int]:
     return summary_indices
 
 
-def summarize_embeddings(embeddings: Tensor, summary_size: int) -> List[int]:
+def summarize_embeddings(embeddings: Tensor, summary_size: int) -> list[int]:
     """Summarizes "something" on the basis of its embeddings' representation.
     This approach may apply to text or a set of chunks.
 
@@ -115,11 +115,11 @@ class ExtractiveSummarizer(Summarizer):
         summary = self.summarize_text(text, max_sentences, max_length_ratio)
         return " ".join(summary)
 
-    def get_sentences_embeddings(self, sentences: List[str]) -> List[float]:
+    def get_sentences_embeddings(self, sentences: list[str]) -> list[float]:
         """Compute the sentence embeddings"""
         return self.sentence_transformer_model.encode(sentences, convert_to_tensor=True)
 
-    def get_sentences(self, text: str, use_spacy: bool = False) -> List[str]:
+    def get_sentences(self, text: str, use_spacy: bool = False) -> list[str]:
         """Return a list of sentences associated to a text (use of sentence tokenizer and some basic filtering)
 
         Parameters
@@ -152,7 +152,7 @@ class ExtractiveSummarizer(Summarizer):
             sentences = sent_tokenize(text, language="french")
         return sentences
 
-    def get_chunks_embeddings(self, chunks: List[str]) -> List[float]:
+    def get_chunks_embeddings(self, chunks: list[str]) -> list[float]:
         """Constructs chunks embeddings as an average of the embeddings of the sentences contained in the chunks."""
         # TODO: maybe we should start by summarizing each chunk in order to have chunks of same size?
         chunk_embeddings = []
@@ -168,9 +168,9 @@ class ExtractiveSummarizer(Summarizer):
     def summarize_text(
         self,
         text: str,
-        max_nb: Optional[int] = DEFAULT_MAX_SENTENCES,
-        percentage: Optional[float] = DEFAULT_SUMMARIZATION_RATIO,
-    ) -> List[str]:
+        max_nb: int | None = DEFAULT_MAX_SENTENCES,
+        percentage: float | None = DEFAULT_SUMMARIZATION_RATIO,
+    ) -> list[str]:
         """Summarizes a text using the maximum number of sentences given as parameter
 
         Parameters
@@ -212,9 +212,9 @@ class ExtractiveSummarizer(Summarizer):
 
     def summarize_chunks(
         self,
-        chunks: List[str],
-        max_nb_chunks: Optional[int] = DEFAULT_CHUNKS_NUMBER_SUMMARY,
-    ) -> List[str]:
+        chunks: list[str],
+        max_nb_chunks: int | None = DEFAULT_CHUNKS_NUMBER_SUMMARY,
+    ) -> list[str]:
         """Summarizes a list of text chunks using their embedding representation
 
         Parameters
@@ -248,10 +248,10 @@ class ExtractiveSummarizer(Summarizer):
         self,
         text: str,
         function_to_compute_embeddings: Callable,
-        ratio_for_additional_embeddings: Optional[float] = 0.5,
-        max_nb: Optional[int] = DEFAULT_MAX_SENTENCES,
-        percentage: Optional[float] = DEFAULT_SUMMARIZATION_RATIO,
-    ) -> List[str]:
+        ratio_for_additional_embeddings: float | None = 0.5,
+        max_nb: int | None = DEFAULT_MAX_SENTENCES,
+        percentage: float | None = DEFAULT_SUMMARIZATION_RATIO,
+    ) -> list[str]:
         """Summarizes a text using the maximum number of sentences given as parameter.
         The summary is based on the combination of two embeddings: the "standard" sentence embeddings obtained by
         the sentence_transformers package, and an additional embedding related to the sentences, provided by
@@ -315,14 +315,14 @@ class ExtractiveSummarizer(Summarizer):
         summary = [sentences[idx].strip() for idx in summary_indices]
         return summary
 
-    def check_paraphrase(self, sentences: List[str]):
+    def check_paraphrase(self, sentences: list[str]):
         """Given a list of sentences, returns a list of triplets with the format [score, id1, id2] indicating
         the degree of paraphrase between pairs of sentences."""
         paraphrases = util.paraphrase_mining(self.sentence_transformer_model, sentences)
         return paraphrases
 
     @staticmethod
-    def to_string(summary: List[str]) -> str:
+    def to_string(summary: list[str]) -> str:
         """Basic display of summary"""
         text = ""
         for s in summary:

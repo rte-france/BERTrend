@@ -4,7 +4,6 @@
 #  This file is part of BERTrend.
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import List
 
 import inspect
 import pandas as pd
@@ -43,7 +42,7 @@ if "st.session_state.topic_expanded" not in st.session_state:
 
 
 @st.cache_data
-def parse_data_from_files(files: List[UploadedFile]) -> pd.DataFrame:
+def parse_data_from_files(files: list[UploadedFile]) -> pd.DataFrame:
     """Read a list of Excel files and return a single dataframe containing the data"""
     dataframes = []
 
