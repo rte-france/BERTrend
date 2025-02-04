@@ -22,6 +22,7 @@ from bertrend.demos.demos_utils.icons import (
     ERROR_ICON,
     SETTINGS_ICON,
     INFO_ICON,
+    EMBEDDING_ICON,
 )
 from bertrend.demos.demos_utils.messages import (
     NO_EMBEDDINGS_WARNING_MESSAGE,
@@ -38,6 +39,7 @@ from bertrend.demos.topic_analysis.messages import (
 )
 from bertrend.demos.demos_utils.parameters_component import (
     display_bertopic_hyperparameters,
+    display_embedding_hyperparameters,
 )
 from bertrend.demos.weak_signals.visualizations_utils import PLOTLY_BUTTON_SAVE_CONFIG
 from bertrend.metrics.topic_metrics import compute_cluster_metrics
@@ -175,6 +177,8 @@ def main():
     # In the sidebar form
     with st.sidebar:
         st.header(SETTINGS_ICON + " Settings")
+        st.subheader(EMBEDDING_ICON + " Embedding Hyperparameters")
+        display_embedding_hyperparameters()
         display_bertopic_hyperparameters()
 
     # Load data

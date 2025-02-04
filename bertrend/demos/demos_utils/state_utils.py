@@ -2,7 +2,7 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -77,7 +77,7 @@ class SessionStateManager:
         return st.session_state[key]
 
     @staticmethod
-    def get_multiple(*keys: str) -> Dict[str, Any]:
+    def get_multiple(*keys: str) -> dict[str, Any]:
         return {key: st.session_state.get(key) for key in keys}
 
     @staticmethod
@@ -90,10 +90,10 @@ class SessionStateManager:
         st.session_state.clear()
 
     @staticmethod
-    def get_dataframe(key: str) -> Optional[pd.DataFrame]:
+    def get_dataframe(key: str) -> pd.DataFrame | None:
         df = st.session_state.get(key)
         return df if isinstance(df, pd.DataFrame) else None
 
     @staticmethod
-    def get_embeddings(key: str = "embeddings") -> Optional[np.ndarray]:
+    def get_embeddings(key: str = "embeddings") -> np.ndarray | None:
         return st.session_state.get(key)

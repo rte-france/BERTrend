@@ -56,7 +56,6 @@ from tqdm import tqdm
 import itertools
 from scipy.sparse import csr_matrix
 from sklearn.preprocessing import normalize
-from typing import List, Union, Tuple
 import re
 
 from bertrend import OUTPUT_PATH
@@ -66,12 +65,12 @@ class TempTopic:
     def __init__(
         self,
         topic_model: BERTopic,
-        docs: List[str],
-        embeddings: List[List[float]],
-        word_embeddings: List[List[List[float]]],
-        token_strings: List[List[str]],
-        timestamps: Union[List[str], List[int]],
-        topics: List[int] = None,
+        docs: list[str],
+        embeddings: list[list[float]],
+        word_embeddings: list[list[list[float]]],
+        token_strings: list[list[str]],
+        timestamps: list[str] | list[int],
+        topics: list[int] = None,
         evolution_tuning: bool = True,
         global_tuning: bool = False,
     ):
@@ -355,12 +354,12 @@ class TempTopic:
     def _fuzzy_match_and_embed(
         self,
         phrase: str,
-        token_strings: List[List[str]],
-        token_embeddings: List[np.ndarray],
+        token_strings: list[list[str]],
+        token_embeddings: list[np.ndarray],
         topic_id: int,
         timestamp: str,
         window_size: int,
-    ) -> Tuple[str, np.ndarray]:
+    ) -> tuple[str, np.ndarray]:
         """
         Matches a phrase to the most similar window in token_strings using fuzzy matching and returns the corresponding embedding.
 
@@ -405,7 +404,7 @@ class TempTopic:
     def _log_failed_match(
         self,
         phrase: str,
-        token_strings: List[List[str]],
+        token_strings: list[list[str]],
         topic_id: int,
         timestamp: str,
         best_match: str,
@@ -535,7 +534,7 @@ class TempTopic:
 
     def calculate_temporal_representation_stability(
         self, window_size: int = 2, k: int = 1
-    ) -> Tuple[pd.DataFrame, float]:
+    ) -> tuple[pd.DataFrame, float]:
         """
         Calculates the Temporal Representation Stability (TRS) scores for each topic.
 
@@ -637,7 +636,7 @@ class TempTopic:
 
     def calculate_topic_embedding_stability(
         self, window_size: int = 2
-    ) -> Tuple[pd.DataFrame, float]:
+    ) -> tuple[pd.DataFrame, float]:
         """
         Calculates the Temporal Topic Embedding Stability (TTES) scores for each topic.
 
@@ -764,7 +763,7 @@ class TempTopic:
 
     def find_similar_topic_pairs(
         self, similarity_threshold: float = 0.8
-    ) -> List[List[Tuple[int, int, str]]]:
+    ) -> list[list[tuple[int, int, str]]]:
         """
         Finds similar topic pairs based on cosine similarity.
 

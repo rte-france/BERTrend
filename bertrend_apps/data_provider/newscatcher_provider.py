@@ -3,7 +3,6 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import os
-from typing import List, Dict, Optional
 
 import dateparser
 from loguru import logger
@@ -35,7 +34,7 @@ class NewsCatcherProvider(DataProvider):
         before: str,
         max_results: int,
         language: str = None,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Requests the news data provider, collects a set of URLs to be parsed, return results as json lines"""
 
         # Use the API to search articles
@@ -47,7 +46,7 @@ class NewsCatcherProvider(DataProvider):
         entries = result["articles"][:max_results]
         return self.process_entries(entries, language)
 
-    def _parse_entry(self, entry: Dict) -> Optional[Dict]:
+    def _parse_entry(self, entry: dict) -> dict | None:
         """Parses a NewsCatcher news entry"""
         try:
             link = entry["link"]

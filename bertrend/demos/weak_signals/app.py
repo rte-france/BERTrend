@@ -32,6 +32,7 @@ from bertrend.demos.demos_utils.icons import (
     ANALYSIS_ICON,
     MODEL_TRAINING_ICON,
     DATA_LOADING_ICON,
+    EMBEDDING_ICON,
 )
 from bertrend.demos.demos_utils.messages import (
     NO_EMBEDDINGS_WARNING_MESSAGE,
@@ -40,6 +41,7 @@ from bertrend.demos.demos_utils.messages import (
 from bertrend.demos.demos_utils.parameters_component import (
     display_bertopic_hyperparameters,
     display_bertrend_hyperparameters,
+    display_embedding_hyperparameters,
 )
 from bertrend.BERTopicModel import BERTopicModel
 from bertrend.demos.weak_signals.messages import (
@@ -479,6 +481,8 @@ def main():
             SessionStateManager.clear()
 
         # BERTopic Hyperparameters
+        st.subheader(EMBEDDING_ICON + " Embedding Hyperparameters")
+        display_embedding_hyperparameters()
         st.subheader(TOPIC_ICON + " BERTopic Hyperparameters")
         display_bertopic_hyperparameters()
         st.subheader(TREND_ICON + " BERTrend Hyperparameters")

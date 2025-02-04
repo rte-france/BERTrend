@@ -16,9 +16,8 @@ TOPIC_DESCRIPTION_PROMPT_FR = """En tant qu'expert en analyse thématique, votre
     1. Un titre concis et informatif pour ce thème (maximum 10 mots)
     2. Une description détaillée du thème (environ 100 mots)
 
-    Format de réponse :
-    ### Titre : [Votre titre ici]
-    [Votre description ici]
+    Réponse au format JSON:
+    title: [Votre titre ici], description: [Votre description ici]
     """
 
 TOPIC_DESCRIPTION_PROMPT_EN = """As a topic analysis expert, your task is to generate a title and a description for a specific theme.
@@ -33,9 +32,8 @@ Based on this information, please provide:
 1. A concise and informative title for this theme (maximum 10 words)
 2. A detailed description of the theme (about 100 words)
 
-Response format:
-### Title: [Your title here]
-[Your description here]
+Response in JSON format :
+title: [Your title here], description: [Your description here]
 """
 
 TOPIC_DESCRIPTION_PROMPT = {

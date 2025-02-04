@@ -4,7 +4,6 @@
 #  This file is part of BERTrend.
 
 import re
-from typing import List
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
@@ -32,7 +31,7 @@ class AbstractiveSummarizer(Summarizer):
     def generate_summary(self, article_text, **kwargs) -> str:
         return self.summarize_batch([article_text])[0]
 
-    def summarize_batch(self, article_texts: List[str], **kwargs) -> List[str]:
+    def summarize_batch(self, article_texts: list[str], **kwargs) -> list[str]:
         inputs = self.tokenizer(
             [self.WHITESPACE_HANDLER(text) for text in article_texts],
             return_tensors="pt",

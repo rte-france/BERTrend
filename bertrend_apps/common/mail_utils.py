@@ -9,7 +9,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import COMMASPACE
 from pathlib import Path
-from typing import List
 
 # Gmail API utils
 from google.auth.transport.requests import Request
@@ -60,7 +59,7 @@ def get_credentials(
 def send_email(
     credentials: Credentials,
     subject: str,
-    recipients: List[str],
+    recipients: list[str],
     content: str,
     content_type="html",
 ):

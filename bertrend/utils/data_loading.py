@@ -5,7 +5,7 @@
 import gzip
 import re
 from pathlib import Path
-from typing import Dict, Literal, List
+from typing import Literal
 
 import pandas as pd
 from loguru import logger
@@ -26,7 +26,7 @@ SOURCE_COLUMN = "source"
 CITATION_COUNT_COL = "citation_count"
 
 
-def find_compatible_files(path: Path, extensions: List[str]) -> List[Path]:
+def find_compatible_files(path: Path, extensions: list[str]) -> list[Path]:
     return [f.relative_to(path) for f in path.rglob("*") if f.suffix[1:] in extensions]
 
 
@@ -124,7 +124,7 @@ def split_data(
 
 def group_by_days(
     df: pd.DataFrame, day_granularity: int = 1
-) -> Dict[pd.Timestamp, pd.DataFrame]:
+) -> dict[pd.Timestamp, pd.DataFrame]:
     """
     Group a DataFrame by a specified number of days.
 

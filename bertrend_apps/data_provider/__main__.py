@@ -15,6 +15,7 @@ from bertrend import FEED_BASE_PATH, load_toml_config
 from bertrend_apps.common.crontab_utils import schedule_scrapping
 from bertrend_apps.data_provider.arxiv_provider import ArxivProvider
 from bertrend_apps.data_provider.bing_news_provider import BingNewsProvider
+from bertrend_apps.data_provider.curebot_provider import CurebotProvider
 from bertrend_apps.data_provider.google_news_provider import GoogleNewsProvider
 from bertrend_apps.data_provider.newscatcher_provider import NewsCatcherProvider
 
@@ -23,6 +24,7 @@ os.umask(0o002)
 
 PROVIDERS = {
     "arxiv": ArxivProvider,
+    "curebot": CurebotProvider,
     "google": GoogleNewsProvider,
     "bing": BingNewsProvider,
     "newscatcher": NewsCatcherProvider,
@@ -46,7 +48,7 @@ if __name__ == "__main__":
         max_results: int = typer.Option(
             50, help="maximum number of results per request"
         ),
-        save_path: str = typer.Option(
+        save_path: Path = typer.Option(
             None, help="Path for writing results. File is in jsonl format."
         ),
         language: str = typer.Option(None, help="Language filter"),
@@ -65,7 +67,7 @@ if __name__ == "__main__":
             "to" date, formatted as YYYY-MM-DD
         max_results: int
             Maximum number of results per request
-        save_path: str
+        save_path: Path
             Path to the output file (jsonl format)
         language: str
             Language filter
@@ -90,7 +92,7 @@ if __name__ == "__main__":
         provider: str = typer.Option(
             "google", help="source for news [google, bing, newscatcher]"
         ),
-        save_path: str = typer.Option(None, help="Path for writing results."),
+        save_path: Path = typer.Option(None, help="Path for writing results."),
         language: str = typer.Option(None, help="Language filter"),
     ):
         """Scrape data from Arxiv, Google, Bing news or NewsCatcher (multiple requests from a configuration file: each line of the file shall be compliant with the following format:
@@ -100,9 +102,11 @@ if __name__ == "__main__":
         ----------
         requests_file: str
             Text file containing the list of requests to be processed
+        max_results: int
+            Maximum number of results per request
         provider: str
             News data provider. Current authorized values [google, bing, newscatcher]
-        save_path: str
+        save_path: Path
             Path to the output file (jsonl format)
         language: str
             Language filter
@@ -178,7 +182,7 @@ if __name__ == "__main__":
 
     @app.command("scrape-feed")
     def scrape_from_feed(
-        feed_cfg: str = typer.Argument(help="Path of the data feed config file"),
+        feed_cfg: Path = typer.Argument(help="Path of the data feed config file"),
     ):
         """Scrape data from Arxiv, Google, Bing news or NewsCatcher on the basis of a feed configuration file"""
         data_feed_cfg = load_toml_config(feed_cfg)
@@ -200,7 +204,7 @@ if __name__ == "__main__":
 
         # Generate a query file
         with tempfile.NamedTemporaryFile() as query_file:
-            if provider == "arxiv":  # already returns batches
+            if provider == "arxiv" or provider == "curebot":  # already returns batches
                 scrape(
                     keywords=keywords,
                     provider=provider,

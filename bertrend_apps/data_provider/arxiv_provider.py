@@ -6,7 +6,6 @@
 import itertools
 import os
 from datetime import datetime
-from typing import List, Dict, Optional
 from collections import defaultdict
 
 import arxiv
@@ -55,7 +54,7 @@ class ArxivProvider(DataProvider):
         before: str,
         max_results: int,
         language: str = None,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Requests the news data provider, collects a set of URLs to be parsed, return results as json lines.
 
         Parameters
@@ -101,7 +100,7 @@ class ArxivProvider(DataProvider):
         # add citations count
         return self.add_citations_count(results)
 
-    def _parse_entry(self, entry: arxiv.Result) -> Optional[Dict]:
+    def _parse_entry(self, entry: arxiv.Result) -> dict | None:
         """Parses a Arxiv entry"""
         try:
             id = entry.entry_id
@@ -122,7 +121,7 @@ class ArxivProvider(DataProvider):
             return None
 
     @wait(1)
-    def _request_semantic_scholar_chunk(self, chunk: List[Dict]):
+    def _request_semantic_scholar_chunk(self, chunk: list[dict]):
         """Get information from semantic scholar API per batch of articles IDs"""
         ids_list = ["URL:" + entry["id"] for entry in chunk]
         response = requests.post(
@@ -133,7 +132,7 @@ class ArxivProvider(DataProvider):
         )
         return [item for item in response.json() if item is not None]
 
-    def add_citations_count(self, entries: List[Dict]):
+    def add_citations_count(self, entries: list[dict]):
         """Uses the semantic_scholar API to get the number of counts per paper"""
         # split list into chunks and request semantic scholar
         chunks = [

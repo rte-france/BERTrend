@@ -3,19 +3,11 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-from typing import Dict, Tuple, List
-
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from bertopic import BERTopic
 from pandas import Timestamp
 from plotly_resampler import FigureWidgetResampler
-
-from bertrend.config.parameters import (
-    SIGNAL_CLASSIF_LOWER_BOUND,
-    SIGNAL_CLASSIF_UPPER_BOUND,
-)
 
 # Visualization Settings
 SANKEY_NODE_PAD = 15
@@ -24,7 +16,7 @@ SANKEY_LINE_COLOR = "black"
 SANKEY_LINE_WIDTH = 0.5
 
 
-def plot_num_topics(topic_models: Dict[pd.Timestamp, BERTopic]) -> go.Figure:
+def plot_num_topics(topic_models: dict[pd.Timestamp, BERTopic]) -> go.Figure:
     """
     Plot the number of topics detected for each model.
 
@@ -41,7 +33,7 @@ def plot_num_topics(topic_models: Dict[pd.Timestamp, BERTopic]) -> go.Figure:
     return fig_num_topics
 
 
-def plot_size_outliers(topic_models: Dict[pd.Timestamp, BERTopic]) -> go.Figure:
+def plot_size_outliers(topic_models: dict[pd.Timestamp, BERTopic]) -> go.Figure:
     """
     Plot the size of the outlier topic for each model.
 
@@ -131,7 +123,7 @@ def plot_topics_for_model(selected_model: BERTopic) -> go.Figure:
     return fig
 
 
-def create_topic_size_evolution_figure(topic_sizes: Dict, topic_ids=None) -> go.Figure:
+def create_topic_size_evolution_figure(topic_sizes: dict, topic_ids=None) -> go.Figure:
     fig = go.Figure()
 
     if topic_ids is None:
@@ -169,57 +161,12 @@ def create_topic_size_evolution_figure(topic_sizes: Dict, topic_ids=None) -> go.
     return fig
 
 
-def compute_popularity_values_and_thresholds(
-    topic_sizes, window_size: int, granularity: int, current_date
-) -> Tuple[Timestamp, Timestamp, list, float, float]:
-    """
-    Plot the evolution of topic sizes over time with colored overlays for signal regions.
-
-    Args:
-        topic_sizes
-        window_size (int): The retrospective window size in days.
-        granularity (int): The granularity of the timestamps in days.
-        current_date (datetime): The current date selected by the user.
-
-    Returns:
-        Tuple[Timestamp,Timestamp, list, float, float,]:
-            window_start, window_end indicates the start / end periods.
-            all_popularities_values
-            The q1 and q3 values representing the 10th and 90th percentiles of popularity values,
-    """
-
-    window_size_timedelta = pd.Timedelta(days=window_size)
-    granularity_timedelta = pd.Timedelta(days=granularity)
-
-    current_date = pd.to_datetime(current_date).floor("D")  # Floor to start of day
-    window_start = current_date - window_size_timedelta
-    window_end = current_date + granularity_timedelta
-
-    # Calculate q1 and q3 values (we remove very low values of disappearing signals to not skew the thresholds)
-    all_popularity_values = [
-        popularity
-        for topic, data in topic_sizes.items()
-        for timestamp, popularity in zip(
-            pd.to_datetime(data["Timestamps"]), data["Popularity"]
-        )
-        if window_start <= timestamp <= current_date and popularity > 1e-5
-    ]
-
-    if all_popularity_values:
-        q1 = np.percentile(all_popularity_values, SIGNAL_CLASSIF_LOWER_BOUND)
-        q3 = np.percentile(all_popularity_values, SIGNAL_CLASSIF_UPPER_BOUND)
-    else:
-        q1, q3 = 0, 0
-
-    return window_start, window_end, all_popularity_values, q1, q3
-
-
 def plot_topic_size_evolution(
     fig: go.Figure,
     current_date,
     window_start: Timestamp,
     window_end: Timestamp,
-    all_popularity_values: List[float],
+    all_popularity_values: list[float],
     q1: float,
     q3: float,
 ):

@@ -85,7 +85,8 @@ def display_remote_embeddings():
     )
 
 
-def display_bertopic_hyperparameters():
+def display_embedding_hyperparameters():
+    """UI settings for embedding hyperparameters"""
     # Embedding model parameters
     with st.expander("Embedding Model Settings", expanded=False):
         register_widget("embedding_service_type")
@@ -103,6 +104,8 @@ def display_bertopic_hyperparameters():
         else:
             display_remote_embeddings()
 
+
+def display_bertopic_hyperparameters():
     # BERTopic model parameters
     with st.expander("BERTopic Model Settings", expanded=False):
         # If BERTopic config is already in session state, use it
