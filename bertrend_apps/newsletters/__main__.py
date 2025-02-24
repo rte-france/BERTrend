@@ -205,7 +205,10 @@ if __name__ == "__main__":
         embedding_model: str,
         embeddings: ndarray,
     ) -> tuple[list, BERTopic]:
-        topic_model = BERTopicModel(config_file)
+        toml = load_toml_config(config_file)
+        # extract relevant bertopic info
+        language = toml["bertopic_parameters"].get("language")
+        topic_model = BERTopicModel({"global": {"language": language}})
         output = topic_model.fit(
             docs=dataset[TEXT_COLUMN],
             embedding_model=embedding_model,

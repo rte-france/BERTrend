@@ -23,12 +23,58 @@ from bertrend_apps.prospective_demo import (
     WEAK_SIGNALS,
     STRONG_SIGNALS,
     LLM_TOPIC_DESCRIPTION_COLUMN,
+    LLM_TOPIC_TITLE_COLUMN,
     DEFAULT_ANALYSIS_CFG,
     get_model_cfg_path,
+    URLS_COLUMN,
 )
 from bertrend_apps.prospective_demo.llm_utils import generate_bertrend_topic_description
 
 DEFAULT_TOP_K = 5
+
+
+def load_all_data(model_id: str, user: str, language: str):
+    # TODO: to be improved
+    cfg_file = get_user_feed_path(user, model_id)
+    if not cfg_file.exists():
+        logger.error(f"Cannot find/process config file: {cfg_file}")
+        return
+    cfg = load_toml_config(cfg_file)
+    feed_base_dir = cfg["data-feed"]["feed_dir_path"]
+    files = list(
+        Path(FEED_BASE_PATH, feed_base_dir).glob(
+            f"*{cfg['data-feed'].get('id')}*.jsonl*"
+        )
+    )
+    if not files:
+        logger.warning(f"No new data for '{model_id}', nothing to do")
+        return
+
+    dfs = [load_data(Path(f), language=language) for f in files]
+    new_data = pd.concat(dfs).drop_duplicates(
+        subset=["title"], keep="first", inplace=False
+    )
+    return new_data
+
+
+def get_relevant_model_config(
+    model_id: str,
+    user: str,
+):
+    # Load model & analysis config
+    model_cfg_path = get_model_cfg_path(user, model_id)
+    try:
+        model_analysis_cfg = load_toml_config(model_cfg_path)
+    except Exception:
+        model_analysis_cfg = DEFAULT_ANALYSIS_CFG
+    # Extract relevant values
+    granularity = model_analysis_cfg["model_config"]["granularity"]
+    window_size = model_analysis_cfg["model_config"]["window_size"]
+    language = model_analysis_cfg["model_config"]["language"]
+    if language not in ["French", "English"]:
+        language = "French"
+    return granularity, window_size, language
+
 
 if __name__ == "__main__":
     app = typer.Typer()
@@ -38,18 +84,10 @@ if __name__ == "__main__":
         user_name: str = typer.Argument(help="Identifier of the user"),
         model_id: str = typer.Argument(help="ID of the model/data to train"),
     ):
-        # Load model & analysis config
-        model_cfg_path = get_model_cfg_path(user_name, model_id)
-        try:
-            model_analysis_cfg = load_toml_config(model_cfg_path)
-        except Exception:
-            model_analysis_cfg = DEFAULT_ANALYSIS_CFG
-        # Extract relevant values
-        granularity = model_analysis_cfg["model_config"]["granularity"]
-        window_size = model_analysis_cfg["model_config"]["window_size"]
-        language = model_analysis_cfg["model_config"]["language"]
-        if language not in ["French", "English"]:
-            language = "French"
+        # Get relevant model info from config
+        granularity, window_size, language = get_relevant_model_config(
+            model_id=model_id, user=user_name
+        )
         language_code = "fr" if language == "French" else "en"
 
         # Path to previously saved models for those data and this user
@@ -59,28 +97,8 @@ if __name__ == "__main__":
         # TODO: customize service (lang, etc)
         embedding_service = EmbeddingService(local=True)
 
-        # load data for last period
-        # TODO: to be improved
-        cfg_file = get_user_feed_path(user_name, model_id)
-        if not cfg_file.exists():
-            logger.error(f"Cannot find/process config file: {cfg_file}")
-            return
-        cfg = load_toml_config(cfg_file)
-        feed_base_dir = cfg["data-feed"]["feed_dir_path"]
-        files = list(
-            Path(FEED_BASE_PATH, feed_base_dir).glob(
-                f"*{cfg['data-feed'].get('id')}*.jsonl*"
-            )
-        )
-        if not files:
-            logger.warning(f"No new data for '{model_id}', nothing to do")
-            return
-
-        dfs = [load_data(Path(f), language=language) for f in files]
-        new_data = pd.concat(dfs).drop_duplicates(
-            subset=["title"], keep="first", inplace=False
-        )
-
+        # Load data for last period
+        new_data = load_all_data(model_id=model_id, user=user_name, language=language)
         # filter data according to granularity
         # Calculate the date X days ago
         reference_timestamp = pd.Timestamp(
@@ -90,6 +108,7 @@ if __name__ == "__main__":
         # Filter the DataFrame to keep only the rows within the last X days
         filtered_df = new_data[new_data["timestamp"] >= cut_off_date]
 
+        # Split data by paragraphs
         filtered_df = split_data(filtered_df)
 
         logger.info(f'Processing new data for user "{user_name}" about "{model_id}"...')
@@ -127,7 +146,7 @@ if __name__ == "__main__":
         ):
             if not df.empty:
                 # enrich signal description with LLM-based topic description
-                df[LLM_TOPIC_DESCRIPTION_COLUMN] = df.apply(
+                df["TEMP_LLM"] = df.apply(
                     lambda row: generate_bertrend_topic_description(
                         topic_words=row["Representation"],
                         topic_number=row["Topic"],
@@ -136,7 +155,36 @@ if __name__ == "__main__":
                     ),
                     axis=1,
                 )
-                df.to_parquet(f"{interpretation_path}/{df_name}.parquet")
+
+                df[LLM_TOPIC_TITLE_COLUMN] = df["TEMP_LLM"].apply(
+                    lambda x: x.get("title") if isinstance(x, dict) else None
+                )
+                df[[LLM_TOPIC_TITLE_COLUMN, LLM_TOPIC_DESCRIPTION_COLUMN]] = (
+                    pd.json_normalize(df["TEMP_LLM"])[["title", "description"]]
+                )
+                df.drop("TEMP_LLM", axis=1, inplace=True)
+
+                # Add documents URL
+                df = pd.merge(
+                    df,
+                    bertrend.merged_df[["Topic", URLS_COLUMN]],
+                    on="Topic",
+                    how="left",
+                )
+                df[URLS_COLUMN] = df[URLS_COLUMN].apply(
+                    lambda x: list(set(x))
+                )  # Removes duplicates within each list
+
+                # FIXME: for some unknown reasons, a few elements in the Documents column are not a str but a
+                #  timestamp (the identifier of current model); this generates errors when trying to serialize the
+                #  df to parquet. The code snippet below is a workaround to avoid this issue.
+                df["Documents"] = df["Documents"].apply(
+                    lambda l: [x if isinstance(x, str) else "" for x in l]
+                )
+
+                output_path = interpretation_path / f"{df_name}.parquet"
+                df.to_parquet(output_path)
+                logger.success(f"{df_name} saved to: {output_path}")
 
                 # Obtain detailed LLM-based interpretion for signals
                 generate_llm_interpretation(

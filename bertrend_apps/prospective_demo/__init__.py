@@ -4,6 +4,9 @@
 #  This file is part of BERTrend.
 from pathlib import Path
 
+import pandas as pd
+import streamlit
+
 from bertrend import MODELS_DIR, FEED_BASE_PATH, CONFIG_PATH
 
 # Config path for users
@@ -19,6 +22,8 @@ NOISE = "noise"
 WEAK_SIGNALS = "weak_signals"
 STRONG_SIGNALS = "strong_signals"
 LLM_TOPIC_DESCRIPTION_COLUMN = "LLM Description"
+LLM_TOPIC_TITLE_COLUMN = "LLM Title"
+URLS_COLUMN = "URLs"
 
 # Models & analysis
 DEFAULT_GRANULARITY = 2
@@ -53,3 +58,13 @@ def get_user_models_path(user_name: str, model_id: str) -> Path:
 def get_model_cfg_path(user_name: str, model_id: str) -> Path:
     model_cfg_path = CONFIG_FEEDS_BASE_PATH / user_name / f"{model_id}_analysis.toml"
     return model_cfg_path
+
+
+def get_model_interpretation_path(
+    user_name: str, model_id: str, reference_ts: pd.Timestamp
+) -> Path:
+    return (
+        get_user_models_path(user_name=user_name, model_id=model_id)
+        / INTERPRETATION_PATH
+        / reference_ts.strftime("%Y-%m-%d")
+    )

@@ -84,6 +84,7 @@ def display_signal_categories_df(
     window_end: Timestamp,
     columns=None,
     column_order=None,
+    column_config=None,
 ):
     """Display the dataframes associated to each signal category: noise, weak signal, strong signal."""
     if columns is None:
@@ -110,8 +111,9 @@ def display_signal_categories_df(
             displayed_df["Documents"] = displayed_df["Documents"].astype(str)
             st.dataframe(
                 displayed_df,
-                # hide_index=True,
                 column_order=column_order,
+                column_config=column_config,
+                hide_index=True,
             )
 
         else:
@@ -129,8 +131,9 @@ def display_signal_categories_df(
             displayed_df["Documents"] = displayed_df["Documents"].astype(str)
             st.dataframe(
                 displayed_df,
-                hide_index=True,
                 column_order=column_order,
+                column_config=column_config,
+                hide_index=True,
             )
         else:
             st.info(
@@ -147,8 +150,9 @@ def display_signal_categories_df(
             displayed_df["Documents"] = displayed_df["Documents"].astype(str)
             st.dataframe(
                 displayed_df,
-                hide_index=True,
                 column_order=column_order,
+                column_config=column_config,
+                hide_index=True,
             )
         else:
             st.info(

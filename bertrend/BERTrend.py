@@ -22,7 +22,6 @@ from tqdm import tqdm
 
 from bertrend import (
     MODELS_DIR,
-    CACHE_PATH,
     BERTREND_DEFAULT_CONFIG_PATH,
     load_toml_config,
     SIGNAL_EVOLUTION_DATA_DIR,
@@ -223,24 +222,22 @@ class BERTrend:
             embedding_model (SentenceTransformer): Sentence transformer model for embeddings.
             embeddings (np.ndarray): Precomputed document embeddings.
         """
-        topic_models = {}
-        doc_groups = {}
-        emb_groups = {}
-
         non_empty_groups = [
             (period, group) for period, group in grouped_data.items() if not group.empty
         ]
 
         # Set up progress bar
         # TODO: tqdm
-        # progress_bar = st.progress(0)
-        # progress_text = st.empty()
 
         for i, (period, group) in enumerate(non_empty_groups):
             try:
                 logger.info(f"Training topic model {i+1}/{len(non_empty_groups)}...")
-                topic_models[period], doc_groups[period], emb_groups[period] = (
-                    self._train_by_period(period, group, embedding_model, embeddings)
+                (
+                    self.topic_models[period],
+                    self.doc_groups[period],
+                    self.emb_groups[period],
+                ) = self._train_by_period(
+                    period, group, embedding_model, embeddings
                 )  # TODO: parallelize?
                 logger.debug(f"Successfully processed period: {period}")
 
@@ -249,24 +246,8 @@ class BERTrend:
                 logger.exception("Traceback:")
                 continue  # TODO: better error handling
 
-            # Update progress bar
-            """
-            progress = (i + 1) / len(non_empty_groups)
-            progress_bar.progress(progress)
-            progress_text.text(
-                f"Training BERTopic model for {period} ({i + 1}/{len(non_empty_groups)})"
-            )
-            """
-
         self._is_fitted = True
 
-        # Merge the newly obtained topic models with new ones
-        # Update topic_models: Dictionary of trained BERTopic models for each timestamp.
-        self.topic_models.update(topic_models)
-        # Update doc_groups: Dictionary of document groups for each timestamp.
-        self.doc_groups.update(doc_groups)
-        # Update emb_groups: Dictionary of document embeddings for each timestamp.
-        self.emb_groups.update(emb_groups)
         logger.success("Finished training all topic models")
 
     def merge_all_models(
@@ -650,6 +631,8 @@ class BERTrend:
 
         # Serialize BERTrend (excluding topic models for separate reuse if needed)
         topic_models_bak = copy.deepcopy(self.topic_models)
+        # FIXME: the code above introduced a too-heavy memory overhead, to be improved; the idea is to serialize
+        # the topics models separetely from the rest of the BERTrend object
         self.topic_models = None
         with open(models_path / BERTREND_FILE, "wb") as f:
             dill.dump(self, f)

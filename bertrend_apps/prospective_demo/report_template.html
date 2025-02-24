@@ -1,0 +1,148 @@
+<!--
+  ~ Copyright (c) 2024, RTE (https://www.rte-france.com)
+  ~ See AUTHORS.txt
+  ~ SPDX-License-Identifier: MPL-2.0
+  ~ This file is part of BERTrend.
+  -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actu LLM</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: sans-serif; /* Use a sans-serif font */
+            line-height: 1.6; /* Improve line spacing for readability */
+            margin: 20px; /* Add some margin around the content */
+            color: #333; /* Dark gray text color for better contrast */
+        }
+        .container {
+            max-width: 800px; /* Set a maximum width for the container */
+            margin: 0 auto; /* Center the container horizontally */
+        }
+        h1 {
+            font-size: 2em; /* Larger heading size */
+            margin-bottom: 15px; /* Add margin below the heading */
+            color: #2c3e50; /* Darker heading color */
+        }
+        h2 {
+            font-size: 1.5em; /* Slightly smaller heading size */
+            margin-top: 25px; /* Add margin above the heading */
+            margin-bottom: 15px; /* Add margin below the heading */
+            color: #2c3e50; /* Darker heading color */
+        }
+        .orange-title {
+            color: orange; /* Orange color for the title */
+        }
+        .green-title {
+            color: green; /* Green color for the title */
+        }
+        p {
+            margin-bottom: 15px; /* Add margin below paragraphs */
+        }
+        a {
+            color: royalblue; /* Blue color for links */
+            text-decoration: none; /* Remove underlines from links */
+        }
+        a:hover {
+            text-decoration: underline; /* Add underline on hover */
+        }
+        hr {
+            border: 0; /* Remove default border */
+            height: 1px; /* Set the height of the line */
+            background-color: #eee; /* Light gray color for the line */
+            margin: 20px 0; /* Add margin above and below the line */
+        }
+
+        /* Details/Dropdown Styles */
+        .details {
+            margin-top: 25px; /* Add margin above the details section */
+            border-top: 1px solid #eee; /* Add a light gray border at the top */
+            padding-top: 15px; /* Add padding at the top */
+        }
+        .dropdown summary {
+            cursor: pointer; /* Make the summary clickable */
+            font-weight: 600; /* Slightly bolder font weight */
+            color: #2c3e50; /* Darker color for the summary text */
+            list-style: none; /* Remove default list marker */
+            padding-bottom: 5px; /* Add padding below the summary text */
+            border-bottom: 1px solid transparent; /* Add a transparent border */
+            transition: border-color 0.3s ease; /* Smooth border color transition */
+        }
+        .dropdown[open] summary {
+            border-bottom-color: #3498db; /* Show blue border when dropdown is open */
+        }
+        .dropdown-content {
+            margin-left: 20px; /* Add left margin to the dropdown content */
+            margin-top: 10px; /* Add top margin to the dropdown content */
+        }
+
+        /* Iframe Styles */
+        .iframe-container {
+            width: 100%; /* Make the iframe container take full width */
+            height: 400px; /* Set a fixed height for the iframe */
+            border: 1px solid #ccc; /* Add a gray border to the iframe container */
+        }
+        .iframe-container iframe {
+            width: 100%; /* Make the iframe take full width of its container */
+            height: 100%; /* Make the iframe take full height of its container */
+            border: none; /* Remove default iframe border */
+        }
+
+        /* Styles for content INSIDE the iframe */
+        #myIframe { /* Target the specific iframe by its ID */
+          /* You can add more specific styles here if needed */
+        }
+        #myIframe body { /* Style the body of the iframe's content */
+            font-family: sans-serif; /* Set a font for the iframe content */
+        }
+        #myIframe h2 { /* Style the h2 inside the iframe */
+            color: #2c3e50; /* Darker heading color */
+        }
+        #myIframe ul { /* Style lists inside the iframe */
+            list-style-type: disc; /* Use bullet points for the list */
+            margin-left: 20px; /* Add left margin to the list */
+        }
+        #myIframe li { /* Style list items inside the iframe */
+            margin-bottom: 5px; /* Add margin below each list item */
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{REPORT_TITLE}}</h1>
+
+        <h2 class="{{COLOR}}-title">{{TOPIC_TITLE}}</h2>
+        <p>
+            {{TOPIC_DESCRIPTION}}
+        </p>
+
+        <a href="{{LINK}}" target="_blank">{{LINK}}</a><br>
+
+        <div class="details">
+            <details class="dropdown">
+                <summary>Analyse détaillée</summary>
+                <div class="dropdown-content">
+                    <div class="iframe-container">
+                        <iframe id="myIframe"></iframe>
+                    </div>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <script>
+        const htmlString = `
+        {{ANALYSIS}}
+        `;
+
+        const iframe = document.getElementById('myIframe');
+        iframe.srcdoc = htmlString;
+    </script>
+
+</body>
+</html>

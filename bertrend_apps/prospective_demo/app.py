@@ -12,13 +12,8 @@ from bertrend.demos.demos_utils.icons import (
     ANALYSIS_ICON,
     NEWSLETTER_ICON,
     SERVER_STORAGE_ICON,
-    TOPIC_ICON,
     TREND_ICON,
     MODELS_ICON,
-)
-from bertrend.demos.demos_utils.parameters_component import (
-    display_bertopic_hyperparameters,
-    display_bertrend_hyperparameters,
 )
 from bertrend.demos.demos_utils.state_utils import SessionStateManager
 from bertrend_apps.prospective_demo.authentication import check_password
@@ -27,7 +22,7 @@ from bertrend_apps.prospective_demo.feeds_config import configure_information_so
 from bertrend_apps.prospective_demo.feeds_data import display_data_status
 from bertrend_apps.prospective_demo.models_info import models_monitoring
 from bertrend_apps.prospective_demo.report_generation import reporting
-from bertrend_apps.prospective_demo.signal_analysis import signal_analysis
+from bertrend_apps.prospective_demo.dashboard_signals import signal_analysis
 
 # UI Settings
 # PAGE_TITLE = "BERTrend - Prospective Analysis demo"

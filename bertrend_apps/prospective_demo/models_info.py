@@ -2,6 +2,8 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
+import multiprocessing
+import os
 import random
 import shutil
 import sys
@@ -20,6 +22,8 @@ from bertrend.demos.demos_utils.icons import (
     INFO_ICON,
     TOGGLE_ON_ICON,
     TOGGLE_OFF_ICON,
+    ERROR_ICON,
+    RESTART_ICON,
 )
 from bertrend_apps.common.crontab_utils import (
     check_cron_job,
@@ -31,6 +35,8 @@ from bertrend_apps.prospective_demo import (
     get_model_cfg_path,
     DEFAULT_ANALYSIS_CFG,
 )
+from bertrend_apps.prospective_demo.perf_utils import get_least_used_gpu
+from bertrend_apps.prospective_demo.regenerate_past_models import regenerate_models
 from bertrend_apps.prospective_demo.streamlit_utils import clickable_df
 
 
@@ -80,6 +86,7 @@ def models_monitoring():
         (EDIT_ICON, edit_model_parameters, "secondary"),
         (lambda x: toggle_icon(df, x), toggle_learning, "secondary"),
         (DELETE_ICON, handle_delete_models, "primary"),
+        (RESTART_ICON, handle_regenerate_models, "primary"),
     ]
     clickable_df(df, clickable_df_buttons)
 
@@ -180,7 +187,7 @@ def load_model_config(model_id: str) -> dict:
 def handle_delete_models(row_dict: dict):
     """Function to handle remove models from cache"""
     model_id = row_dict["id"]
-    st.write(
+    st.warning(
         f":orange[{WARNING_ICON}] Voulez-vous vraiment supprimer tous les modèles stockés pour la veille **{model_id}** ?"
     )
     col1, col2, _ = st.columns([2, 2, 8])
@@ -196,6 +203,55 @@ def handle_delete_models(row_dict: dict):
     with col2:
         if st.button("Non"):
             st.rerun()
+
+
+@st.dialog("Regénération des modèles")
+def handle_regenerate_models(row_dict: dict):
+    """Function to regenerate models from scratch"""
+    model_id = row_dict["id"]
+    st.warning(
+        f"{WARNING_ICON} Voulez-vous re-générer l'ensemble des modèles pour la veille {model_id} ?"
+    )
+    st.warning(
+        f"{WARNING_ICON} L'ensemble des modèles existant pour cette veille sera supprimé."
+    )
+    st.error(
+        f"{ERROR_ICON} Attention, cette regénération ne peut pas être annulée une fois lancée !"
+    )
+    col1, col2, _ = st.columns([2, 2, 8])
+    with col1:
+        if yes_btn := st.button("Oui", type="primary"):
+            # Delete previously stored model
+            delete_cached_models(model_id)
+            logger.info(f"Modèles en cache supprimés pour la veille {model_id} !")
+
+            # Regenerate new models
+            # Launch model generation in a separate thread to avoid blocking the app
+            # Create a new process with parameters
+            # Set the start method to 'spawn' - required for a process using CUDA
+            os.environ["CUDA_VISIBLE_DEVICES"] = get_least_used_gpu()
+            multiprocessing.set_start_method("spawn", force=True)
+
+            process = multiprocessing.Process(
+                target=regenerate_models,
+                kwargs={"model_id": model_id, "user": st.session_state.username},
+            )
+            # Start the process
+            process.start()
+
+            time.sleep(0.2)
+            # st.rerun()
+
+    with col2:
+        if st.button("Non"):
+            st.rerun()
+
+    if yes_btn:
+        st.info(
+            f"{INFO_ICON} Regénération en cours des modèles pour la veille {model_id}. "
+            "L'opération peut prendre un peu de temps."
+        )
+        st.info(f"{INFO_ICON} Vous pouvez fermer cette fenêtre.")
 
 
 def toggle_learning(cfg: dict):
@@ -237,7 +293,7 @@ def toggle_icon(df: pd.DataFrame, index: int) -> str:
 def check_if_learning_active_for_user(model_id: str, user: str):
     """Checks if a given scrapping feed is active (registered in the crontab"""
     if user:
-        return check_cron_job(rf"process_new_data.*{user}.*{model_id}.*>")
+        return check_cron_job(rf"process_new_data.*{user}.*{model_id}")
     else:
         return False
 
@@ -245,7 +301,7 @@ def check_if_learning_active_for_user(model_id: str, user: str):
 def remove_scheduled_training_for_user(model_id: str, user: str):
     """Removes from the crontab the training job matching the provided model_id"""
     if user:
-        return remove_from_crontab(rf"process_new_data.*{user}.*{model_id}.*>")
+        return remove_from_crontab(rf"process_new_data.*{user}.*{model_id}")
 
 
 def schedule_training_for_user(model_id: str, user: str):
