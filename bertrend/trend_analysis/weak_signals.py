@@ -390,7 +390,6 @@ def analyze_signal(
                 system_prompt=LLM_CONFIG["system_prompt"],
                 user_prompt=summary_prompt,
                 temperature=LLM_CONFIG["temperature"],
-                max_output_tokens=LLM_CONFIG["max_output_tokens"],
                 response_format=TopicSummaryList,
             )
 
@@ -410,7 +409,6 @@ def analyze_signal(
                 system_prompt=LLM_CONFIG["system_prompt"],
                 user_prompt=weak_signal_prompt,
                 temperature=LLM_CONFIG["temperature"],
-                max_output_tokens=LLM_CONFIG["max_output_tokens"],
                 response_format=SignalAnalysis,
             )
 

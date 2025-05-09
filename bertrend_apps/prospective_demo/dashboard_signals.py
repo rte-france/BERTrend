@@ -5,9 +5,11 @@
 import pandas as pd
 import streamlit as st
 
-from bertrend.demos.demos_utils.icons import WARNING_ICON
-from bertrend.demos.weak_signals.visualizations_utils import (
-    display_signal_categories_df,
+from bertrend.demos.demos_utils.icons import (
+    WARNING_ICON,
+    WEAK_SIGNAL_ICON,
+    STRONG_SIGNAL_ICON,
+    NOISE_ICON,
 )
 from bertrend_apps.prospective_demo import (
     LLM_TOPIC_DESCRIPTION_COLUMN,
@@ -22,6 +24,7 @@ from bertrend_apps.prospective_demo.dashboard_common import (
     choose_id_and_ts,
     get_df_topics,
 )
+from bertrend_apps.prospective_demo.i18n import translate
 
 COLS_RATIO = [4 / 7, 3 / 7]
 
@@ -59,7 +62,7 @@ def signal_analysis():
             pinned=True,
         ),
         LLM_TOPIC_TITLE_COLUMN: st.column_config.TextColumn(
-            "Titre", pinned=True, width="large"
+            translate("title"), pinned=True, width="large"
         ),
         "Latest_Popularity": st.column_config.ProgressColumn(
             format="%i",
@@ -80,7 +83,7 @@ def signal_analysis():
     col1, col2 = st.columns(COLS_RATIO)
     with col1:
         # Display dataframes for weak_signals, strong, etc
-        display_signal_categories_df(
+        display_translated_signal_categories(
             dfs_topics[NOISE],
             dfs_topics[WEAK_SIGNALS],
             dfs_topics[STRONG_SIGNALS],
@@ -90,44 +93,40 @@ def signal_analysis():
         )
 
     with col2:
-        st.info(
-            "TODO <Place disponible pour d'autres infos...>"
-            "En particulier, rajouter la courbe d'évolution des sujets"
-            "en se limitant à ceux présentés dans les tableaux weak/strong/noise"
-        )
+        st.info(translate("todo_message"))
         explore_topic_sources(dfs_topics)
 
 
 @st.fragment
 def explore_topic_sources(dfs_topics):
-    st.write("**Exploration des sources par sujet**")
+    st.write(f"**{translate('explore_sources_by_topic')}**")
     selected_signal_type = st.pills(
-        "Type de signal",
+        translate("signal_type"),
         label_visibility="hidden",
-        options=["Sujets émergents", "Sujets forts"],
+        options=[translate("emerging_topics"), translate("strong_topics")],
         selection_mode="single",
-        default="Sujets émergents",
+        default=translate("emerging_topics"),
     )
-    if selected_signal_type == "Sujets forts":
+    if selected_signal_type == translate("strong_topics"):
         selected_df = dfs_topics.get(STRONG_SIGNALS)
     else:
         selected_df = dfs_topics.get(WEAK_SIGNALS)
     if selected_df is None or selected_df.empty:
-        st.warning(f"{WARNING_ICON} Pas de données")
+        st.warning(f"{WARNING_ICON} {translate('no_data')}")
     else:
         selected_df = selected_df.sort_values(by=["Latest_Popularity"], ascending=False)
         options = selected_df["Topic"].tolist()
         topic_id = st.selectbox(
             index=None,
-            label="Sélection du sujet",
+            label=translate("topic_selection"),
             label_visibility="hidden",
             options=options,
-            format_func=lambda x: f"Sujet {x}: "
+            format_func=lambda x: f"{translate('topic')} {x}: "
             + selected_df[selected_df["Topic"] == x][LLM_TOPIC_TITLE_COLUMN].values[0],
         )
         if topic_id is None:
             return
-        if selected_signal_type == "Sujets forts":
+        if selected_signal_type == translate("strong_topics"):
             color = "green"
         else:
             color = "orange"
@@ -139,7 +138,82 @@ def explore_topic_sources(dfs_topics):
         )
 
 
-@st.dialog("Exploration des sources", width="large")
+def display_translated_signal_categories(
+    noise_topics_df: pd.DataFrame,
+    weak_signal_topics_df: pd.DataFrame,
+    strong_signal_topics_df: pd.DataFrame,
+    window_end: pd.Timestamp,
+    columns=None,
+    column_order=None,
+    column_config=None,
+):
+    """Wrapper around display_signal_categories_df that uses translated text."""
+    # Weak Signals
+    with st.expander(
+        f":orange[{WEAK_SIGNAL_ICON} {translate('weak_signals')}]", expanded=True
+    ):
+        st.subheader(f":orange[{translate('weak_signals')}]")
+        if not weak_signal_topics_df.empty:
+            displayed_df = weak_signal_topics_df[columns].sort_values(
+                by=["Latest_Popularity"], ascending=False
+            )
+            displayed_df["Documents"] = displayed_df["Documents"].astype(str)
+            st.dataframe(
+                displayed_df,
+                column_order=column_order if column_order else columns,
+                column_config=column_config,
+                hide_index=True,
+            )
+        else:
+            st.info(
+                translate("no_weak_signals").format(timestamp=window_end),
+                icon=WARNING_ICON,
+            )
+
+    # Strong Signals
+    with st.expander(
+        f":green[{STRONG_SIGNAL_ICON} {translate('strong_signals')}]", expanded=True
+    ):
+        st.subheader(f":green[{translate('strong_signals')}]")
+        if not strong_signal_topics_df.empty:
+            displayed_df = strong_signal_topics_df[columns].sort_values(
+                by=["Latest_Popularity"], ascending=False
+            )
+            displayed_df["Documents"] = displayed_df["Documents"].astype(str)
+            st.dataframe(
+                displayed_df,
+                column_order=column_order if column_order else columns,
+                column_config=column_config,
+                hide_index=True,
+            )
+        else:
+            st.info(
+                translate("no_strong_signals").format(timestamp=window_end),
+                icon=WARNING_ICON,
+            )
+
+    # Noise
+    with st.expander(f":grey[{NOISE_ICON} {translate('noise')}]", expanded=True):
+        st.subheader(f":grey[{translate('noise')}]")
+        if not noise_topics_df.empty:
+            displayed_df = noise_topics_df[columns].sort_values(
+                by=["Latest_Popularity"], ascending=False
+            )
+            displayed_df["Documents"] = displayed_df["Documents"].astype(str)
+            st.dataframe(
+                displayed_df,
+                column_order=column_order if column_order else columns,
+                column_config=column_config,
+                hide_index=True,
+            )
+        else:
+            st.info(
+                translate("no_noise_signals").format(timestamp=window_end),
+                icon=WARNING_ICON,
+            )
+
+
+@st.dialog(translate("explore_sources"), width="large")
 def display_topic_links(title: str, desc: str, df: pd.DataFrame):
     st.subheader(title)
     st.write(desc)
@@ -147,6 +221,6 @@ def display_topic_links(title: str, desc: str, df: pd.DataFrame):
         df,
         use_container_width=True,
         column_config={
-            "value": st.column_config.LinkColumn("Articles de référence"),
+            "value": st.column_config.LinkColumn(translate("reference_articles")),
         },
     )

@@ -27,10 +27,7 @@ EMBEDDING_CONFIG = SERVICES_CONFIG["embedding_service"]
 LLM_CONFIG = SERVICES_CONFIG["llm_service"]
 
 # Linux command to find the index of the GPU device currently less used than the others
-BEST_CUDA_DEVICE = (
-    "\`nvidia-smi --query-gpu=index,memory.used --format=csv,nounits | tail -n +2 | sort -t',' -k2 -n  "
-    "| head -n 1 | cut -d',' -f1\`"
-)
+BEST_CUDA_DEVICE = r"\`nvidia-smi --query-gpu=index,memory.used --format=csv,nounits | tail -n +2 | sort -t',' -k2 -n  | head -n 1 | cut -d',' -f1\`"
 
 BERTREND_BASE_DIR = os.getenv("BERTREND_BASE_DIR", None)
 BASE_PATH = (

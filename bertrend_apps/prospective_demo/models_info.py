@@ -293,7 +293,7 @@ def toggle_icon(df: pd.DataFrame, index: int) -> str:
 def check_if_learning_active_for_user(model_id: str, user: str):
     """Checks if a given scrapping feed is active (registered in the crontab"""
     if user:
-        return check_cron_job(rf"process_new_data.*{user}.*{model_id}")
+        return check_cron_job(rf"process_new_data train-new-model.*{user}.*{model_id}")
     else:
         return False
 
@@ -301,7 +301,9 @@ def check_if_learning_active_for_user(model_id: str, user: str):
 def remove_scheduled_training_for_user(model_id: str, user: str):
     """Removes from the crontab the training job matching the provided model_id"""
     if user:
-        return remove_from_crontab(rf"process_new_data.*{user}.*{model_id}")
+        return remove_from_crontab(
+            rf"process_new_data train-new-model.*{user}.*{model_id}"
+        )
 
 
 def schedule_training_for_user(model_id: str, user: str):
@@ -312,7 +314,7 @@ def schedule_training_for_user(model_id: str, user: str):
     logpath = BERTREND_LOG_PATH / "users" / user
     logpath.mkdir(parents=True, exist_ok=True)
     command = (
-        f"{sys.prefix}/bin/python -m bertrend_apps.prospective_demo.process_new_data {user} {model_id} "
+        f"{sys.prefix}/bin/python -m bertrend_apps.prospective_demo.process_new_data train-new-model {user} {model_id} "
         f"> {logpath}/learning_{model_id}.log 2>&1"
     )
     env_vars = f"CUDA_VISIBLE_DEVICES={BEST_CUDA_DEVICE}"

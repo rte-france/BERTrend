@@ -274,15 +274,22 @@ def regenerate_models(model_id: str, user: str, with_analysis: bool = True):
         )
         bertrend.save_model(models_path=bertrend_models_path)
 
-    else:
+        logger.success(
+            f"Regenerated models for '{model_id}' from scratch. BERTrend model was built using {len(bertrend.doc_groups)} models/time periods."
+        )
+
+    else:  # with analysis
         for ts, df in sorted(grouped_data.items()):
             train_new_model_for_period(
-                model_id=model_id, user_name=user, new_data=df, reference_timestamp=ts
+                model_id=model_id,
+                user_name=user,
+                new_data=df.reset_index(drop=True),
+                reference_timestamp=ts,
             )
 
-    logger.success(
-        f"Regenerated models for '{model_id}' from scratch. BERTrend model was built using {len(bertrend.doc_groups)} models/time periods."
-    )
+        logger.success(
+            f"Regenerated models for '{model_id}' from scratch with LLM-based analysis. BERTrend model was built using {len(grouped_data)} models/time periods."
+        )
 
 
 if __name__ == "__main__":

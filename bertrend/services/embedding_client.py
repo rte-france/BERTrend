@@ -18,7 +18,7 @@ from bertrend.services.authentication import SecureAPIClient
 
 MAX_N_JOBS = 4
 BATCH_DOCUMENT_SIZE = 1000
-MAX_DOCS_PER_REQUEST_PER_WORKER = 10000
+MAX_DOCS_PER_REQUEST_PER_WORKER = 20000
 
 
 class EmbeddingAPIClient(SecureAPIClient, Embeddings):

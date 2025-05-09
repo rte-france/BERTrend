@@ -5,7 +5,7 @@
 [![stars - BERTrend](https://img.shields.io/github/stars/rte-france/BERTrend?style=social)](https://github.com/rte-france/BERTrend)
 [![forks - BERTrend](https://img.shields.io/github/forks/rte-france/BERTrend?style=social)](https://github.com/rte-france/BERTrend)
 [![issues - BERTrend](https://img.shields.io/github/issues/rte-france/BERTrend)](https://github.com/rte-france/BERTrend/issues)
-![Static Badge](https://img.shields.io/badge/python-%3E%3D3.11-blue)
+![Static Badge](https://img.shields.io/badge/python-%3E%3D3.12-blue)
 
 ![BERTrend pipeline](./BERTrend_overview.png)
 
@@ -84,7 +84,7 @@ BERTrend requires the following environment variables to be set:
 ### Hardware and Software Requirements
 
 - Recommended: at least one GPU with 16GB RAM for faster processing
-- Python >= 3.11 is required
+- Python >= 3.12 is required
 
 ### Package Installation
 

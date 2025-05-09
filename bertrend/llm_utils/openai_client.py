@@ -219,8 +219,6 @@ class OpenAI_Client:
             kwargs["model"] = self.model_name
         if not kwargs.get("temperature"):
             kwargs["temperature"] = self.temperature
-        if not kwargs.get("max_output_tokens"):
-            kwargs["max_output_tokens"] = self.max_output_tokens
 
         try:
             # NB. here use beta.chat...parse to support structured outputs

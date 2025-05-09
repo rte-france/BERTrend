@@ -4,14 +4,13 @@ from bertopic import BERTopic
 import numpy as np
 import pandas as pd
 from pathlib import Path
-import torch
 
 import streamlit as st
 from streamlit.runtime.uploaded_file_manager import UploadedFile
-from sentence_transformers import SentenceTransformer
 import plotly.graph_objects as go
 from urllib.parse import urlparse
 
+from bertrend import LLM_CONFIG
 from bertrend.BERTopicModel import BERTopicModel
 from bertrend.llm_utils.openai_client import OpenAI_Client
 from bertrend.services.embedding_service import EmbeddingService
@@ -130,7 +129,11 @@ def get_improved_topic_description(
 ) -> list[str]:
     """Get improved topic description using LLM."""
     # Get llm client
-    llm_client = OpenAI_Client()
+    llm_client = OpenAI_Client(
+        api_key=LLM_CONFIG["api_key"],
+        endpoint=LLM_CONFIG["endpoint"],
+        model=LLM_CONFIG["model"],
+    )
 
     # List of improved topics description
     improved_descriptions = []
@@ -221,7 +224,11 @@ def create_newsletter(
                 axis=1,
             )
         )
-        llm_client = OpenAI_Client()
+        llm_client = OpenAI_Client(
+            api_key=LLM_CONFIG["api_key"],
+            endpoint=LLM_CONFIG["endpoint"],
+            model=LLM_CONFIG["model"],
+        )
         response = llm_client.generate(
             user_prompt=user_prompt,
             system_prompt=TOPIC_SUMMARY_SYSTEM_PROMPT,

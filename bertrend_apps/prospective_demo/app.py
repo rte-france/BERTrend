@@ -26,14 +26,13 @@ from bertrend_apps.prospective_demo.authentication import check_password
 from bertrend_apps.prospective_demo.dashboard_analysis import dashboard_analysis
 from bertrend_apps.prospective_demo.feeds_config import configure_information_sources
 from bertrend_apps.prospective_demo.feeds_data import display_data_status
+from bertrend_apps.prospective_demo.i18n import translate, create_language_selector
 from bertrend_apps.prospective_demo.models_info import models_monitoring
 from bertrend_apps.prospective_demo.report_generation import reporting
 from bertrend_apps.prospective_demo.dashboard_signals import signal_analysis
 
 
 # UI Settings
-# PAGE_TITLE = "BERTrend - Prospective Analysis demo"
-PAGE_TITLE = "BERTrend - Démo Veille & Analyse"
 LAYOUT: Literal["centered", "wide"] = "wide"
 
 # TODO: reactivate password
@@ -43,14 +42,15 @@ AUTHENTIFICATION = True
 
 def main():
     """Main page"""
+    page_title = translate("app_title")
     st.set_page_config(
-        page_title=PAGE_TITLE,
+        page_title=page_title,
         layout=LAYOUT,
         initial_sidebar_state="expanded" if is_admin_mode() else "collapsed",
         page_icon=":part_alternation_mark:",
     )
 
-    st.title(":part_alternation_mark: " + PAGE_TITLE)
+    st.title(":part_alternation_mark: " + page_title)
 
     if AUTHENTIFICATION:
         username = check_password()
@@ -66,31 +66,34 @@ def main():
     # Sidebar
     with st.sidebar:
         st.header(SETTINGS_ICON + " Settings and Controls")
+        create_language_selector()
 
     # Main content
     tab1, tab2, tab3, tab4, tab5 = st.tabs(
         [
-            NEWSLETTER_ICON + " Veilles",
-            MODELS_ICON + " Modèles",
-            TREND_ICON + " Tendances",
-            ANALYSIS_ICON + " Analyses",
-            NEWSLETTER_ICON + " Génération de rapports",
+            NEWSLETTER_ICON + " " + translate("tab_monitoring"),
+            MODELS_ICON + " " + translate("tab_models"),
+            TREND_ICON + " " + translate("tab_trends"),
+            ANALYSIS_ICON + " " + translate("tab_analysis"),
+            NEWSLETTER_ICON + " " + translate("tab_reports"),
         ]
     )
 
     with tab1:
         with st.expander(
-            "Configuration des flux de données", expanded=True, icon=SETTINGS_ICON
+            translate("data_flow_config"), expanded=True, icon=SETTINGS_ICON
         ):
             configure_information_sources()
 
         with st.expander(
-            "Etat de collecte des données", expanded=False, icon=SERVER_STORAGE_ICON
+            translate("data_collection_status"),
+            expanded=False,
+            icon=SERVER_STORAGE_ICON,
         ):
             display_data_status()
     with tab2:
         with st.expander(
-            "Statut des modèles par veille", expanded=True, icon=MODELS_ICON
+            translate("model_status_by_monitoring"), expanded=True, icon=MODELS_ICON
         ):
             models_monitoring()
 

@@ -37,6 +37,7 @@ def plot_topics_over_time(
                 opacity=1,
             )
         return fig
+    return None
 
 
 def plot_docs_repartition_over_time(df: pd.DataFrame, freq: str):

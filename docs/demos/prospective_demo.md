@@ -100,7 +100,7 @@ Users can configure information sources in the "Veilles" tab. This includes:
 New models can be trained using the command-line interface:
 
 ```bash
-python -m bertrend_apps.prospective_demo.process_new_data <user_name> <model_id>
+python -m bertrend_apps.prospective_demo.process_new_data train-new-model <user_name> <model_id>
 ```
 
 Or through the web interface in the "Modèles" tab.

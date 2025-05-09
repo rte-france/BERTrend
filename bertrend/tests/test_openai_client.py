@@ -7,6 +7,7 @@ import pytest
 import os
 from unittest.mock import patch, MagicMock
 from openai import OpenAI, AzureOpenAI, Stream
+from pydantic import BaseModel
 
 from bertrend.llm_utils.openai_client import OpenAI_Client
 
@@ -89,3 +90,121 @@ def test_generate_with_streaming(mock_api_key):
     with patch.object(client.llm_client.responses, "create", return_value=mock_stream):
         result = client.generate("What is the weather today?", stream=True)
         assert result == mock_stream
+
+
+# Define a test Pydantic model for parse tests
+# Using underscore prefix to prevent pytest from collecting it as a test class
+class _TestResponseModel(BaseModel):
+    answer: str
+    confidence: float
+
+
+class MockMessage:
+    def __init__(self, parsed):
+        self.parsed = parsed
+
+
+class MockChoice:
+    def __init__(self, parsed):
+        self.message = MockMessage(parsed)
+
+
+class MockParseResponse:
+    def __init__(self, parsed):
+        self.choices = [MockChoice(parsed)]
+
+
+def test_parse_basic_functionality(mock_api_key):
+    """Test parse method with a simple user prompt"""
+    client = OpenAI_Client(api_key="test_api_key")
+
+    # Create a mock parsed response
+    mock_parsed = _TestResponseModel(answer="This is a test answer", confidence=0.95)
+    mock_response = MockParseResponse(mock_parsed)
+
+    # Mock the beta.chat.completions.parse method
+    with patch.object(
+        client.llm_client.beta.chat.completions,
+        "parse",
+        return_value=mock_response,
+    ):
+        result = client.parse(
+            "What is the weather today?", response_format=_TestResponseModel
+        )
+        assert isinstance(result, _TestResponseModel)
+        assert result.answer == "This is a test answer"
+        assert result.confidence == 0.95
+
+
+def test_parse_with_system_prompt(mock_api_key):
+    """Test parse method with both user and system prompts"""
+    client = OpenAI_Client(api_key="test_api_key")
+
+    # Create a mock parsed response
+    mock_parsed = _TestResponseModel(answer="System prompt response", confidence=0.9)
+    mock_response = MockParseResponse(mock_parsed)
+
+    # Mock the beta.chat.completions.parse method
+    with patch.object(
+        client.llm_client.beta.chat.completions,
+        "parse",
+        return_value=mock_response,
+    ) as mock_parse:
+        result = client.parse(
+            "What is the weather today?",
+            system_prompt="You are a weather assistant",
+            response_format=_TestResponseModel,
+        )
+
+        # Verify the system prompt was included in the messages
+        args, kwargs = mock_parse.call_args
+        messages = kwargs.get("messages", [])
+        assert any(
+            msg.get("role") == "system"
+            and "weather assistant" in msg.get("content", "")
+            for msg in messages
+        )
+
+        # Verify the result
+        assert isinstance(result, _TestResponseModel)
+        assert result.answer == "System prompt response"
+
+
+def test_parse_error_handling(mock_api_key):
+    """Test if an API error in parse is properly handled"""
+    client = OpenAI_Client(api_key="test_api_key")
+
+    # Simulate an error during API call
+    with patch.object(
+        client.llm_client.beta.chat.completions,
+        "parse",
+        side_effect=Exception("API Parse Error"),
+    ):
+        result = client.parse(
+            "What is the weather today?", response_format=_TestResponseModel
+        )
+        assert result is None
+
+
+def test_parse_with_none_response_format(mock_api_key):
+    """Test parse method with response_format=None"""
+    client = OpenAI_Client(api_key="test_api_key")
+
+    # Create a mock parsed response
+    mock_parsed = {"answer": "Default response", "confidence": 0.8}
+    mock_response = MockParseResponse(mock_parsed)
+
+    # Mock the beta.chat.completions.parse method
+    with patch.object(
+        client.llm_client.beta.chat.completions,
+        "parse",
+        return_value=mock_response,
+    ) as mock_parse:
+        result = client.parse("What is the weather today?", response_format=None)
+
+        # Verify response_format was passed as None
+        args, kwargs = mock_parse.call_args
+        assert kwargs.get("response_format") is None
+
+        # Verify the result
+        assert result == mock_parsed

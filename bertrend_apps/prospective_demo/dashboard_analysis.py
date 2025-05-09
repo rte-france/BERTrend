@@ -21,6 +21,7 @@ from bertrend_apps.prospective_demo.dashboard_common import (
     choose_id_and_ts,
     get_df_topics,
 )
+from bertrend_apps.prospective_demo.i18n import translate, get_current_language
 
 
 @st.fragment()
@@ -40,7 +41,7 @@ def dashboard_analysis():
     )
 
     # Detailed analysis
-    st.subheader("Analyse détaillée par sujet")
+    st.subheader(translate("detailed_analysis_by_topic"))
     dfs_topics = get_df_topics(model_interpretation_path)
     display_detailed_analysis(model_id, model_interpretation_path, dfs_topics)
 
@@ -76,10 +77,10 @@ def display_detailed_analysis(
         signal_topics[STRONG_SIGNALS] = list(interpretations[STRONG_SIGNALS]["topic"])
     signal_list = signal_topics[WEAK_SIGNALS] + signal_topics[STRONG_SIGNALS]
     selected_signal = st.selectbox(
-        label="Sélection du sujet",
+        label=translate("topic_selection"),
         label_visibility="hidden",
         options=signal_list,
-        format_func=lambda signal_id: f"[Sujet {'émergent' if signal_id in signal_topics[WEAK_SIGNALS] else 'fort'} "
+        format_func=lambda signal_id: f"[{translate('topic')} {translate('emerging_topic') if signal_id in signal_topics[WEAK_SIGNALS] else translate('strong_topic')} "
         f"{signal_id}]: {get_row(signal_id, interpretations[WEAK_SIGNALS] if signal_id in signal_topics[WEAK_SIGNALS] else interpretations[STRONG_SIGNALS])[LLM_TOPIC_TITLE_COLUMN]}",
     )
     # Summary of the topic
@@ -96,7 +97,7 @@ def display_detailed_analysis(
         ),
     )
     if desc is None:
-        st.error(f"{ERROR_ICON} Rien à afficher")
+        st.error(f"{ERROR_ICON} {translate('nothing_to_display')}")
         return
     if selected_signal in list(signal_topics[WEAK_SIGNALS]):
         color = "orange"
@@ -110,7 +111,9 @@ def display_detailed_analysis(
     signal_analysis: SignalAnalysis = SignalAnalysis.model_validate_json(
         desc["analysis"]
     )
-    formatted_html = fill_html_template(summaries, signal_analysis, "fr")
+    # Use current language for HTML template
+    lang = get_current_language()
+    formatted_html = fill_html_template(summaries, signal_analysis, lang)
     st.html(formatted_html)
 
     st.session_state.signal_interpretations[model_id] = interpretations
