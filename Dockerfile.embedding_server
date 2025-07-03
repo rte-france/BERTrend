@@ -1,0 +1,91 @@
+FROM nvidia/cuda:12.5.1-cudnn-devel-ubuntu22.04
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y \
+    gfortran \
+    less \
+    apt-transport-https \
+    git \
+    ssh \
+    tar \
+    wget \
+    curl \
+    sudo
+
+# Install uv
+RUN wget -qO- https://astral.sh/uv/install.sh | sh
+
+# Setup Python venv
+ENV PATH="/root/.local/bin/:$PATH"
+RUN uv python install 3.12
+RUN uv venv /opt/venv --python 3.12
+
+# Ensure the virtual environment's bin directory is in the PATH
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Only copy needed elements
+COPY bertrend/services/embedding_server /bertrend/services/embedding_server/
+
+# Copy certs, etc
+COPY bertrend/services/key.pem /bertrend/services/
+COPY bertrend/services/cert.pem /bertrend/services/
+
+# Set workdir
+WORKDIR /bertrend/services/embedding_server/
+
+# Install minimum requirements
+RUN uv pip install -r requirements.txt
+
+# Create user mapping script
+RUN echo '#!/bin/bash\n\
+# Create user with same UID/GID as host if they don'\''t exist\n\
+if [ "$HOST_UID" ] && [ "$HOST_GID" ]; then\n\
+    # Create group if it doesn'\''t exist\n\
+    if ! getent group $HOST_GID > /dev/null 2>&1; then\n\
+        groupadd -g $HOST_GID hostgroup\n\
+    fi\n\
+    \n\
+    # Create user if it doesn'\''t exist\n\
+    if ! getent passwd $HOST_UID > /dev/null 2>&1; then\n\
+        useradd -u $HOST_UID -g $HOST_GID -m -s /bin/bash hostuser\n\
+        # Add user to sudo group for any needed permissions\n\
+        usermod -aG sudo hostuser\n\
+        # Allow passwordless sudo\n\
+        echo "hostuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers\n\
+    fi\n\
+    \n\
+    # Set HF_HOME ownership\n\
+    if [ "$HF_HOME" ] && [ -d "$HF_HOME" ]; then\n\
+        chown -R $HOST_UID:$HOST_GID "$HF_HOME"\n\
+    fi\n\
+    \n\
+    # Switch to the host user and run the command\n\
+    exec gosu $HOST_UID "$@"\n\
+else\n\
+    # If no UID/GID specified, run as root\n\
+    exec "$@"\n\
+fi' > /usr/local/bin/entrypoint.sh && \
+    chmod +x /usr/local/bin/entrypoint.sh
+
+# Install gosu for user switching
+RUN wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/1.17/gosu-$(dpkg --print-architecture)" && \
+    chmod +x /usr/local/bin/gosu
+
+# Env variables for CUDA / GPUs
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV PYTHONPATH="/:$PYTHONPATH"
+
+# Set default HF_HOME (will be overridden by docker run)
+ENV HF_HOME=/root/.cache/huggingface
+
+# Expose the embedding server port
+EXPOSE 6464
+
+# Use the entrypoint script
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh", "python", "start.py"]
+
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+  CMD curl --fail --insecure https://localhost:6464/info || exit 1

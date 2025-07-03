@@ -1,0 +1,10 @@
+fastapi
+pydantic
+pydantic_settings
+python-multipart
+urllib3
+uvicorn
+PyJWT
+loguru
+dotenv
+sentence_transformers
