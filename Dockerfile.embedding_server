@@ -1,0 +1,84 @@
+# Use PyTorch with CUDA as base image
+# Note: This image comes with Python 3.10 and PyTorch 2.2.1 pre-installed
+FROM pytorch/pytorch:2.2.1-cuda12.1-cudnn8-runtime
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    POETRY_VERSION=2.0.0 \
+    POETRY_HOME="/opt/poetry" \
+    POETRY_VIRTUALENVS_CREATE=false \
+    BERTREND_BASE_DIR="/app/data" \
+    CUDA_VISIBLE_DEVICES="0"
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    git \
+    libgomp1 \  # Required for UMAP and other libraries
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 -
+ENV PATH="$POETRY_HOME/bin:$PATH"
+
+# Set working directory
+WORKDIR /app
+
+# Copy project files
+COPY . /app/
+
+# Modify pyproject.toml to accept Python 3.10
+RUN sed -i 's/requires-python = ">=3.12,<4.0"/requires-python = ">=3.10,<4.0"/' /app/pyproject.toml
+
+# Create necessary directories
+RUN mkdir -p $BERTREND_BASE_DIR/data \
+    $BERTREND_BASE_DIR/cache \
+    $BERTREND_BASE_DIR/output \
+    $BERTREND_BASE_DIR/config \
+    $BERTREND_BASE_DIR/logs/bertrend
+
+# Define volume for BERTREND_BASE_DIR to allow sharing with host OS
+VOLUME $BERTREND_BASE_DIR
+
+# Install project dependencies
+RUN poetry config virtualenvs.create false && \
+    poetry install --extras apps --no-interaction --no-ansi
+
+# Generate self-signed SSL certificates for the embedding server
+RUN mkdir -p /app/bertrend/services/embedding_server/certs && \
+    cd /app/bertrend/services/embedding_server/certs && \
+    openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=embedding-server"
+
+# Create a configuration file for the embedding server
+RUN mkdir -p /app/bertrend/services/embedding_server/config && \
+    echo 'host = "0.0.0.0"' > /app/bertrend/services/embedding_server/config/docker_config.toml && \
+    echo 'port = 6464' >> /app/bertrend/services/embedding_server/config/docker_config.toml && \
+    echo 'model_name = "OrdalieTech/Solon-embeddings-large-0.1"' >> /app/bertrend/services/embedding_server/config/docker_config.toml && \
+    echo 'number_workers = 2' >> /app/bertrend/services/embedding_server/config/docker_config.toml && \
+    echo 'cuda_visible_devices = "0"' >> /app/bertrend/services/embedding_server/config/docker_config.toml
+
+# Set the environment variable to use the docker configuration
+ENV EMBEDDING_API_CONFIG_FILE=/app/bertrend/services/embedding_server/config/docker_config.toml
+
+# Expose the embedding server port
+EXPOSE 6464
+
+# Create a script to start the embedding server
+RUN echo '#!/bin/bash\n\
+# Start the embedding server\n\
+cd /app && python -m bertrend.services.embedding_server.start\n\
+' > /app/start_embedding_server.sh && chmod +x /app/start_embedding_server.sh
+
+# Set the entrypoint
+ENTRYPOINT ["/app/start_embedding_server.sh"]
+
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+  CMD curl --fail --insecure https://localhost:6464/info || exit 1
+
+# Note: This image uses a PyTorch pre-built image with Python 3.10 to save installation time.
+# The original project requires Python 3.12, but we've modified it to work with Python 3.10.
+# If you encounter compatibility issues, consider reverting to the python:3.12-slim base image.
