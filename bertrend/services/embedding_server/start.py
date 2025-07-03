@@ -17,7 +17,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = CONFIG.cuda_visible_devices
 # Start the FastAPI application
 if __name__ == "__main__":
     uvicorn.run(
-        "wattelse.api.embedding.main:app",
+        "bertrend.services.embedding_server.main:app",
         host=CONFIG.host,
         port=CONFIG.port,
         workers=CONFIG.number_workers,
