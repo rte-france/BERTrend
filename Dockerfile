@@ -71,7 +71,7 @@ RUN mkdir -p /bertrend \
 RUN chown -R $HOST_UID:$HOST_GID /bertrend $BERTREND_BASE_DIR
 
 # Set working directory
-WORKDIR /bertrend
+WORKDIR /
 
 # Create the startup script with proper variable handling
 RUN BERTREND_HOME=$(python -c "import os; import bertrend; print(os.path.dirname(os.path.dirname(bertrend.__file__)))") && \
@@ -104,7 +104,7 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 EXPOSE 8501 8502 8503
 
 # Set the entrypoint
-ENTRYPOINT ["/bertrend/start_demo.sh"]
+ENTRYPOINT ["/start_demo.sh"]
 
 # To run this container with GPU support, use:
 # docker run --gpus all -p 8501:8501 -p 8502:8502 -p 8503:8503 -e OPENAI_API_KEY=your_key -e OPENAI_ENDPOINT=your_endpoint bertrend:latest
