@@ -56,7 +56,7 @@ RUN if [ ! -f /opt/venv/bin/python ]; then ln -s /opt/venv/bin/python3 /opt/venv
 ENV PATH=/opt/venv/bin:$PATH
 
 # Install BERTrend
-RUN gosu $HOST_UID:$HOST_GID uv pip install bertrend[apps]
+RUN gosu $HOST_UID:$HOST_GID uv pip install -U bertrend[apps]
 
 ARG BERTREND_BASE_DIR=/bertrend/
 
@@ -84,6 +84,7 @@ echo "Starting BERTrend demos..."\n\
 echo "BERTREND_HOME: $BERTREND_HOME"\n\
 echo "BERTREND_BASE_DIR: $BERTREND_BASE_DIR"\n\
 \n\
+source /opt/venv/bin/activate\n\
 # Start Topic Analysis demo on port 8501\n\
 cd $BERTREND_HOME/bertrend/demos/topic_analysis && streamlit run app.py --server.port=8501 --server.address=0.0.0.0 2>&1 | tee -a $BERTREND_BASE_DIR/logs/bertrend/topic_analysis_demo.log &\n\
 \n\
