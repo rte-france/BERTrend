@@ -18,6 +18,9 @@ services:
       # User mapping environment variables
       - HOST_UID=${HOST_UID:-1000}
       - HOST_GID=${HOST_GID:-1000}
+      # Ensure these are not empty strings
+      - DEFAULT_RATE_LIMIT=${DEFAULT_RATE_LIMIT:-50}
+      - DEFAULT_RATE_WINDOW=${DEFAULT_RATE_WINDOW:-60}
       # Set HF_HOME inside container
       - HF_HOME=/app/.cache/huggingface
     healthcheck:
