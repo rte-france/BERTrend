@@ -10,7 +10,7 @@ services:
       - "6464:6464"  # Embedding server API
     volumes:
       # Mount HF_HOME directory to share with host
-      - ${HF_HOME:-$${HOME}/.cache/huggingface}:/app/.cache/huggingface
+      - ${HF_HOME:-.cache/huggingface}:/app/.cache/huggingface
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
@@ -52,7 +52,7 @@ services:
       - "8502:8502"  # Weak Signals demo
       - "8503:8503"  # Prospective demo
     volumes:
-      - ${BERTREND_BASE_DIR:-$${HOME}/.bertrend}:/bertrend
+      - ${BERTREND_BASE_DIR}:/bertrend
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
@@ -87,7 +87,7 @@ services:
 
 
 # To run with GPU support, uncomment the deploy section above and use:
-# docker-compose up
+# docker-compose up -d
 
 # To use environment variables from a .env file, create a .env file with:
 # OPENAI_API_KEY=your_key
