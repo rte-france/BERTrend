@@ -54,9 +54,7 @@ RUN if [ ! -f /opt/venv/bin/python ]; then ln -s /opt/venv/bin/python3 /opt/venv
 
 # Ensure the virtual environment's bin directory is in the PATH
 ENV PATH=/opt/venv/bin:$PATH
-
-# Install BERTrend
-RUN gosu $HOST_UID:$HOST_GID uv pip install -U bertrend[apps]
+ENV NVIDIA_VISIBLE_DEVICES=all
 
 ARG BERTREND_BASE_DIR=/bertrend/
 
@@ -69,6 +67,9 @@ RUN mkdir -p /bertrend \
     $BERTREND_BASE_DIR/logs/bertrend
 
 RUN chown -R $HOST_UID:$HOST_GID /bertrend $BERTREND_BASE_DIR
+
+# Install BERTrend
+RUN gosu $HOST_UID:$HOST_GID uv pip install -U bertrend[apps]
 
 # Set working directory
 WORKDIR /
@@ -97,8 +98,6 @@ cd $BERTREND_HOME/bertrend_apps/prospective_demo && streamlit run app.py --serve
 # Keep the container running\n\
 wait\n\
 ' "$BERTREND_HOME" "$BERTREND_BASE_DIR" > start_demo.sh && chmod +x start_demo.sh
-
-ENV NVIDIA_VISIBLE_DEVICES=all
 
 # Expose Streamlit ports for all three demos
 EXPOSE 8501 8502 8503
