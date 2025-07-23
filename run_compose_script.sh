@@ -2,6 +2,7 @@
 
 # Use it like docker-compose
 #./run_compose_script.sh up -d
+#./run_compose_script.sh up  --build --no-deps --force-recreate -d
 #./run_compose_script.sh down
 #./run_compose_script.sh logs -f
 
