@@ -9,13 +9,17 @@ ARG HOST_UID=1000
 ARG HOST_GID=1000
 ARG HF_HOME
 
-# Create cache directory (ownership will be handled by user mapping)
-RUN mkdir -p /app/.cache/huggingface
+# Create cache directories and ensure they are writable by any user
+RUN mkdir -p /app/.cache/huggingface /app/.cache/uv && \
+    chmod -R 777 /app/.cache
 
-# Only copy needed elements into the container
-COPY bertrend/services/embedding_server /bertrend/services/embedding_server/
+# Copy the entire bertrend package into the container
+COPY /bertrend/services/embedding_server/ /bertrend/services/embedding_server/
 COPY bertrend/services/key.pem /bertrend/services/
 COPY bertrend/services/cert.pem /bertrend/services/
+
+# Add the root directory to the Python path
+ENV PYTHONPATH=/
 
 
 # Set workdir
@@ -31,4 +35,4 @@ ENV PATH=/opt/venv/bin:$PATH
 EXPOSE 6464
 
 # Use the entrypoint script with absolute path
-CMD ["uv", "run", "--no-sync", "/bertrend/services/embedding_server/start.py"]
+CMD ["uv", "run", "/bertrend/services/embedding_server/start.py"]
