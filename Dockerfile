@@ -25,16 +25,24 @@ ARG HOST_UID=1000
 ARG HOST_GID=1000
 ARG BERTREND_BASE_DIR=/bertrend/
 
-COPY supervisord.conf run_demos.sh /
+# Create NLTK data directory and ensure app directory has appropriate permissions
+RUN mkdir -p /app/nltk_data && \
+    chmod -R 777 /app/nltk_data && \
+    chmod -R 777 /app
+
+COPY supervisord.conf run_demos.sh /app/
 
 # Install BERTrend
 RUN uv pip install --no-cache-dir --system -U bertrend[apps]
+
+# Set workdir
+WORKDIR /app
 
 # Expose Streamlit ports for all three demos
 EXPOSE 8081 8083 8084
 
 # Set the entrypoint
-ENTRYPOINT ["/run_demos.sh"]
+ENTRYPOINT ["/app/run_demos.sh"]
 
 # To run this container with GPU support, use:
 # docker run --gpus all -p 8501:8501 -p 8502:8502 -p 8503:8503 -e OPENAI_API_KEY=your_key -e OPENAI_ENDPOINT=your_endpoint bertrend:latest
