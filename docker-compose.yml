@@ -21,6 +21,8 @@ services:
       - DEFAULT_RATE_WINDOW=${DEFAULT_RATE_WINDOW:-60}
       # Set HF_HOME inside container
       - HF_HOME=/app/.cache/huggingface
+      # Set UV_CACHE_DIR to a location where the user has write permissions
+      - UV_CACHE_DIR=/app/.cache/uv
     healthcheck:
       test: ["CMD", "curl", "--fail", "--insecure", "https://localhost:6464/health", "||", "exit", "1"]
       interval: 30s
@@ -56,6 +58,10 @@ services:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
       - CUDA_VISIBLE_DEVICES=0
+      # Set UV_CACHE_DIR to a location where the user has write permissions
+      - UV_CACHE_DIR=/app/.cache/uv
+      # Set NLTK_DATA to a location where the user has write permissions
+      - NLTK_DATA=/app/nltk_data
       # BERTrend base dir
       - BERTREND_BASE_DIR=/bertrend/
       # Configure to use the embedding server
