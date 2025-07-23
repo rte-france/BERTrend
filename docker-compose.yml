@@ -6,6 +6,7 @@ services:
       dockerfile: Dockerfile.embedding_server
     image: bertrend-embedding-server:latest
     container_name: bertrend-embedding-server
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     ports:
       - "6464:6464"  # Embedding server API
     volumes:
@@ -15,9 +16,6 @@ services:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
       - CUDA_VISIBLE_DEVICES=0
-      # User mapping environment variables
-      - HOST_UID=${HOST_UID:-1000}
-      - HOST_GID=${HOST_GID:-1000}
       # Ensure these are not empty strings
       - DEFAULT_RATE_LIMIT=${DEFAULT_RATE_LIMIT:-50}
       - DEFAULT_RATE_WINDOW=${DEFAULT_RATE_WINDOW:-60}
@@ -45,21 +43,19 @@ services:
       dockerfile: Dockerfile
     image: bertrend:latest
     container_name: bertrend
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     depends_on:
       - embedding_server
     ports:
-      - "8501:8501"  # Topic Analysis demo
-      - "8502:8502"  # Weak Signals demo
-      - "8503:8503"  # Prospective demo
+      - "8083:8083"  # Topic Analysis demo
+      - "8084:8084"  # Weak Signals demo
+      - "8081:8081"  # Prospective demo
     volumes:
       - ${BERTREND_BASE_DIR}:/bertrend
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
       - CUDA_VISIBLE_DEVICES=0
-      # User mapping environment variables
-      - HOST_UID=${HOST_UID:-1000}
-      - HOST_GID=${HOST_GID:-1000}
       # BERTrend base dir
       - BERTREND_BASE_DIR=/bertrend/
       # Configure to use the embedding server
@@ -70,13 +66,12 @@ services:
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
       - OPENAI_DEFAULT_MODEL_NAME=${OPENAI_DEFAULT_MODEL_NAME:-gpt-4o-mini}
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8501/_stcore/health", "||", "curl", "--fail", "http://localhost:8502/_stcore/health", "||", "curl", "--fail", "http://localhost:8503/_stcore/health", "||", "exit", "1"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8081/_stcore/health", "||", "curl", "--fail", "http://localhost:8083/_stcore/health", "||", "curl", "--fail", "http://localhost:8084/_stcore/health", "||", "exit", "1"]
       interval: 30s
       timeout: 30s
       retries: 3
       start_period: 5s
     restart: unless-stopped
-    # Uncomment the lines below to enable GPU support
     deploy:
        resources:
          reservations:
@@ -84,19 +79,3 @@ services:
              - driver: nvidia
                count: 1  # Use 1 GPU for the bertrend server
                capabilities: [gpu]
-
-
-# To run with GPU support, uncomment the deploy section above and use:
-# docker-compose up -d
-
-# To use environment variables from a .env file, create a .env file with:
-# OPENAI_API_KEY=your_key
-# OPENAI_ENDPOINT=your_endpoint
-# OPENAI_DEFAULT_MODEL_NAME=your_model_name
-# HF_HOME=/custom/path/to/huggingface/cache  # Optional: custom HF_HOME path
-# HOST_UID=1000  # Optional: override default UID
-# HOST_GID=1000  # Optional: override default GID
-# Access the demos at:
-# - Topic Analysis: http://localhost:8501
-# - Weak Signals: http://localhost:8502
-# - Prospective Demo: http://localhost:8503
