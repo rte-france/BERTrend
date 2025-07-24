@@ -11,6 +11,7 @@ RUN apt-get update && \
     wget \
     curl \
     sudo \
+    cron \
     locales \
     && echo "fr_FR.UTF-8 UTF-8" > /etc/locale.gen \
     && locale-gen fr_FR.UTF-8 \
