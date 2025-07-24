@@ -64,15 +64,16 @@ services:
       - NLTK_DATA=/app/nltk_data
       # BERTrend base dir
       - BERTREND_BASE_DIR=/bertrend/
+      - BERTREND_CLIENT_SECRET=bd76aa472dd91aed4a56bf1935dbb802583c119824380d8567086579c0ef3324
       # Configure to use the embedding server
-      - EMBEDDING_SERVICE_URL=https://embedding_server:6464
+      - EMBEDDING_SERVICE_URL=https://localhost:6464
       - EMBEDDING_SERVICE_USE_LOCAL=false
       # OpenAI environment variables (replace with your own values)
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
       - OPENAI_DEFAULT_MODEL_NAME=${OPENAI_DEFAULT_MODEL_NAME:-gpt-4o-mini}
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8081/_stcore/health", "||", "curl", "--fail", "http://localhost:8083/_stcore/health", "||", "curl", "--fail", "http://localhost:8084/_stcore/health", "||", "exit", "1"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8081/_stcore/health", "|", "grep", "-q", "ok", "||", "curl", "--fail", "http://localhost:8083/_stcore/health", "|", "grep", "-q", "ok", "||", "curl", "--fail", "http://localhost:8084/_stcore/health", "|", "grep", "-q", "ok", "||", "exit", "1"]
       interval: 30s
       timeout: 30s
       retries: 3
