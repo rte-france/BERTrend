@@ -56,6 +56,8 @@ services:
       - ${BERTREND_BASE_DIR}:/bertrend
       - ${HF_HOME:-.cache/huggingface}:/app/.cache/huggingface
     environment:
+      - NO_PROXY=$NO_PROXY,embedding_server,bertrend # to avoid communication issues between containers
+      - no_proxy=$no_proxy,embedding_server,bertrend # to avoid communication issues between containers
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
       - CUDA_VISIBLE_DEVICES=0
@@ -69,7 +71,7 @@ services:
       - BERTREND_BASE_DIR=/bertrend/
       - BERTREND_CLIENT_SECRET=bd76aa472dd91aed4a56bf1935dbb802583c119824380d8567086579c0ef3324
       # Configure to use the embedding server
-      - EMBEDDING_SERVICE_URL=https://localhost:6464
+      - EMBEDDING_SERVICE_URL=https://embedding_server:6464
       - EMBEDDING_SERVICE_USE_LOCAL=false
       # OpenAI environment variables (replace with your own values)
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
