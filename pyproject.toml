@@ -1,6 +1,6 @@
 [project]
 name = "bertrend"
-version = "0.3.13"
+version = "0.3.14"
 description = "BERTrend analyses topic evolution over time using state-of-the-art transformer models: topic modelling and LLM"
 license = "LICENSE.md"
 readme = "README.md"
