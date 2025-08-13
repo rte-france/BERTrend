@@ -94,6 +94,9 @@ if __name__ == "__main__":
         ),
         save_path: Path = typer.Option(None, help="Path for writing results."),
         language: str = typer.Option(None, help="Language filter"),
+        evaluate_articles_quality: bool = typer.Option(
+            False, help="Evaluate quality of articles (LLM-based)"
+        ),
     ):
         """Scrape data from Arxiv, Google, Bing news or NewsCatcher (multiple requests from a configuration file: each line of the file shall be compliant with the following format:
         <keyword list>;<after_date, format YYYY-MM-DD>;<before_date, format YYYY-MM-DD>)
@@ -124,7 +127,12 @@ if __name__ == "__main__":
             except:
                 logger.error("Bad file format")
                 return -1
-            results = provider.get_articles_batch(requests, max_results, language)
+            results = provider.get_articles_batch(
+                queries_batch=requests,
+                max_results=max_results,
+                language=language,
+                evaluate_articles_quality=evaluate_articles_quality,
+            )
             logger.info(f"Storing {len(results)} articles")
             provider.store_articles(results, save_path)
 
@@ -200,6 +208,9 @@ if __name__ == "__main__":
             / data_feed_cfg["data-feed"].get("feed_dir_path")
             / f"{current_date_str}_{data_feed_cfg['data-feed'].get('id')}.jsonl"
         )
+        evaluate_articles_quality = data_feed_cfg["data-feed"].get(
+            "evaluate_articles_quality", False
+        )
         save_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Generate a query file
@@ -224,6 +235,7 @@ if __name__ == "__main__":
                     provider=provider,
                     save_path=save_path,
                     language=language,
+                    evaluate_articles_quality=evaluate_articles_quality,
                 )
 
     @app.command("schedule-scrapping")

@@ -2,7 +2,7 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-
+import asyncio
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -16,6 +16,9 @@ from joblib import delayed, Parallel
 from loguru import logger
 from newspaper import Article
 
+from bertrend.article_scoring.article_scoring import QualityLevel
+from bertrend.article_scoring.scoring_agent import score_articles
+from bertrend.utils.data_loading import TEXT_COLUMN
 from bertrend_apps.data_provider.utils import wait_if_seen_url
 
 # Ensures to write with +rw for both user and groups
@@ -77,8 +80,37 @@ class DataProvider(ABC):
 
         pass
 
+    @staticmethod
+    def evaluate_quality(
+        articles: list[dict], minimum_quality=QualityLevel.AVERAGE
+    ) -> list[dict]:
+        texts = [article[TEXT_COLUMN] for article in articles]
+
+        # Evaluate quality of articles using a LLM agent
+        results = asyncio.run(score_articles(texts))
+
+        # Filter out articles with quality < minimum_quality
+        filtered_articles = [
+            {
+                **article,
+                "quality_metrics": results[i].output.model_dump(),
+                "overall_quality": results[i].output.quality_level.name,
+            }
+            for i, article in enumerate(articles)
+            if results[i].output.quality_level >= minimum_quality
+        ]
+        assert len(results) == len(texts)
+        logger.info(
+            f"Filtered out {len(articles) - len(filtered_articles)} articles with quality < {minimum_quality.name}"
+        )
+        return filtered_articles
+
     def get_articles_batch(
-        self, queries_batch: list[list], max_results: int, language: str = None
+        self,
+        queries_batch: list[list],
+        max_results: int,
+        language: str = None,
+        evaluate_articles_quality: bool = False,
     ) -> list[dict]:
         """Requests the news data provider for a list of queries, collects a set of URLs to be parsed,
         return results as json lines"""
@@ -98,6 +130,10 @@ class DataProvider(ABC):
                 continue
         # remove duplicates
         articles = [dict(t) for t in {tuple(d.items()) for d in articles}]
+
+        if evaluate_articles_quality:
+            articles = self.evaluate_quality(articles)
+
         logger.info(f"Collected {len(articles)} articles")
         return articles
 

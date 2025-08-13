@@ -378,4 +378,12 @@ TRANSLATIONS = {
         "en": "Split text by paragraphs for analysis (useful for long text such as news articles which may contain different subtopics)",
         "fr": "Découpe le texte par paragraphes pour l'analyse (utile pour des textes longs comme des articles de presse qui peuvent contenir plusieurs sous-sujets)",
     },
+    "evaluate_articles_quality": {
+        "en": "Keep only high-quality articles",
+        "fr": "Retenir seulement les articles de meilleure qualité",
+    },
+    "evaluate_articles_quality_help": {
+        "en": "Score each article using a LLM-based approach ($$) and keep only high-quality articles",
+        "fr": "Evalue chaque article avec une approche basée sur des LLM ($$) et ne retient que les articles de meilleure qualité",
+    },
 }

@@ -1,6 +1,6 @@
 [project]
 name = "bertrend"
-version = "0.3.13"
+version = "0.3.14"
 description = "BERTrend analyses topic evolution over time using state-of-the-art transformer models: topic modelling and LLM"
 license = "LICENSE.md"
 readme = "README.md"
@@ -39,7 +39,7 @@ dependencies = [
     "nltk (>=3.9.1)",
     "numpy (<2)",
     "openai (>=1.77.0)",
-    "openai-agents (>=0.2.5)",
+    "openai-agents[litellm] (>=0.2.5)",
     "openpyxl (>=3.1.5)",
     "opentelemetry-exporter-otlp-proto-grpc (==1.25.0)",  # to avoid error chroma with protobuf
     "pandas (>=2.2.2)",
@@ -49,6 +49,7 @@ dependencies = [
     "PyJWT (>=2.10.1)",
     "Pyqtree (==1.0.0)",
     "pytest>=8.4.0",
+    "pytest-asyncio",
     "pyarrow>=21.0.0",
     "scipy (==1.12)",
     "scikit-learn (>=1.5.2)",
