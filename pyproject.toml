@@ -39,7 +39,7 @@ dependencies = [
     "nltk (>=3.9.1)",
     "numpy (<2)",
     "openai (>=1.77.0)",
-    "openai-agents (>=0.2.5)",
+    "openai-agents[litellm] (>=0.2.5)",
     "openpyxl (>=3.1.5)",
     "opentelemetry-exporter-otlp-proto-grpc (==1.25.0)",  # to avoid error chroma with protobuf
     "pandas (>=2.2.2)",
