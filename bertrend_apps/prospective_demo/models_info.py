@@ -44,10 +44,9 @@ from bertrend_apps.prospective_demo.process_new_data import regenerate_models
 def load_model_config(model_id: str):
     """Loads the model config from the disk"""
     st.session_state.model_analysis_cfg[model_id] = load_toml_config(
-        get_model_cfg_path(
-            user_name=st.session_state.username, model_id=model_id
-        )
+        get_model_cfg_path(user_name=st.session_state.username, model_id=model_id)
     )
+
 
 @st.fragment
 def models_monitoring():
