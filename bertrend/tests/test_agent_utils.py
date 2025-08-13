@@ -33,9 +33,7 @@ class TestProcessingResult:
     def test_processing_result_with_output(self):
         """Test creating ProcessingResult with output."""
         result = ProcessingResult(
-            input_index=0,
-            output="test output",
-            processing_time=1.5
+            input_index=0, output="test output", processing_time=1.5
         )
         assert result.input_index == 0
         assert result.output == "test output"
@@ -45,11 +43,7 @@ class TestProcessingResult:
 
     def test_processing_result_with_error(self):
         """Test creating ProcessingResult with error."""
-        result = ProcessingResult(
-            input_index=2,
-            error="test error",
-            timeout=True
-        )
+        result = ProcessingResult(input_index=2, error="test error", timeout=True)
         assert result.input_index == 2
         assert result.output is None
         assert result.error == "test error"
@@ -72,9 +66,7 @@ class TestBaseAgentFactory:
     def test_base_agent_factory_creation_custom(self):
         """Test creating BaseAgentFactory with custom parameters."""
         factory = BaseAgentFactory(
-            model_name="gpt-4",
-            api_key="custom-key",
-            base_url="https://api.openai.com"
+            model_name="gpt-4", api_key="custom-key", base_url="https://api.openai.com"
         )
         assert factory.model_name == "gpt-4"
         assert factory.api_key == "custom-key"
@@ -86,7 +78,11 @@ class TestBaseAgentFactory:
             BaseAgentFactory(api_key=None)
         assert "OPENAI_API_KEY environment variable not found" in str(exc_info.value)
 
-    @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key", "OPENAI_DEFAULT_MODEL_NAME": "custom-model"}, clear=True)
+    @patch.dict(
+        os.environ,
+        {"OPENAI_API_KEY": "test-key", "OPENAI_DEFAULT_MODEL_NAME": "custom-model"},
+        clear=True,
+    )
     def test_base_agent_factory_env_model_name(self):
         """Test that BaseAgentFactory uses environment variable for model name."""
         factory = BaseAgentFactory(model_name=None)
@@ -105,11 +101,11 @@ class TestBaseAgentFactory:
     @patch("bertrend.llm_utils.agent_utils.LitellmModel")
     def test_base_agent_factory_litellm_model(self, mock_litellm_model):
         """Test creating BaseAgentFactory with custom base URL."""
-        factory = BaseAgentFactory(api_key="test-key", base_url="https://custom-api.com")
+        factory = BaseAgentFactory(
+            api_key="test-key", base_url="https://custom-api.com"
+        )
         mock_litellm_model.assert_called_once_with(
-            model="gpt-4.1-mini",
-            api_key="test-key",
-            base_url="https://custom-api.com"
+            model="gpt-4.1-mini", api_key="test-key", base_url="https://custom-api.com"
         )
 
     @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
@@ -118,7 +114,9 @@ class TestBaseAgentFactory:
         """Test creating an agent."""
         factory = BaseAgentFactory()
         agent = factory.create_agent(system="test system prompt")
-        mock_agent.assert_called_once_with(model=factory.model, system="test system prompt")
+        mock_agent.assert_called_once_with(
+            model=factory.model, system="test system prompt"
+        )
 
     def test_base_agent_factory_empty_base_url(self):
         """Test that empty base URL environment variable is handled correctly."""
@@ -138,17 +136,13 @@ class TestAsyncAgentConcurrentProcessor:
     def processor(self, mock_agent):
         """Create a processor instance for testing."""
         return AsyncAgentConcurrentProcessor(
-            agent=mock_agent,
-            max_concurrent=2,
-            timeout=5.0
+            agent=mock_agent, max_concurrent=2, timeout=5.0
         )
 
     def test_processor_initialization(self, mock_agent):
         """Test AsyncAgentConcurrentProcessor initialization."""
         processor = AsyncAgentConcurrentProcessor(
-            agent=mock_agent,
-            max_concurrent=3,
-            timeout=10.0
+            agent=mock_agent, max_concurrent=3, timeout=10.0
         )
         assert processor.agent == mock_agent
         assert processor.max_concurrent == 3
@@ -180,7 +174,9 @@ class TestAsyncAgentConcurrentProcessor:
 
     @pytest.mark.asyncio
     @patch("bertrend.llm_utils.agent_utils.Runner.run")
-    async def test_process_single_item_response_without_final_output(self, mock_runner, processor):
+    async def test_process_single_item_response_without_final_output(
+        self, mock_runner, processor
+    ):
         """Test processing when response doesn't have final_output attribute."""
         # Mock the response without final_output
         mock_response = "direct response"
@@ -262,8 +258,7 @@ class TestAsyncAgentConcurrentProcessor:
 
             input_list = ["item1", "item2"]
             await processor.process_list_concurrent(
-                input_list, 
-                progress_callback=progress_callback
+                input_list, progress_callback=progress_callback
             )
 
             assert len(callback_calls) == 2
@@ -273,14 +268,13 @@ class TestAsyncAgentConcurrentProcessor:
     @pytest.mark.asyncio
     async def test_process_list_concurrent_with_chunking(self, processor):
         """Test processing with chunking."""
-        with patch.object(processor, '_process_in_chunks') as mock_chunks:
-            mock_chunks.return_value = [ProcessingResult(input_index=i) for i in range(5)]
+        with patch.object(processor, "_process_in_chunks") as mock_chunks:
+            mock_chunks.return_value = [
+                ProcessingResult(input_index=i) for i in range(5)
+            ]
 
             input_list = ["item"] * 5
-            results = await processor.process_list_concurrent(
-                input_list, 
-                chunk_size=2
-            )
+            results = await processor.process_list_concurrent(input_list, chunk_size=2)
 
             mock_chunks.assert_called_once_with(input_list, 2, None, None)
             assert len(results) == 5
@@ -300,14 +294,15 @@ class TestAsyncAgentConcurrentProcessor:
 
             input_list = ["item1", "item2", "item3"]
             results = await processor.process_list_concurrent(
-                input_list,
-                overall_timeout=0.05  # Very short overall timeout
+                input_list, overall_timeout=0.05  # Very short overall timeout
             )
 
             # Should get results with timeout errors
             assert len(results) == 3
             # At least some should have timeout errors
-            timeout_errors = [r for r in results if "timeout" in (r.error or "").lower()]
+            timeout_errors = [
+                r for r in results if "timeout" in (r.error or "").lower()
+            ]
             assert len(timeout_errors) > 0
 
     @pytest.mark.asyncio
@@ -320,8 +315,7 @@ class TestAsyncAgentConcurrentProcessor:
         tasks = []
         for i in range(2):
             task = asyncio.create_task(
-                processor.process_single_item(f"item{i}", i),
-                name=f"item_{i}"
+                processor.process_single_item(f"item{i}", i), name=f"item_{i}"
             )
             tasks.append(task)
 
@@ -340,17 +334,14 @@ class TestAsyncAgentConcurrentProcessor:
     @pytest.mark.asyncio
     async def test_process_in_chunks_success(self, processor):
         """Test _process_in_chunks method."""
-        with patch.object(processor, 'process_list_concurrent') as mock_process:
+        with patch.object(processor, "process_list_concurrent") as mock_process:
             mock_process.return_value = [
                 ProcessingResult(input_index=0, output="output0"),
-                ProcessingResult(input_index=1, output="output1")
+                ProcessingResult(input_index=1, output="output1"),
             ]
 
             input_list = ["item0", "item1", "item2", "item3"]
-            results = await processor._process_in_chunks(
-                input_list,
-                chunk_size=2
-            )
+            results = await processor._process_in_chunks(input_list, chunk_size=2)
 
             # Should be called twice (2 chunks of size 2)
             assert mock_process.call_count == 2
@@ -359,7 +350,7 @@ class TestAsyncAgentConcurrentProcessor:
     @pytest.mark.asyncio
     async def test_process_in_chunks_with_overall_timeout(self, processor):
         """Test _process_in_chunks with overall timeout."""
-        with patch.object(processor, 'process_list_concurrent') as mock_process:
+        with patch.object(processor, "process_list_concurrent") as mock_process:
             # Make the first chunk take some time
             async def slow_process(*args, **kwargs):
                 await asyncio.sleep(0.1)
@@ -369,9 +360,7 @@ class TestAsyncAgentConcurrentProcessor:
 
             input_list = ["item0", "item1", "item2", "item3"]
             results = await processor._process_in_chunks(
-                input_list,
-                chunk_size=2,
-                overall_timeout=0.05  # Very short timeout
+                input_list, chunk_size=2, overall_timeout=0.05  # Very short timeout
             )
 
             # Should get timeout results for remaining items
@@ -381,14 +370,11 @@ class TestAsyncAgentConcurrentProcessor:
     @pytest.mark.asyncio
     async def test_process_in_chunks_with_error(self, processor):
         """Test _process_in_chunks when chunk processing fails."""
-        with patch.object(processor, 'process_list_concurrent') as mock_process:
+        with patch.object(processor, "process_list_concurrent") as mock_process:
             mock_process.side_effect = Exception("Chunk processing error")
 
             input_list = ["item0", "item1"]
-            results = await processor._process_in_chunks(
-                input_list,
-                chunk_size=1
-            )
+            results = await processor._process_in_chunks(input_list, chunk_size=1)
 
             # Should get error results
             assert len(results) == 2
@@ -402,13 +388,10 @@ class TestProgressReporter:
     @patch("bertrend.llm_utils.agent_utils.logger")
     def test_progress_reporter_success(self, mock_logger):
         """Test progress_reporter with successful result."""
-        result = ProcessingResult(
-            input_index=0,
-            output="test output"
-        )
-        
+        result = ProcessingResult(input_index=0, output="test output")
+
         progress_reporter(5, 10, result)
-        
+
         # Check that logger.info was called with success status
         mock_logger.info.assert_called_once()
         call_args = mock_logger.info.call_args[0][0]
@@ -418,13 +401,10 @@ class TestProgressReporter:
     @patch("bertrend.llm_utils.agent_utils.logger")
     def test_progress_reporter_timeout(self, mock_logger):
         """Test progress_reporter with timeout result."""
-        result = ProcessingResult(
-            input_index=0,
-            timeout=True
-        )
-        
+        result = ProcessingResult(input_index=0, timeout=True)
+
         progress_reporter(3, 10, result)
-        
+
         mock_logger.info.assert_called_once()
         call_args = mock_logger.info.call_args[0][0]
         assert "3/10" in call_args
@@ -435,16 +415,16 @@ class TestProgressReporter:
         """Test progress_reporter with error result."""
         result = ProcessingResult(
             input_index=0,
-            error="test error message that is quite long and should be truncated"
+            error="test error message that is quite long and should be truncated",
         )
-        
+
         progress_reporter(1, 5, result)
-        
+
         mock_logger.info.assert_called_once()
         call_args = mock_logger.info.call_args[0][0]
         assert "1/5" in call_args
         assert "✗" in call_args
-        
+
         # Should also log the error details
         mock_logger.debug.assert_called_once()
         debug_call_args = mock_logger.debug.call_args[0][0]
@@ -454,8 +434,8 @@ class TestProgressReporter:
     def test_progress_reporter_percentage_calculation(self, mock_logger):
         """Test that progress_reporter calculates percentage correctly."""
         result = ProcessingResult(input_index=0, output="test")
-        
+
         progress_reporter(7, 10, result)
-        
+
         call_args = mock_logger.info.call_args[0][0]
         assert "7.0%" in call_args  # (7/10) * 10 = 7.0%

@@ -50,7 +50,7 @@ class TestCriteriaScores:
             narrative_and_engagement=0.6,
             timeliness_and_relevance=0.8,
             ethical_considerations_and_sensitivity=0.9,
-            rte_relevance_and_strategic_impact=0.4
+            rte_relevance_and_strategic_impact=0.4,
         )
         assert scores.depth_of_reporting == 0.8
         assert scores.originality_and_exclusivity == 0.6
@@ -69,7 +69,7 @@ class TestCriteriaScores:
                 narrative_and_engagement=0.6,
                 timeliness_and_relevance=0.8,
                 ethical_considerations_and_sensitivity=0.9,
-                rte_relevance_and_strategic_impact=0.4
+                rte_relevance_and_strategic_impact=0.4,
             )
 
         with pytest.raises(ValidationError):
@@ -83,7 +83,7 @@ class TestCriteriaScores:
                 narrative_and_engagement=0.6,
                 timeliness_and_relevance=0.8,
                 ethical_considerations_and_sensitivity=0.9,
-                rte_relevance_and_strategic_impact=0.4
+                rte_relevance_and_strategic_impact=0.4,
             )
 
     def test_get_criterion_names(self):
@@ -99,7 +99,7 @@ class TestCriteriaScores:
             "narrative_and_engagement",
             "timeliness_and_relevance",
             "ethical_considerations_and_sensitivity",
-            "rte_relevance_and_strategic_impact"
+            "rte_relevance_and_strategic_impact",
         ]
         assert names == expected_names
 
@@ -115,7 +115,7 @@ class TestCriteriaScores:
             narrative_and_engagement=0.6,
             timeliness_and_relevance=0.8,
             ethical_considerations_and_sensitivity=0.9,
-            rte_relevance_and_strategic_impact=0.4
+            rte_relevance_and_strategic_impact=0.4,
         )
         result = scores.to_dict()
         assert isinstance(result, dict)
@@ -139,7 +139,7 @@ class TestWeightConfig:
             narrative_and_engagement=0.10,
             timeliness_and_relevance=0.05,
             ethical_considerations_and_sensitivity=0.05,
-            rte_relevance_and_strategic_impact=0.05
+            rte_relevance_and_strategic_impact=0.05,
         )
         assert weights.depth_of_reporting == 0.15
         assert weights.rte_relevance_and_strategic_impact == 0.05
@@ -157,7 +157,7 @@ class TestWeightConfig:
                 narrative_and_engagement=2.0,
                 timeliness_and_relevance=2.0,
                 ethical_considerations_and_sensitivity=2.0,
-                rte_relevance_and_strategic_impact=2.0
+                rte_relevance_and_strategic_impact=2.0,
             )
 
     def test_to_dict(self):
@@ -184,14 +184,13 @@ class TestArticleScore:
             narrative_and_engagement=0.6,
             timeliness_and_relevance=0.8,
             ethical_considerations_and_sensitivity=0.9,
-            rte_relevance_and_strategic_impact=0.4
+            rte_relevance_and_strategic_impact=0.4,
         )
-        
+
         score = ArticleScore(
-            scores=criteria,
-            assessment_summary="Good article with strong reporting."
+            scores=criteria, assessment_summary="Good article with strong reporting."
         )
-        
+
         assert score.scores == criteria
         assert score.assessment_summary == "Good article with strong reporting."
 
@@ -207,11 +206,11 @@ class TestArticleScore:
             narrative_and_engagement=0.6,
             timeliness_and_relevance=0.8,
             ethical_considerations_and_sensitivity=0.9,
-            rte_relevance_and_strategic_impact=0.4
+            rte_relevance_and_strategic_impact=0.4,
         )
-        
+
         score = ArticleScore(scores=criteria)
-        
+
         final_score = score.final_score
         assert isinstance(final_score, float)
         assert 0.0 <= final_score <= 1.0
@@ -229,14 +228,11 @@ class TestArticleScore:
             narrative_and_engagement=0.1,
             timeliness_and_relevance=0.1,
             ethical_considerations_and_sensitivity=0.1,
-            rte_relevance_and_strategic_impact=0.1
+            rte_relevance_and_strategic_impact=0.1,
         )
-        
-        low_score = ArticleScore(
-            scores=low_criteria,
-            assessment_summary="Poor quality"
-        )
-        
+
+        low_score = ArticleScore(scores=low_criteria, assessment_summary="Poor quality")
+
         assert low_score.quality_level == QualityLevel.POOR
 
         # Test GOOD quality
@@ -250,15 +246,16 @@ class TestArticleScore:
             narrative_and_engagement=0.8,
             timeliness_and_relevance=0.8,
             ethical_considerations_and_sensitivity=0.9,
-            rte_relevance_and_strategic_impact=0.7
+            rte_relevance_and_strategic_impact=0.7,
         )
-        
+
         high_score = ArticleScore(
-            scores=high_criteria,
-            assessment_summary="Excellent quality"
+            scores=high_criteria, assessment_summary="Excellent quality"
         )
-        
-        assert high_score.quality_level == QualityLevel.POOR  # Due to division by len(score_dict) in implementation
+
+        assert (
+            high_score.quality_level == QualityLevel.POOR
+        )  # Due to division by len(score_dict) in implementation
 
     def test_get_detailed_breakdown(self):
         """Test getting detailed breakdown of scores."""
@@ -272,11 +269,11 @@ class TestArticleScore:
             narrative_and_engagement=0.6,
             timeliness_and_relevance=0.8,
             ethical_considerations_and_sensitivity=0.9,
-            rte_relevance_and_strategic_impact=0.4
+            rte_relevance_and_strategic_impact=0.4,
         )
-        
+
         score = ArticleScore(scores=criteria)
-        
+
         breakdown = score.get_detailed_breakdown()
         assert isinstance(breakdown, dict)
         assert len(breakdown) == 10
@@ -297,11 +294,11 @@ class TestArticleScore:
             narrative_and_engagement=0.4,
             timeliness_and_relevance=0.5,
             ethical_considerations_and_sensitivity=0.6,
-            rte_relevance_and_strategic_impact=0.1
+            rte_relevance_and_strategic_impact=0.1,
         )
-        
+
         score = ArticleScore(scores=criteria)
-        
+
         strengths = score.get_top_strengths(n=3)
         assert len(strengths) == 3
         assert strengths[0][0] == "depth_of_reporting"
@@ -321,11 +318,11 @@ class TestArticleScore:
             narrative_and_engagement=0.3,  # Third weakness
             timeliness_and_relevance=0.5,
             ethical_considerations_and_sensitivity=0.4,
-            rte_relevance_and_strategic_impact=0.8
+            rte_relevance_and_strategic_impact=0.8,
         )
-        
+
         score = ArticleScore(scores=criteria)
-        
+
         weaknesses = score.get_top_weaknesses(n=3)
         assert len(weaknesses) == 3
         assert weaknesses[0][0] == "originality_and_exclusivity"
@@ -345,14 +342,13 @@ class TestArticleScore:
             narrative_and_engagement=0.6,
             timeliness_and_relevance=0.8,
             ethical_considerations_and_sensitivity=0.9,
-            rte_relevance_and_strategic_impact=0.4
+            rte_relevance_and_strategic_impact=0.4,
         )
-        
+
         score = ArticleScore(
-            scores=criteria,
-            assessment_summary="Good article with strong reporting."
+            scores=criteria, assessment_summary="Good article with strong reporting."
         )
-        
+
         report = score.to_report()
         assert isinstance(report, str)
         assert "ARTICLE QUALITY ASSESSMENT REPORT" in report
@@ -371,14 +367,11 @@ class TestArticleScore:
             narrative_and_engagement=0.6,
             timeliness_and_relevance=0.8,
             ethical_considerations_and_sensitivity=0.9,
-            rte_relevance_and_strategic_impact=0.4
+            rte_relevance_and_strategic_impact=0.4,
         )
-        
-        score = ArticleScore(
-            scores=criteria,
-            assessment_summary="Test assessment"
-        )
-        
+
+        score = ArticleScore(scores=criteria, assessment_summary="Test assessment")
+
         result = score.export_to_dict()
         assert isinstance(result, dict)
         assert result["assessment_summary"] == "Test assessment"
@@ -398,16 +391,18 @@ class TestScoringAgent:
         assert "RTE Relevance and Strategic Impact" in ARTICLE_SCORING_PROMPT
 
     @pytest.mark.asyncio
-    @patch('bertrend.article_scoring.scoring_agent.BaseAgentFactory')
-    @patch('bertrend.article_scoring.scoring_agent.AsyncAgentConcurrentProcessor')
-    async def test_score_articles_function(self, mock_processor_class, mock_factory_class):
+    @patch("bertrend.article_scoring.scoring_agent.BaseAgentFactory")
+    @patch("bertrend.article_scoring.scoring_agent.AsyncAgentConcurrentProcessor")
+    async def test_score_articles_function(
+        self, mock_processor_class, mock_factory_class
+    ):
         """Test the score_articles function with mocked dependencies."""
         # Mock the agent factory and processor
         mock_agent = Mock()
         mock_factory = Mock()
         mock_factory.create_agent.return_value = mock_agent
         mock_factory_class.return_value = mock_factory
-        
+
         mock_processor = Mock()
         mock_result = Mock()
         mock_result.output = ArticleScore(
@@ -421,23 +416,23 @@ class TestScoringAgent:
                 narrative_and_engagement=0.6,
                 timeliness_and_relevance=0.8,
                 ethical_considerations_and_sensitivity=0.9,
-                rte_relevance_and_strategic_impact=0.4
+                rte_relevance_and_strategic_impact=0.4,
             ),
-            assessment_summary="Test"
+            assessment_summary="Test",
         )
         mock_result.error = None
-        
+
         mock_processor.process_list_concurrent = AsyncMock(return_value=[mock_result])
         mock_processor_class.return_value = mock_processor
-        
+
         # Test the function
         articles = ["Test article content"]
         results = await score_articles(articles)
-        
+
         # Verify the results
         assert len(results) == 1
         assert results[0] == mock_result
-        
+
         # Verify the mocks were called correctly
         mock_factory.create_agent.assert_called_once()
         mock_processor_class.assert_called_once()
@@ -447,8 +442,9 @@ class TestScoringAgent:
         """Test that default constants are defined."""
         from bertrend.article_scoring.scoring_agent import (
             DEFAULT_CHUNK_SIZE,
-            DEFAULT_MAX_CONCURRENT_TASKS
+            DEFAULT_MAX_CONCURRENT_TASKS,
         )
+
         assert DEFAULT_CHUNK_SIZE == 25
         assert DEFAULT_MAX_CONCURRENT_TASKS == 25
 
@@ -469,31 +465,33 @@ class TestIntegrationScenarios:
             narrative_and_engagement=0.65,
             timeliness_and_relevance=0.85,
             ethical_considerations_and_sensitivity=0.95,
-            rte_relevance_and_strategic_impact=0.60
+            rte_relevance_and_strategic_impact=0.60,
         )
-        
+
         # Create article score
         article_score = ArticleScore(
             scores=criteria,
-            assessment_summary="Excellent reporting on energy infrastructure with strong sourcing and ethical considerations."
+            assessment_summary="Excellent reporting on energy infrastructure with strong sourcing and ethical considerations.",
         )
-        
+
         # Verify the complete workflow
         assert article_score.final_score > 0.07  # Should be high quality
-        assert article_score.quality_level == QualityLevel.POOR  # Due to division by len(score_dict) in implementation
-        
+        assert (
+            article_score.quality_level == QualityLevel.POOR
+        )  # Due to division by len(score_dict) in implementation
+
         # Test report generation
         report = article_score.to_report()
         assert "ARTICLE QUALITY ASSESSMENT REPORT" in report
-        
+
         # Test export functionality
         exported = article_score.export_to_dict()
         assert exported["quality_level"] == "Poor"
-        
+
         # Test strengths and weaknesses analysis
         strengths = article_score.get_top_strengths(n=2)
         weaknesses = article_score.get_top_weaknesses(n=2)
-        
+
         assert len(strengths) == 2
         assert len(weaknesses) == 2
         assert strengths[0][1] > weaknesses[0][1]  # Top strength > top weakness
@@ -510,14 +508,13 @@ class TestIntegrationScenarios:
             narrative_and_engagement=0.0,
             timeliness_and_relevance=0.0,
             ethical_considerations_and_sensitivity=0.0,
-            rte_relevance_and_strategic_impact=0.0
+            rte_relevance_and_strategic_impact=0.0,
         )
-        
+
         article_score = ArticleScore(
-            scores=criteria,
-            assessment_summary="Article fails all quality criteria."
+            scores=criteria, assessment_summary="Article fails all quality criteria."
         )
-        
+
         assert article_score.final_score == 0.0
         assert article_score.quality_level == QualityLevel.POOR
 
@@ -533,13 +530,15 @@ class TestIntegrationScenarios:
             narrative_and_engagement=1.0,
             timeliness_and_relevance=1.0,
             ethical_considerations_and_sensitivity=1.0,
-            rte_relevance_and_strategic_impact=1.0
+            rte_relevance_and_strategic_impact=1.0,
         )
-        
+
         article_score = ArticleScore(
             scores=criteria,
-            assessment_summary="Article excels in all quality criteria."
+            assessment_summary="Article excels in all quality criteria.",
         )
-        
+
         assert article_score.final_score == 0.1  # Due to division by len(score_dict)
-        assert article_score.quality_level == QualityLevel.POOR  # This might be a bug in the implementation
+        assert (
+            article_score.quality_level == QualityLevel.POOR
+        )  # This might be a bug in the implementation
