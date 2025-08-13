@@ -63,8 +63,7 @@ class BaseAgentFactory:
 class ProcessingResult:
     """Result container for processed items"""
 
-    input_data: object
-    input_index: int
+    input_index: int  # to keep track of link output/input
     output: str | None = None
     error: str | None = None
     processing_time: float = 0.0
@@ -103,7 +102,7 @@ class AsyncAgentConcurrentProcessor:
             ProcessingResult containing the output or error
         """
         start_time = time.time()
-        result = ProcessingResult(input_data=item, input_index=item_index)
+        result = ProcessingResult(input_index=item_index)
 
         try:
             # Use asyncio.wait_for to add timeout protection
@@ -209,7 +208,6 @@ class AsyncAgentConcurrentProcessor:
                     except Exception as e:
                         results.append(
                             ProcessingResult(
-                                input_data=input_list[i],
                                 input_index=i,
                                 error=f"Task failed: {str(e)}",
                             )
@@ -217,7 +215,6 @@ class AsyncAgentConcurrentProcessor:
                 else:
                     results.append(
                         ProcessingResult(
-                            input_data=input_list[i],
                             input_index=i,
                             error="Overall timeout exceeded",
                             timeout=True,
@@ -232,9 +229,7 @@ class AsyncAgentConcurrentProcessor:
             logger.error(f"Unexpected error in process_list_concurrent: {e}")
             # Return error results for all items
             return [
-                ProcessingResult(
-                    input_data=item, input_index=i, error=f"Processing failed: {str(e)}"
-                )
+                ProcessingResult(input_index=i, error=f"Processing failed: {str(e)}")
                 for i, item in enumerate(input_list)
             ]
 
@@ -284,7 +279,6 @@ class AsyncAgentConcurrentProcessor:
                 logger.error(f"Error collecting result: {e}")
                 # Create error result for failed task
                 error_result = ProcessingResult(
-                    input_data=f"task_error_{completed}",
                     input_index=completed,
                     error=str(e),
                 )
@@ -322,7 +316,6 @@ class AsyncAgentConcurrentProcessor:
                 for item in remaining_items:
                     all_results.append(
                         ProcessingResult(
-                            input_data=item,
                             input_index=input_list.index(item),
                             error="Overall timeout exceeded",
                             timeout=True,
@@ -372,7 +365,6 @@ class AsyncAgentConcurrentProcessor:
                 for item in chunk:
                     all_results.append(
                         ProcessingResult(
-                            input_data=item,
                             input_index=input_list.index(item),
                             error=f"Chunk processing failed: {str(e)}",
                         )

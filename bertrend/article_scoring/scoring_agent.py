@@ -1,6 +1,8 @@
 import asyncio
 from pathlib import Path
 
+from agents import ModelSettings
+
 from bertrend.article_scoring.article_scoring import ArticleScore
 from bertrend.article_scoring.prompts import ARTICLE_SCORING_PROMPT
 from bertrend.llm_utils.agent_utils import (
@@ -10,20 +12,26 @@ from bertrend.llm_utils.agent_utils import (
 )
 from bertrend.utils.data_loading import load_data
 
+DEFAULT_CHUNK_SIZE = 40
+DEFAULT_MAX_CONCURRENT_TASKS = 40
+
 
 async def score_articles(articles: list[str]):
     agent = BaseAgentFactory().create_agent(
         name="scoring_agent",
         instructions=ARTICLE_SCORING_PROMPT,
         output_type=ArticleScore,
+        model_settings=ModelSettings(temperature=0.1),
     )
 
     # Initialize processor
-    processor = AsyncAgentConcurrentProcessor(agent=agent, max_concurrent=10)
+    processor = AsyncAgentConcurrentProcessor(
+        agent=agent, max_concurrent=DEFAULT_MAX_CONCURRENT_TASKS
+    )
 
     # Uncomment to process multiple items:
     results = await processor.process_list_concurrent(
-        articles, progress_callback=progress_reporter, chunk_size=10
+        articles, progress_callback=progress_reporter, chunk_size=DEFAULT_CHUNK_SIZE
     )
     return results
 
@@ -33,11 +41,13 @@ if __name__ == "__main__":
     path = Path("/DSIA/nlp/bertrend/data/feeds/feed_nlp/2025-01-07_feed_nlp.jsonl")
     df = load_data(path)
     print(len(df), df.columns)
-    df = df.head(5)[["title", "text"]]
-    print(df)
     l = list(df.text)
     results = asyncio.run(score_articles(l))
 
     assert len(results) == len(df)
-    df.eval = results
-    print(df.eval)
+    df["quality_metrics"] = [r.output if not r.error else None for r in results]
+    df["quality"] = df["quality_metrics"].apply(
+        lambda x: x.output.quality_level.name if not x.error else None
+    )
+    print(df.quality)
+    print(df.columns)
