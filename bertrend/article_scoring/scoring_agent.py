@@ -12,8 +12,8 @@ from bertrend.llm_utils.agent_utils import (
 )
 from bertrend.utils.data_loading import load_data
 
-DEFAULT_CHUNK_SIZE = 40
-DEFAULT_MAX_CONCURRENT_TASKS = 40
+DEFAULT_CHUNK_SIZE = 25
+DEFAULT_MAX_CONCURRENT_TASKS = 25
 
 
 async def score_articles(articles: list[str]):
@@ -46,8 +46,10 @@ if __name__ == "__main__":
 
     assert len(results) == len(df)
     df["quality_metrics"] = [r.output if not r.error else None for r in results]
-    df["quality"] = df["quality_metrics"].apply(
-        lambda x: x.output.quality_level.name if not x.error else None
+    df["overall_quality"] = df["quality_metrics"].apply(
+        lambda x: x.quality_level.name if x else None
     )
-    print(df.quality)
-    print(df.columns)
+    print(df.overall_quality)
+    category_percentages = df["overall_quality"].value_counts(normalize=True) * 100
+    # Display percentages
+    print(category_percentages)

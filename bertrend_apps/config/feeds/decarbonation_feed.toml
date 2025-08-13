@@ -13,3 +13,4 @@ language = "fr"
 # Frequency at which new data shall be gathered (in crontab format, cf https://crontab.guru/)
 # “At 22:00 on every day-of-week from Monday through Friday.”
 update_frequency = "0 2 * * 3"
+evaluate_articles_quality = true
