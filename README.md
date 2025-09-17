@@ -84,6 +84,12 @@ BERTrend requires the following environment variables to be set:
 - Recommended: at least one GPU with 16GB RAM for faster processing
 - Python >= 3.12 is required
 
+### Docker Installation
+
+BERTrend can be run using Docker, which provides an easy way to run the application without installing dependencies directly on your system.
+
+For detailed instructions on using BERTrend with Docker, see the [Docker documentation](./docs/docker.md).
+
 ### Package Installation
 
 - (Recommended): create a new python environment using `venv` or `conda`: 
