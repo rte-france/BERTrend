@@ -1,0 +1,103 @@
+services:
+  # Embedding server service
+  embedding_server:
+    build:
+      context: .
+      dockerfile: Dockerfile.embedding_server
+    image: bertrend-embedding-server:latest
+    container_name: bertrend-embedding-server
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    ports:
+      - "6464:6464"  # Embedding server API
+    volumes:
+      # Mount HF_HOME directory to share with host
+      - ${HF_HOME:-.cache/huggingface}:/app/.cache/huggingface
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=0
+      # Ensure these are not empty strings
+      - DEFAULT_RATE_LIMIT=${DEFAULT_RATE_LIMIT:-50}
+      - DEFAULT_RATE_WINDOW=${DEFAULT_RATE_WINDOW:-60}
+      # Set HF_HOME inside container
+      - HF_HOME=/app/.cache/huggingface
+      # Set UV_CACHE_DIR to a location where the user has write permissions
+      - UV_CACHE_DIR=/app/.cache/uv
+    healthcheck:
+      test: curl --fail --insecure https://localhost:6464/health || exit 1
+      interval: 120s
+      timeout: 30s
+      retries: 3
+      start_period: 120s  # Longer start period as model loading can take time
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1  # Use 1 GPU for the embedding server
+              capabilities: [gpu]
+
+  # Main BERTrend application
+  bertrend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bertrend:latest
+    container_name: bertrend
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    depends_on:
+      - embedding_server
+    ports:
+      - "8083:8083"  # Topic Analysis demo
+      - "8084:8084"  # Weak Signals demo
+      - "8081:8081"  # Prospective demo
+    volumes:
+      - ${BERTREND_BASE_DIR}:/bertrend
+      - ${HF_HOME:-.cache/huggingface}:/app/.cache/huggingface
+    environment:
+      - NO_PROXY=$NO_PROXY,embedding_server,bertrend # to avoid communication issues between containers
+      - no_proxy=$no_proxy,embedding_server,bertrend # to avoid communication issues between containers
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=0
+      # Set HF_HOME inside container
+      - HF_HOME=/app/.cache/huggingface
+      # Set UV_CACHE_DIR to a location where the user has write permissions
+      - UV_CACHE_DIR=/app/.cache/uv
+      # Set NLTK_DATA to a location where the user has write permissions
+      - NLTK_DATA=/app/nltk_data
+      # BERTrend base dir
+      - BERTREND_BASE_DIR=/bertrend/
+      - BERTREND_CLIENT_SECRET=bd76aa472dd91aed4a56bf1935dbb802583c119824380d8567086579c0ef3324
+      # Configure to use the embedding server
+      - EMBEDDING_SERVICE_URL=https://embedding_server:6464
+      - EMBEDDING_SERVICE_USE_LOCAL=false
+      # OpenAI environment variables (replace with your own values)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
+      - OPENAI_DEFAULT_MODEL_NAME=${OPENAI_DEFAULT_MODEL_NAME:-gpt-4o-mini}
+    healthcheck:
+      test: curl -f http://localhost:8081/_stcore/health && curl -f http://localhost:8083/_stcore/health && curl -f http://localhost:8084/_stcore/health || exit 1
+      interval: 120s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+       resources:
+         reservations:
+           devices:
+             - driver: nvidia
+               count: 1  # Use 1 GPU for the bertrend server
+               capabilities: [gpu]
