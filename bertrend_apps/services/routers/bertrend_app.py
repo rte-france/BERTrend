@@ -34,7 +34,7 @@ router = APIRouter()
 async def train_new_model(req: TrainNewModelRequest):
     """
     Incrementally enrich the BERTrend model with new data.
-    
+
     This endpoint processes new data for a specific user and model ID,
     filtering data according to the configured granularity and training
     a new model for the most recent period.
@@ -111,7 +111,7 @@ async def train_new_model(req: TrainNewModelRequest):
 async def regenerate(req: RegenerateRequest):
     """
     Regenerate past models from scratch.
-    
+
     This endpoint regenerates all models for a specific user and model ID,
     optionally with LLM-based analysis and filtering by a start date.
     """
