@@ -23,7 +23,7 @@ services:
       - LOG_LEVEL=INFO
       # Optional: Number of worker processes
       - MAX_WORKERS=5
-    restart: unless-stopped
+    restart: always
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/')"]
       interval: 30s

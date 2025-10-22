@@ -14,6 +14,7 @@ from pathlib import Path
 from bertrend import FEED_BASE_PATH, load_toml_config
 from bertrend.article_scoring.article_scoring import QualityLevel
 from bertrend_apps import SCHEDULER_UTILS
+from bertrend_apps.common.date_utils import daterange
 from bertrend_apps.data_provider.arxiv_provider import ArxivProvider
 from bertrend_apps.data_provider.bing_news_provider import BingNewsProvider
 from bertrend_apps.data_provider.atom_feed_provider import ATOMFeedProvider
@@ -184,20 +185,13 @@ if __name__ == "__main__":
         date_format = "%Y-%m-%d"
         start_date = datetime.strptime(after, date_format)
         end_date = datetime.strptime(before, date_format)
-        dates_l = list(_daterange(start_date, end_date, interval))
+        dates_l = list(daterange(start_date, end_date, interval))
 
         with open(save_path, "a") as query_file:
             for elem in dates_l:
                 query_file.write(
                     f"{keywords};{elem[0].strftime(date_format)};{elem[1].strftime(date_format)}\n"
                 )
-
-    def _daterange(start_date, end_date, ndays):
-        for n in range(int((end_date - start_date).days / ndays)):
-            yield (
-                start_date + timedelta(ndays * n),
-                start_date + timedelta(ndays * (n + 1)),
-            )
 
     @app.command("scrape-feed")
     def scrape_from_feed(

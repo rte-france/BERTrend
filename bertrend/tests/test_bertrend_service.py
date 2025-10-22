@@ -8,9 +8,10 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from bertrend_apps.services.data_provider import data_provider_service as svc
+from bertrend_apps.services.routers import data_provider as svc
 
 
 class DummyProvider:
@@ -74,7 +75,10 @@ def client(monkeypatch):
         }
     )
     monkeypatch.setattr(svc, "PROVIDERS", providers)
-    return TestClient(svc.app)
+    # Wrap the router in a FastAPI app for proper exception handling
+    app = FastAPI()
+    app.include_router(svc.router)
+    return TestClient(app)
 
 
 def test_scrape_success(client, tmp_path, monkeypatch):
@@ -250,7 +254,7 @@ def test_schedule_scrapping_success(client, tmp_path, monkeypatch):
         called["ok"] = True
         assert str(path).endswith("cfg.toml")
 
-    monkeypatch.setattr(svc.scheduler_utils, "schedule_scrapping", fake_schedule)
+    monkeypatch.setattr(svc.SCHEDULER_UTILS, "schedule_scrapping", fake_schedule)
 
     resp = client.post(
         "/schedule-scrapping",
@@ -265,7 +269,7 @@ def test_schedule_scrapping_error(client, tmp_path, monkeypatch):
     def boom(_):
         raise RuntimeError("fail")
 
-    monkeypatch.setattr(svc.scheduler_utils, "schedule_scrapping", boom)
+    monkeypatch.setattr(svc.SCHEDULER_UTILS, "schedule_scrapping", boom)
 
     resp = client.post(
         "/schedule-scrapping",

@@ -280,14 +280,19 @@ def plot_topic_popularity_over_time(
             ]
 
             # Format topic label
-            topic_label = (
-                translate("topic_with_title").format(
+            if topic_id in topic_titles:
+                raw_title = topic_titles.get(topic_id)
+                # Handle None/NaN and ensure string
+                if raw_title is None or pd.isna(raw_title):
+                    safe_title = translate("not_available")
+                else:
+                    safe_title = str(raw_title)
+                topic_label = translate("topic_with_title").format(
                     topic_id=topic_id,
-                    title=topic_titles.get(topic_id, translate("not_available"))[:50],
+                    title=safe_title[:50],
                 )
-                if topic_id in topic_titles
-                else translate("topic_without_title").format(topic_id=topic_id)
-            )
+            else:
+                topic_label = translate("topic_without_title").format(topic_id=topic_id)
 
             fig.add_trace(
                 go.Scatter(

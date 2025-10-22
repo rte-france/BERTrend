@@ -2,31 +2,40 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
+from fastapi import APIRouter
 
 from datetime import datetime, timedelta
 import tempfile
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 import asyncio
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import HTTPException
 from loguru import logger
 
 from bertrend import FEED_BASE_PATH, load_toml_config
 from bertrend.article_scoring.article_scoring import QualityLevel
+
 from bertrend_apps import SCHEDULER_UTILS
+from bertrend_apps.common.date_utils import daterange
+from bertrend_apps.services.config.settings import get_config
 from bertrend_apps.data_provider.arxiv_provider import ArxivProvider
 from bertrend_apps.data_provider.atom_feed_provider import ATOMFeedProvider
 from bertrend_apps.data_provider.rss_feed_provider import RSSFeedProvider
 from bertrend_apps.data_provider.google_news_provider import GoogleNewsProvider
 from bertrend_apps.data_provider.bing_news_provider import BingNewsProvider
 from bertrend_apps.data_provider.newscatcher_provider import NewsCatcherProvider
+from bertrend_apps.services.models.data_provider_models import (
+    ScrapeRequest,
+    ScrapeResponse,
+    AutoScrapeRequest,
+    GenerateQueryFileRequest,
+    GenerateQueryFileResponse,
+    ScrapeFeedRequest,
+    ScheduleScrappingRequest,
+)
 
-
-# FastAPI application
-app = FastAPI(title="Data Provider Service", version="1.0.0")
-
+# Load the configuration
 # Providers mapping (same as CLI)
 PROVIDERS = {
     "arxiv": ArxivProvider,
@@ -37,81 +46,14 @@ PROVIDERS = {
     "newscatcher": NewsCatcherProvider,
 }
 
+CONFIG = get_config()
+# FastAPI application
 
-# Request/Response models
-class ScrapeRequest(BaseModel):
-    keywords: str = Field(..., description="Keywords for data search engine.")
-    provider: str = Field(
-        default="google",
-        description="source for data [arxiv, atom, rss, google, bing, newscatcher]",
-    )
-    after: Optional[str] = Field(
-        default=None, description="date after which to consider news [YYYY-MM-DD]"
-    )
-    before: Optional[str] = Field(
-        default=None, description="date before which to consider news [YYYY-MM-DD]"
-    )
-    max_results: int = Field(default=50, description="maximum results per request")
-    save_path: Optional[Path] = Field(
-        default=None, description="Path for writing results (jsonl)"
-    )
-    language: Optional[str] = Field(default=None, description="Language filter")
-
-
-class ScrapeResponse(BaseModel):
-    stored_path: Optional[Path]
-    article_count: int
-
-
-class AutoScrapeRequest(BaseModel):
-    requests_file: Path = Field(
-        ..., description="Path of input file containing the expected queries."
-    )
-    max_results: int = Field(default=50)
-    provider: str = Field(
-        default="google",
-        description="source for news [arxiv, atom, rss, google, bing, newscatcher]",
-    )
-    save_path: Optional[Path] = None
-    language: Optional[str] = None
-    evaluate_articles_quality: bool = False
-    minimum_quality_level: str = Field(default="AVERAGE")
-
-
-class GenerateQueryFileRequest(BaseModel):
-    keywords: str
-    after: str
-    before: str
-    save_path: Path
-    interval: int = Field(default=30, description="Range of days of atomic requests")
-
-
-class GenerateQueryFileResponse(BaseModel):
-    save_path: Path
-    line_count: int
-
-
-class ScrapeFeedRequest(BaseModel):
-    feed_cfg: Path
-
-
-class ScheduleScrappingRequest(BaseModel):
-    feed_cfg: Path
-
-
-# Utilities copied from CLI implementation
-
-
-def _daterange(start_date: datetime, end_date: datetime, ndays: int):
-    for n in range(int((end_date - start_date).days / ndays)):
-        yield (
-            start_date + timedelta(ndays * n),
-            start_date + timedelta(ndays * (n + 1)),
-        )
+router = APIRouter()
 
 
 # Endpoints
-@app.post("/scrape", response_model=ScrapeResponse)
+@router.post("/scrape", response_model=ScrapeResponse, summary="Scrape data")
 async def scrape(req: ScrapeRequest):
     provider_class = PROVIDERS.get(req.provider)
     if provider_class is None:
@@ -129,7 +71,9 @@ async def scrape(req: ScrapeRequest):
     return ScrapeResponse(stored_path=req.save_path, article_count=len(results))
 
 
-@app.post("/auto-scrape", response_model=ScrapeResponse)
+@router.post(
+    "/auto-scrape", response_model=ScrapeResponse, summary="Scrape data to file"
+)
 async def auto_scrape(req: AutoScrapeRequest):
     provider_class = PROVIDERS.get(req.provider)
     if provider_class is None:
@@ -158,12 +102,16 @@ async def auto_scrape(req: AutoScrapeRequest):
     return ScrapeResponse(stored_path=req.save_path, article_count=len(results))
 
 
-@app.post("/generate-query-file", response_model=GenerateQueryFileResponse)
+@router.post(
+    "/generate-query-file",
+    response_model=GenerateQueryFileResponse,
+    summary="Generate query file",
+)
 async def generate_query_file(req: GenerateQueryFileRequest):
     date_format = "%Y-%m-%d"
     start_date = datetime.strptime(req.after, date_format)
     end_date = datetime.strptime(req.before, date_format)
-    dates_l = list(_daterange(start_date, end_date, req.interval))
+    dates_l = list(daterange(start_date, end_date, req.interval))
 
     def write_query_file():
         line_count = 0
@@ -179,7 +127,7 @@ async def generate_query_file(req: GenerateQueryFileRequest):
     return GenerateQueryFileResponse(save_path=req.save_path, line_count=line_count)
 
 
-@app.post("/scrape-feed", response_model=ScrapeResponse)
+@router.post("/scrape-feed", response_model=ScrapeResponse, summary="Scrape data feed")
 async def scrape_from_feed(req: ScrapeFeedRequest):
     data_feed_cfg = await asyncio.to_thread(load_toml_config, req.feed_cfg)
     current_date = datetime.today()
@@ -245,7 +193,7 @@ async def scrape_from_feed(req: ScrapeFeedRequest):
     return ScrapeResponse(stored_path=save_path, article_count=article_count)
 
 
-@app.post("/schedule-scrapping")
+@router.post("/schedule-scrapping", summary="Schedule data scrapping")
 async def automate_scrapping(req: ScheduleScrappingRequest):
     try:
         await asyncio.to_thread(SCHEDULER_UTILS.schedule_scrapping, req.feed_cfg)
