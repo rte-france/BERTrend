@@ -15,11 +15,13 @@ from bertrend import load_toml_config, FEED_BASE_PATH, OUTPUT_PATH
 from bertrend.BERTopicModel import BERTopicModel
 from bertrend.config.parameters import BERTOPIC_SERIALIZATION
 from bertrend.utils.data_loading import TEXT_COLUMN, load_data
-from bertrend_apps.newsletters.__main__ import (
-    INFERENCE_ONLY,
-    LEARN_FROM_LAST,
-    LEARN_FROM_SCRATCH,
+
+# Learning strategies
+LEARN_FROM_SCRATCH = (
+    "learn_from_scratch"  # uses all available data from feed to create the model
 )
+LEARN_FROM_LAST = "learn_from_last"  # only the last feed data to create the model
+INFERENCE_ONLY = "inference_only"  # do not retrain model; reuse existing bertopic model if available, otherwise, fallback to learn_from_scratch for the first run
 
 
 def _train_topic_model(

@@ -33,19 +33,13 @@ from bertrend_apps.newsletters.utils import (
     _load_feed_data,
     _load_topic_model,
     _save_topic_model,
+    INFERENCE_ONLY,
+    LEARN_FROM_SCRATCH,
 )
 
 # Config sections
-BERTOPIC_CONFIG_SECTION = "bertopic_parameters"
 LEARNING_STRATEGY_SECTION = "learning_strategy"
 NEWSLETTER_SECTION = "newsletter"
-
-# Learning strategies
-LEARN_FROM_SCRATCH = (
-    "learn_from_scratch"  # uses all available data from feed to create the model
-)
-LEARN_FROM_LAST = "learn_from_last"  # only the last feed data to create the model
-INFERENCE_ONLY = "inference_only"  # do not retrain model; reuse existing bertopic model if available, otherwise, fallback to learn_from_scratch for the first run
 
 # Ensures to write with +rw for both user and groups
 os.umask(0o002)

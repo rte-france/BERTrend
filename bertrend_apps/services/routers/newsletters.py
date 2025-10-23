@@ -30,6 +30,8 @@ from bertrend_apps.newsletters.utils import (
     _load_topic_model,
     _train_topic_model,
     _save_topic_model,
+    INFERENCE_ONLY,
+    LEARN_FROM_SCRATCH,
 )
 from bertrend_apps.services.config.settings import get_config
 from bertrend_apps.services.models.newsletters_models import (
@@ -43,11 +45,6 @@ from pydoc import locate
 BERTOPIC_CONFIG_SECTION = "bertopic_parameters"
 LEARNING_STRATEGY_SECTION = "learning_strategy"
 NEWSLETTER_SECTION = "newsletter"
-
-# Learning strategies
-LEARN_FROM_SCRATCH = "learn_from_scratch"
-LEARN_FROM_LAST = "learn_from_last"
-INFERENCE_ONLY = "inference_only"
 
 # Load the configuration
 CONFIG = get_config()
