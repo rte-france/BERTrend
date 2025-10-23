@@ -23,11 +23,13 @@ def client(monkeypatch):
 def mock_data():
     """Create mock data for testing"""
     dates = pd.date_range("2025-01-01", periods=10, freq="D")
-    return pd.DataFrame({
-        "timestamp": dates,
-        "text": [f"Article {i}" for i in range(10)],
-        "title": [f"Title {i}" for i in range(10)],
-    })
+    return pd.DataFrame(
+        {
+            "timestamp": dates,
+            "text": [f"Article {i}" for i in range(10)],
+            "title": [f"Title {i}" for i in range(10)],
+        }
+    )
 
 
 class TestTrainNewModel:
@@ -35,6 +37,7 @@ class TestTrainNewModel:
 
     def test_train_new_model_success(self, client, monkeypatch, mock_data):
         """Test successful model training"""
+
         # Mock all the dependencies
         def mock_get_model_config(model_id, user):
             return {
@@ -49,13 +52,17 @@ class TestTrainNewModel:
         def mock_split_data(df, split_by_paragraph):
             return df
 
-        def mock_train_new_model_for_period(model_id, user_name, new_data, reference_timestamp):
+        def mock_train_new_model_for_period(
+            model_id, user_name, new_data, reference_timestamp
+        ):
             pass
 
         monkeypatch.setattr(bertrend_app, "get_model_config", mock_get_model_config)
         monkeypatch.setattr(bertrend_app, "load_all_data", mock_load_all_data)
         monkeypatch.setattr(bertrend_app, "split_data", mock_split_data)
-        monkeypatch.setattr(bertrend_app, "train_new_model_for_period", mock_train_new_model_for_period)
+        monkeypatch.setattr(
+            bertrend_app, "train_new_model_for_period", mock_train_new_model_for_period
+        )
 
         response = client.post(
             "/train-new-model",
@@ -73,6 +80,7 @@ class TestTrainNewModel:
 
     def test_train_new_model_no_data(self, client, monkeypatch):
         """Test training when no data is available"""
+
         def mock_get_model_config(model_id, user):
             return {
                 "granularity": 7,
@@ -101,6 +109,7 @@ class TestTrainNewModel:
 
     def test_train_new_model_empty_dataframe(self, client, monkeypatch):
         """Test training with empty dataframe"""
+
         def mock_get_model_config(model_id, user):
             return {
                 "granularity": 7,
@@ -128,6 +137,7 @@ class TestTrainNewModel:
 
     def test_train_new_model_error(self, client, monkeypatch):
         """Test error handling during training"""
+
         def mock_get_model_config(model_id, user):
             raise RuntimeError("Configuration error")
 
@@ -144,8 +154,11 @@ class TestTrainNewModel:
         assert response.status_code == 500
         assert "Configuration error" in response.json()["detail"]
 
-    def test_train_new_model_with_split_by_paragraph_false(self, client, monkeypatch, mock_data):
+    def test_train_new_model_with_split_by_paragraph_false(
+        self, client, monkeypatch, mock_data
+    ):
         """Test training with split_by_paragraph set to False"""
+
         def mock_get_model_config(model_id, user):
             return {
                 "granularity": 7,
@@ -160,13 +173,17 @@ class TestTrainNewModel:
             assert split_by_paragraph == "no"
             return df
 
-        def mock_train_new_model_for_period(model_id, user_name, new_data, reference_timestamp):
+        def mock_train_new_model_for_period(
+            model_id, user_name, new_data, reference_timestamp
+        ):
             pass
 
         monkeypatch.setattr(bertrend_app, "get_model_config", mock_get_model_config)
         monkeypatch.setattr(bertrend_app, "load_all_data", mock_load_all_data)
         monkeypatch.setattr(bertrend_app, "split_data", mock_split_data)
-        monkeypatch.setattr(bertrend_app, "train_new_model_for_period", mock_train_new_model_for_period)
+        monkeypatch.setattr(
+            bertrend_app, "train_new_model_for_period", mock_train_new_model_for_period
+        )
 
         response = client.post(
             "/train-new-model",
@@ -185,6 +202,7 @@ class TestRegenerate:
 
     def test_regenerate_success(self, client, monkeypatch):
         """Test successful model regeneration"""
+
         def mock_regenerate_models(model_id, user, with_analysis, since):
             pass
 
@@ -275,6 +293,7 @@ class TestRegenerate:
 
     def test_regenerate_error(self, client, monkeypatch):
         """Test error handling during regeneration"""
+
         def mock_regenerate_models(model_id, user, with_analysis, since):
             raise RuntimeError("Regeneration failed")
 

@@ -13,12 +13,13 @@ from bertrend_apps.services.routers import info
 @pytest.fixture
 def client(monkeypatch):
     """Create a test client with mocked config"""
+
     # Mock the CONFIG to return predictable values
     class MockConfig:
         number_workers = 4
 
     monkeypatch.setattr(info, "CONFIG", MockConfig())
-    
+
     app = FastAPI()
     app.include_router(info.router)
     return TestClient(app)
