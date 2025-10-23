@@ -40,40 +40,105 @@ from bertrend_apps.prospective_demo.llm_utils import generate_bertrend_topic_des
 DEFAULT_TOP_K = 5
 
 
+class ConfigFileNotFoundError(Exception):
+    """Raised when the user feed configuration file cannot be found."""
+
+    pass
+
+
+class InvalidModelConfigError(Exception):
+    """Raised when the model configuration is invalid or missing required keys."""
+
+    pass
+
+
+class NoDataAvailableError(Exception):
+    """Raised when no data files are found for the given model."""
+
+    pass
+
+
 def load_all_data(model_id: str, user: str, language_code: str):
-    # TODO: to be improved
+    """
+    Load and process all data for a given model and user.
+
+    Args:
+        model_id: The model identifier
+        user: The user identifier
+        language_code: Language code (e.g., 'fr', 'en')
+
+    Returns:
+        pd.DataFrame: Concatenated and deduplicated data
+
+    Raises:
+        ConfigFileNotFoundError: If the configuration file doesn't exist
+        NoDataAvailableError: If no data files are found
+        FileNotFoundError: If feed directory doesn't exist
+        KeyError: If required config keys are missing
+    """
     cfg_file = get_user_feed_path(user, model_id)
     if not cfg_file.exists():
-        logger.error(f"Cannot find/process config file: {cfg_file}")
-        return
-    cfg = load_toml_config(cfg_file)
-    feed_base_dir = cfg["data-feed"]["feed_dir_path"]
-    files = list(
-        Path(FEED_BASE_PATH, feed_base_dir).glob(
-            f"*{cfg['data-feed'].get('id')}*.jsonl*"
-        )
-    )
-    if not files:
-        logger.warning(f"No new data for '{model_id}', nothing to do")
-        return
+        raise ConfigFileNotFoundError(f"Cannot find config file: {cfg_file}")
 
-    dfs = [
-        load_data(Path(f), language="French" if language_code == "fr" else "English")
-        for f in files
-    ]
+    cfg = load_toml_config(cfg_file)
+
+    try:
+        feed_base_dir = cfg["data-feed"]["feed_dir_path"]
+        feed_id = cfg["data-feed"].get("id")
+    except KeyError as e:
+        raise KeyError(f"Missing required configuration key in {cfg_file}: {e}") from e
+
+    feed_path = Path(FEED_BASE_PATH, feed_base_dir)
+    if not feed_path.exists():
+        raise FileNotFoundError(f"Feed directory does not exist: {feed_path}")
+
+    files = list(feed_path.glob(f"*{feed_id}*.jsonl*"))
+    if not files:
+        raise NoDataAvailableError(
+            f"No data files found for model '{model_id}' in {feed_path}"
+        )
+
+    language = "French" if language_code == "fr" else "English"
+    dfs = [load_data(Path(f), language=language) for f in files]
+
     new_data = pd.concat(dfs).drop_duplicates(
         subset=["title"], keep="first", inplace=False
     )
+
     return new_data
 
 
 def get_model_config(model_id: str, user: str) -> dict:
+    """
+    Load model configuration for a given model and user.
+
+    Args:
+        model_id: The model identifier
+        user: The user identifier
+
+    Returns:
+        dict: Model configuration dictionary
+
+    Raises:
+        ConfigFileNotFoundError: If the configuration file doesn't exist
+        InvalidModelConfigError: If the configuration is missing required keys
+        TOMLDecodeError: If the TOML file is malformed
+    """
     model_cfg_path = get_model_cfg_path(user, model_id)
+
+    if not model_cfg_path.exists():
+        raise ConfigFileNotFoundError(f"Model config file not found: {model_cfg_path}")
+
     try:
         model_analysis_cfg = load_toml_config(model_cfg_path)
-    except Exception:
-        logger.warning(f"Model config not found at {model_cfg_path}, using defaults")
-        model_analysis_cfg = DEFAULT_ANALYSIS_CFG
+    except Exception as e:
+        raise InvalidModelConfigError(
+            f"Failed to load model config from {model_cfg_path}: {e}"
+        ) from e
+
+    if "model_config" not in model_analysis_cfg:
+        raise InvalidModelConfigError(f"Missing 'model_config' key in {model_cfg_path}")
+
     return model_analysis_cfg["model_config"]
 
 
@@ -260,7 +325,10 @@ def regenerate_models(
 ):
     """Regenerate from scratch (method retrospective) the models associated with the specified model identifier
     for the specified user."""
-
+    logger.info(
+        f"Regenerating models for user '{user}' about '{model_id}', "
+        f"with analysis: {with_analysis}..."
+    )
     # Get relevant model info from config
     model_config = get_model_config(model_id=model_id, user=user)
     granularity = model_config["granularity"]
@@ -332,49 +400,82 @@ def regenerate_models(
         )
 
 
+def train_new_model(
+    model_id: str,
+    user_name: str,
+) -> dict:
+    """
+    Core logic for training a new model incrementally. Can be used in sync mode (CLI) or async mode (API).
+
+    Returns:
+        dict with keys: status, message, and optionally error details
+    """
+    logger.info(f'Processing new data for user "{user_name}" about "{model_id}"...')
+
+    # Get relevant model info from config
+    model_config = get_model_config(model_id=model_id, user=user_name)
+    granularity = model_config["granularity"]
+    language_code = model_config["language"]
+    split_by_paragraph = model_config.get("split_by_paragraph", True)
+
+    logger.info(f"Splitting data by paragraphs: {split_by_paragraph}")
+
+    # Load data for last period
+    new_data = load_all_data(
+        model_id=model_id, user=user_name, language_code=language_code
+    )
+
+    if new_data is None or new_data.empty:
+        return {
+            "status": "no_data",
+            "message": f"No new data found for model '{model_id}'",
+        }
+
+    # Filter data according to granularity
+    # Calculate the date X days ago
+    reference_timestamp = pd.Timestamp(
+        new_data["timestamp"].max().date()
+    )  # used to identify the last model
+    cut_off_date = new_data["timestamp"].max() - timedelta(days=granularity)
+    # Filter the DataFrame to keep only the rows within the last X days
+    filtered_df = new_data[new_data["timestamp"] >= cut_off_date]
+
+    # Split data by paragraphs
+    filtered_df = split_data(
+        df=filtered_df, split_by_paragraph="yes" if split_by_paragraph else "no"
+    )
+
+    train_new_model_for_period(
+        model_id=model_id,
+        user_name=user_name,
+        new_data=filtered_df,
+        reference_timestamp=reference_timestamp,
+    )
+
+    return {
+        "status": "success",
+        "message": f"Successfully trained new model for user '{user_name}' and model '{model_id}'",
+    }
+
+
 if __name__ == "__main__":
     app = typer.Typer()
 
     @app.command("train-new-model")
-    def train_new_model(
+    def train_new(
         user_name: str = typer.Argument(help="Identifier of the user"),
         model_id: str = typer.Argument(help="ID of the model/data to train"),
     ):
         """Incrementally enrich the BERTrend model with new data"""
-        logger.info(f'Processing new data for user "{user_name}" about "{model_id}"...')
-
-        # Get relevant model info from config
-        model_config = get_model_config(model_id=model_id, user=user_name)
-        granularity = model_config["granularity"]
-        language_code = model_config["language"]
-        split_by_paragraph = model_config.get("split_by_paragraph", True)
-
-        logger.info(f"Splitting data by paragraphs: {split_by_paragraph}")
-
-        # Load data for last period
-        new_data = load_all_data(
-            model_id=model_id, user=user_name, language_code=language_code
-        )
-        # filter data according to granularity
-        # Calculate the date X days ago
-        reference_timestamp = pd.Timestamp(
-            new_data["timestamp"].max().date()
-        )  # used to identify the last model
-        cut_off_date = new_data["timestamp"].max() - timedelta(days=granularity)
-        # Filter the DataFrame to keep only the rows within the last X days
-        filtered_df = new_data[new_data["timestamp"] >= cut_off_date]
-
-        # Split data by paragraphs
-        filtered_df = split_data(
-            df=filtered_df, split_by_paragraph="yes" if split_by_paragraph else "no"
-        )
-
-        train_new_model_for_period(
-            model_id=model_id,
-            user_name=user_name,
-            new_data=filtered_df,
-            reference_timestamp=reference_timestamp,
-        )
+        try:
+            result = train_new_model(model_id=model_id, user_name=user_name)
+            if result["status"] == "no_data":
+                logger.warning(result["message"])
+            else:
+                logger.info(result["message"])
+        except Exception as e:
+            logger.error(f"Error training new model: {e}")
+            raise
 
     @app.command("regenerate")
     def regenerate(
@@ -391,16 +492,11 @@ if __name__ == "__main__":
         ),
     ):
         """Regenerate past models from scratch"""
-        logger.info(
-            f"Regenerating models for user '{user}' about '{model_id}', with analysis: {with_analysis}..."
-        )
-        # Convert string date to pd.Timestamp if provided
-        since_timestamp = pd.Timestamp(since) if since else None
         regenerate_models(
             model_id=model_id,
             user=user,
             with_analysis=with_analysis,
-            since=since_timestamp,
+            since=pd.Timestamp(since) if since else None,
         )
 
     # Main app
