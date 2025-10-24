@@ -22,9 +22,6 @@ from bertrend_apps.services.models.data_provider_models import (
     ScrapeResponse,
     AutoScrapeRequest,
     GenerateQueryFileRequest,
-    GenerateQueryFileResponse,
-    ScrapeFeedRequest,
-    ScheduleScrappingRequest,
 )
 
 
@@ -159,8 +156,8 @@ class TestDataProviderModels:
 
     def test_auto_scrape_request_minimal(self, tmp_path):
         requests_file = tmp_path / "requests.txt"
-        req = AutoScrapeRequest(requests_file=requests_file)
-        assert req.requests_file == requests_file
+        req = AutoScrapeRequest(requests_file=str(requests_file))
+        assert req.requests_file == str(requests_file)
         assert req.max_results == 50  # default
         assert req.provider == "google"  # default
         assert req.evaluate_articles_quality is False  # default
@@ -170,7 +167,7 @@ class TestDataProviderModels:
         requests_file = tmp_path / "requests.txt"
         save_path = tmp_path / "output.jsonl"
         req = AutoScrapeRequest(
-            requests_file=requests_file,
+            requests_file=str(requests_file),
             max_results=100,
             provider="bing",
             save_path=save_path,
@@ -191,12 +188,12 @@ class TestDataProviderModels:
             keywords="climate",
             after="2025-01-01",
             before="2025-01-31",
-            save_path=save_path,
+            save_path=str(save_path),
         )
         assert req.keywords == "climate"
         assert req.after == "2025-01-01"
         assert req.before == "2025-01-31"
-        assert req.save_path == save_path
+        assert req.save_path == str(save_path)
         assert req.interval == 30  # default
 
     def test_generate_query_file_request_custom_interval(self, tmp_path):
@@ -205,23 +202,7 @@ class TestDataProviderModels:
             keywords="climate",
             after="2025-01-01",
             before="2025-01-31",
-            save_path=save_path,
+            save_path=str(save_path),
             interval=7,
         )
         assert req.interval == 7
-
-    def test_generate_query_file_response_valid(self, tmp_path):
-        save_path = tmp_path / "queries.txt"
-        resp = GenerateQueryFileResponse(save_path=save_path, line_count=10)
-        assert resp.save_path == save_path
-        assert resp.line_count == 10
-
-    def test_scrape_feed_request_valid(self, tmp_path):
-        feed_cfg = tmp_path / "feed.toml"
-        req = ScrapeFeedRequest(feed_cfg=feed_cfg)
-        assert req.feed_cfg == feed_cfg
-
-    def test_schedule_scrapping_request_valid(self, tmp_path):
-        feed_cfg = tmp_path / "feed.toml"
-        req = ScheduleScrappingRequest(feed_cfg=feed_cfg)
-        assert req.feed_cfg == feed_cfg

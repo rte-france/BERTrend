@@ -33,7 +33,7 @@ class ScrapeResponse(BaseModel):
 
 
 class AutoScrapeRequest(BaseModel):
-    requests_file: Path = Field(
+    requests_file: str = Field(
         ..., description="Path of input file containing the expected queries."
     )
     max_results: int = Field(default=50)
@@ -51,18 +51,23 @@ class GenerateQueryFileRequest(BaseModel):
     keywords: str
     after: str
     before: str
-    save_path: Path
+    save_path: str
     interval: int = Field(default=30, description="Range of days of atomic requests")
 
 
 class GenerateQueryFileResponse(BaseModel):
-    save_path: Path
+    save_path: str
     line_count: int
 
 
 class ScrapeFeedRequest(BaseModel):
-    feed_cfg: Path
+    feed_cfg: str
+
+
+class ScrapeFeedResponse(BaseModel):
+    stored_path: str
+    article_count: int
 
 
 class ScheduleScrappingRequest(BaseModel):
-    feed_cfg: Path
+    feed_cfg: str
