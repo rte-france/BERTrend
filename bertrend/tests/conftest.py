@@ -3,8 +3,6 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
-
 
 def pytest_configure(config):
     """Register custom markers."""

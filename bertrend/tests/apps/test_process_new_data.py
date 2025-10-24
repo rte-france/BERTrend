@@ -6,8 +6,7 @@
 import pytest
 import pandas as pd
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock, mock_open
-from datetime import datetime, timedelta
+from unittest.mock import Mock, patch
 import jsonlines
 import tempfile
 import shutil
@@ -18,7 +17,6 @@ from bertrend_apps.prospective_demo.process_new_data import (
     generate_llm_interpretation,
     train_new_model_for_period,
     regenerate_models,
-    DEFAULT_TOP_K,
 )
 
 
@@ -72,13 +70,16 @@ class TestLoadAllData:
     @patch("bertrend_apps.prospective_demo.process_new_data.get_user_feed_path")
     def test_load_all_data_config_not_found(self, mock_get_user_feed_path):
         """Test behavior when config file doesn't exist."""
+        from bertrend_apps.prospective_demo.process_new_data import (
+            ConfigFileNotFoundError,
+        )
+
         mock_cfg_file = Mock()
         mock_cfg_file.exists.return_value = False
         mock_get_user_feed_path.return_value = mock_cfg_file
 
-        result = load_all_data("test_model", "test_user", "en")
-
-        assert result is None
+        with pytest.raises(ConfigFileNotFoundError):
+            load_all_data("test_model", "test_user", "en")
 
     @patch("bertrend_apps.prospective_demo.process_new_data.get_user_feed_path")
     @patch("bertrend_apps.prospective_demo.process_new_data.load_toml_config")
@@ -87,6 +88,8 @@ class TestLoadAllData:
         self, mock_path, mock_load_toml_config, mock_get_user_feed_path
     ):
         """Test behavior when no data files are found."""
+        from bertrend_apps.prospective_demo.process_new_data import NoDataAvailableError
+
         mock_cfg_file = Mock()
         mock_cfg_file.exists.return_value = True
         mock_get_user_feed_path.return_value = mock_cfg_file
@@ -99,9 +102,8 @@ class TestLoadAllData:
         mock_path_instance.glob.return_value = []
         mock_path.return_value = mock_path_instance
 
-        result = load_all_data("test_model", "test_user", "en")
-
-        assert result is None
+        with pytest.raises(NoDataAvailableError):
+            load_all_data("test_model", "test_user", "en")
 
 
 class TestGetModelConfig:
@@ -113,7 +115,9 @@ class TestGetModelConfig:
         self, mock_load_toml_config, mock_get_model_cfg_path
     ):
         """Test successful loading of model config."""
-        mock_get_model_cfg_path.return_value = Path("/test/config.toml")
+        mock_cfg_path = Mock(spec=Path)
+        mock_cfg_path.exists.return_value = True
+        mock_get_model_cfg_path.return_value = mock_cfg_path
         mock_load_toml_config.return_value = {
             "model_config": {"granularity": 7, "window_size": 30, "language": "en"}
         }
@@ -129,16 +133,18 @@ class TestGetModelConfig:
     def test_get_model_config_exception(
         self, mock_load_toml_config, mock_get_model_cfg_path
     ):
-        """Test fallback to default config when loading fails."""
-        mock_get_model_cfg_path.return_value = Path("/test/config.toml")
+        """Test exception when loading fails."""
+        from bertrend_apps.prospective_demo.process_new_data import (
+            InvalidModelConfigError,
+        )
+
+        mock_cfg_path = Mock(spec=Path)
+        mock_cfg_path.exists.return_value = True
+        mock_get_model_cfg_path.return_value = mock_cfg_path
         mock_load_toml_config.side_effect = Exception("Config loading failed")
 
-        model_config = get_model_config("test_model", "test_user")
-
-        # Should use DEFAULT_ANALYSIS_CFG values
-        assert "granularity" in model_config
-        assert "window_size" in model_config
-        assert "language" in model_config
+        with pytest.raises(InvalidModelConfigError):
+            get_model_config("test_model", "test_user")
 
     @patch("bertrend_apps.prospective_demo.process_new_data.get_model_cfg_path")
     @patch("bertrend_apps.prospective_demo.process_new_data.load_toml_config")
@@ -146,7 +152,9 @@ class TestGetModelConfig:
         self, mock_load_toml_config, mock_get_model_cfg_path
     ):
         """Test split_by_paragraph parameter handling."""
-        mock_get_model_cfg_path.return_value = Path("/test/config.toml")
+        mock_cfg_path = Mock(spec=Path)
+        mock_cfg_path.exists.return_value = True
+        mock_get_model_cfg_path.return_value = mock_cfg_path
         mock_load_toml_config.return_value = {
             "model_config": {
                 "granularity": 7,

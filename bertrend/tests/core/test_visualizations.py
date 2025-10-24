@@ -7,7 +7,6 @@ import pytest
 import pandas as pd
 import numpy as np
 from unittest.mock import patch, MagicMock
-from datetime import datetime
 from plotly import graph_objects as go
 
 from bertrend.topic_analysis.visualizations import (

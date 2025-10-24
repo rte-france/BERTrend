@@ -4,7 +4,7 @@
 #  This file is part of BERTrend.
 
 import pytest
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, MagicMock
 
 from bertrend.services.summary.abstractive_summarizer import (
     AbstractiveSummarizer,

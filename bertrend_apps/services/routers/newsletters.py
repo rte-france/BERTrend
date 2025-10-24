@@ -25,6 +25,7 @@ from bertrend.llm_utils.newsletter_features import (
 )
 from bertrend_apps import SCHEDULER_UTILS
 from bertrend_apps.common.mail_utils import get_credentials, send_email
+from bertrend_apps.newsletters.newsletter_generation import process_newsletter
 from bertrend_apps.newsletters.utils import (
     _load_feed_data,
     _load_topic_model,
@@ -50,6 +51,27 @@ NEWSLETTER_SECTION = "newsletter"
 CONFIG = get_config()
 
 router = APIRouter()
+
+
+@router.post(
+    "/newsletters",
+    response_model=NewsletterResponse,
+    summary="Generate newsletter from feed",
+)
+async def newsletter_from_feed(req: NewsletterRequest):
+    """
+    Creates a newsletter associated to a data feed.
+    """
+    try:
+        await asyncio.to_thread(
+            process_newsletter,
+            req.newsletter_toml_path,
+            req.data_feed_toml_path,
+        )
+        return {"status": "Newsletter generated successfully"}
+    except Exception as e:
+        logger.error(f"Error generating newsletter: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Endpoints

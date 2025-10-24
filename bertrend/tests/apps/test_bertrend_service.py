@@ -3,8 +3,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 import pytest

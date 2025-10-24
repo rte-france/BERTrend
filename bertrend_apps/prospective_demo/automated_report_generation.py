@@ -252,13 +252,19 @@ def generate_automated_report(
 
     if not auto_send:
         logger.warning(
-            "auto_send is disabled in configuration. Skipping report generation."
+            "auto_send is disabled in configuration. Skipping report generation. (user: '{user}', model: '{model_id}')"
         )
-        raise ValueError("auto_send is disabled in configuration")
+        raise ValueError(
+            "auto_send is disabled in configuration. (user: '{user}', model: '{model_id}')"
+        )
 
     if not recipients:
-        logger.warning("No email recipients configured. Skipping report generation.")
-        raise ValueError("No email recipients configured")
+        logger.warning(
+            "No email recipients configured. Skipping report generation. (user: '{user}', model: '{model_id}')"
+        )
+        raise ValueError(
+            "No email recipients configured. (user: '{user}', model: '{model_id}')"
+        )
 
     # Determine reference timestamp
     if reference_date:
@@ -269,13 +275,19 @@ def generate_automated_report(
         interpretation_path = models_path / "interpretation"
         if not interpretation_path.exists():
             logger.error(f"No interpretation data found at {interpretation_path}")
-            raise FileNotFoundError(f"No interpretation data found at {interpretation_path}")
+            raise FileNotFoundError(
+                f"No interpretation data found at {interpretation_path}"
+            )
 
         # Get the most recent date directory
         date_dirs = sorted([d for d in interpretation_path.iterdir() if d.is_dir()])
         if not date_dirs:
-            logger.error("No date directories found in interpretation path")
-            raise FileNotFoundError("No date directories found in interpretation path")
+            logger.error(
+                "No date directories found in interpretation path. (user: '{user}', model: '{model_id}')"
+            )
+            raise FileNotFoundError(
+                "No date directories found in interpretation path. (user: '{user}', model: '{model_id}')"
+            )
         reference_ts = pd.Timestamp(date_dirs[-1].name)
 
     logger.info(f"Using reference date: {reference_ts.date()}")
@@ -292,8 +304,12 @@ def generate_automated_report(
     if (weak_signals is None or weak_signals.empty) and (
         strong_signals is None or strong_signals.empty
     ):
-        logger.error("No signal data available for report generation")
-        raise ValueError("No signal data available for report generation")
+        logger.error(
+            "No signal data available for report generation. (user: '{user}', model: '{model_id}')"
+        )
+        raise ValueError(
+            "No signal data available for report generation. (user: '{user}', model: '{model_id}')"
+        )
 
     # Get analysis options
     analysis_config = model_config.get("analysis_config", {})
@@ -327,7 +343,9 @@ def generate_automated_report(
         reference_date=str(reference_ts.date()),
     )
 
-    logger.success(f"Automated report generation completed for '{model_id}'")
+    logger.success(
+        f"Automated report generation completed for user: '{user}', model: '{model_id}'"
+    )
 
 
 app = typer.Typer()

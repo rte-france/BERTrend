@@ -38,31 +38,17 @@ class TestTrainNewModel:
     def test_train_new_model_success(self, client, monkeypatch, mock_data):
         """Test successful model training"""
 
-        # Mock all the dependencies
-        def mock_get_model_config(model_id, user):
+        # Mock the train_new_model function to return success
+        def mock_train_new_model(model_id, user_name):
             return {
-                "granularity": 7,
-                "language": "en",
-                "split_by_paragraph": True,
+                "status": "success",
+                "message": f"Successfully trained new model for user '{user_name}' and model '{model_id}'",
             }
 
-        def mock_load_all_data(model_id, user, language_code):
-            return mock_data
+        # Patch where it's imported in bertrend_app module
+        from bertrend_apps.services.routers import bertrend_app as ba_module
 
-        def mock_split_data(df, split_by_paragraph):
-            return df
-
-        def mock_train_new_model_for_period(
-            model_id, user_name, new_data, reference_timestamp
-        ):
-            pass
-
-        monkeypatch.setattr(bertrend_app, "get_model_config", mock_get_model_config)
-        monkeypatch.setattr(bertrend_app, "load_all_data", mock_load_all_data)
-        monkeypatch.setattr(bertrend_app, "split_data", mock_split_data)
-        monkeypatch.setattr(
-            bertrend_app, "train_new_model_for_period", mock_train_new_model_for_period
-        )
+        monkeypatch.setattr(ba_module, "train_new_model", mock_train_new_model)
 
         response = client.post(
             "/train-new-model",
@@ -81,18 +67,17 @@ class TestTrainNewModel:
     def test_train_new_model_no_data(self, client, monkeypatch):
         """Test training when no data is available"""
 
-        def mock_get_model_config(model_id, user):
+        # Mock the train_new_model function to return no_data status
+        def mock_train_new_model(model_id, user_name):
             return {
-                "granularity": 7,
-                "language": "en",
-                "split_by_paragraph": True,
+                "status": "no_data",
+                "message": f"No new data found for model '{model_id}'",
             }
 
-        def mock_load_all_data(model_id, user, language_code):
-            return None
+        # Patch where it's imported in bertrend_app module
+        from bertrend_apps.services.routers import bertrend_app as ba_module
 
-        monkeypatch.setattr(bertrend_app, "get_model_config", mock_get_model_config)
-        monkeypatch.setattr(bertrend_app, "load_all_data", mock_load_all_data)
+        monkeypatch.setattr(ba_module, "train_new_model", mock_train_new_model)
 
         response = client.post(
             "/train-new-model",
@@ -110,18 +95,17 @@ class TestTrainNewModel:
     def test_train_new_model_empty_dataframe(self, client, monkeypatch):
         """Test training with empty dataframe"""
 
-        def mock_get_model_config(model_id, user):
+        # Mock the train_new_model function to return no_data status
+        def mock_train_new_model(model_id, user_name):
             return {
-                "granularity": 7,
-                "language": "en",
-                "split_by_paragraph": True,
+                "status": "no_data",
+                "message": f"No new data found for model '{model_id}'",
             }
 
-        def mock_load_all_data(model_id, user, language_code):
-            return pd.DataFrame()
+        # Patch where it's imported in bertrend_app module
+        from bertrend_apps.services.routers import bertrend_app as ba_module
 
-        monkeypatch.setattr(bertrend_app, "get_model_config", mock_get_model_config)
-        monkeypatch.setattr(bertrend_app, "load_all_data", mock_load_all_data)
+        monkeypatch.setattr(ba_module, "train_new_model", mock_train_new_model)
 
         response = client.post(
             "/train-new-model",
@@ -138,10 +122,14 @@ class TestTrainNewModel:
     def test_train_new_model_error(self, client, monkeypatch):
         """Test error handling during training"""
 
-        def mock_get_model_config(model_id, user):
+        # Mock the train_new_model function to raise an exception
+        def mock_train_new_model(model_id, user_name):
             raise RuntimeError("Configuration error")
 
-        monkeypatch.setattr(bertrend_app, "get_model_config", mock_get_model_config)
+        # Patch where it's imported in bertrend_app module
+        from bertrend_apps.services.routers import bertrend_app as ba_module
+
+        monkeypatch.setattr(ba_module, "train_new_model", mock_train_new_model)
 
         response = client.post(
             "/train-new-model",
@@ -159,31 +147,17 @@ class TestTrainNewModel:
     ):
         """Test training with split_by_paragraph set to False"""
 
-        def mock_get_model_config(model_id, user):
+        # Mock the train_new_model function to return success
+        def mock_train_new_model(model_id, user_name):
             return {
-                "granularity": 7,
-                "language": "en",
-                "split_by_paragraph": False,
+                "status": "success",
+                "message": f"Successfully trained new model for user '{user_name}' and model '{model_id}'",
             }
 
-        def mock_load_all_data(model_id, user, language_code):
-            return mock_data
+        # Patch where it's imported in bertrend_app module
+        from bertrend_apps.services.routers import bertrend_app as ba_module
 
-        def mock_split_data(df, split_by_paragraph):
-            assert split_by_paragraph == "no"
-            return df
-
-        def mock_train_new_model_for_period(
-            model_id, user_name, new_data, reference_timestamp
-        ):
-            pass
-
-        monkeypatch.setattr(bertrend_app, "get_model_config", mock_get_model_config)
-        monkeypatch.setattr(bertrend_app, "load_all_data", mock_load_all_data)
-        monkeypatch.setattr(bertrend_app, "split_data", mock_split_data)
-        monkeypatch.setattr(
-            bertrend_app, "train_new_model_for_period", mock_train_new_model_for_period
-        )
+        monkeypatch.setattr(ba_module, "train_new_model", mock_train_new_model)
 
         response = client.post(
             "/train-new-model",

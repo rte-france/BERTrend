@@ -4,7 +4,7 @@
 #  This file is part of BERTrend.
 
 import pytest
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, MagicMock
 import torch
 import numpy as np
 
@@ -13,10 +13,6 @@ from bertrend.services.summary.extractive_summarizer import (
     EnhancedExtractiveSummarizer,
     _summarize_based_on_cos_scores,
     summarize_embeddings,
-)
-from bertrend.services.summarizer import (
-    DEFAULT_MAX_SENTENCES,
-    DEFAULT_SUMMARIZATION_RATIO,
 )
 
 

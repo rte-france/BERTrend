@@ -5,13 +5,8 @@
 
 import os
 import pytest
-import numpy as np
 import pandas as pd
-from pathlib import Path
 from datetime import datetime, timedelta
-
-from bertopic import BERTopic
-from sentence_transformers import SentenceTransformer
 
 from bertrend.BERTrend import BERTrend
 from bertrend.BERTopicModel import BERTopicModel

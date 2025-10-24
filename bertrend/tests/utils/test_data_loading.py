@@ -3,11 +3,10 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import os
 import pytest
 import pandas as pd
 from pathlib import Path
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch, MagicMock
 
 from bertrend.utils.data_loading import (
     find_compatible_files,

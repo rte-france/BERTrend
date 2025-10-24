@@ -5,8 +5,6 @@
 
 import pytest
 from unittest.mock import patch, MagicMock
-import pandas as pd
-import numpy as np
 from gensim.models.coherencemodel import CoherenceModel
 
 from bertrend.metrics.topic_metrics import (

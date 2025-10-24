@@ -3,11 +3,9 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch, mock_open, MagicMock
-from email.message import EmailMessage
+from unittest.mock import Mock, patch, mock_open
 
 from bertrend_apps.common.mail_utils import (
     get_credentials,
