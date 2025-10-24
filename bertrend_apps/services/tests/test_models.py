@@ -9,9 +9,8 @@ from pydantic import ValidationError
 
 from bertrend_apps.services.models.bertrend_app_models import (
     TrainNewModelRequest,
-    TrainNewModelResponse,
     RegenerateRequest,
-    RegenerateResponse,
+    StatusResponse,
 )
 from bertrend_apps.services.models.newsletters_models import (
     NewsletterRequest,
@@ -44,7 +43,7 @@ class TestBertrendAppModels:
             TrainNewModelRequest(model_id="model_123")
 
     def test_train_new_model_response_valid(self):
-        resp = TrainNewModelResponse(status="success", message="Model trained")
+        resp = StatusResponse(status="success", message="Model trained")
         assert resp.status == "success"
         assert resp.message == "Model trained"
 
@@ -66,7 +65,7 @@ class TestBertrendAppModels:
         assert req.since == "2025-01-01"
 
     def test_regenerate_response_valid(self):
-        resp = RegenerateResponse(status="success", message="Regenerated")
+        resp = StatusResponse(status="success", message="Regenerated")
         assert resp.status == "success"
         assert resp.message == "Regenerated"
 

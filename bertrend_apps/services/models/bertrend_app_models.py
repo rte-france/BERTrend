@@ -6,6 +6,13 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
+class StatusResponse(BaseModel):
+    """Response model for any status message"""
+
+    status: str
+    message: str
+
+
 class TrainNewModelRequest(BaseModel):
     """Request model for training a new BERTrend model incrementally"""
 
@@ -36,8 +43,12 @@ class RegenerateRequest(BaseModel):
     )
 
 
-class RegenerateResponse(BaseModel):
-    """Response model for regenerate endpoint"""
+class GenerateReportRequest(BaseModel):
+    """Request model for generating an automated report"""
 
-    status: str
-    message: str
+    user: str = Field(..., description="Identifier of the user")
+    model_id: str = Field(..., description="ID of the model")
+    reference_date: Optional[str] = Field(
+        default=None,
+        description="Reference date for the report (format: YYYY-MM-DD). If not provided, uses the most recent data.",
+    )

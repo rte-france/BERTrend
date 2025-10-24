@@ -2,15 +2,11 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-import inspect
-import tempfile
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
-from pathlib import Path
-
 from google.auth.exceptions import RefreshError
-from jinja2 import FileSystemLoader, Environment
 from loguru import logger
 
 from bertrend.demos.demos_utils.i18n import translate
@@ -24,7 +20,6 @@ from bertrend.demos.demos_utils.icons import (
 from bertrend.demos.streamlit_components.input_with_pills_component import (
     input_with_pills,
 )
-from bertrend.llm_utils.newsletter_features import generate_newsletter
 from bertrend.llm_utils.newsletter_model import (
     STRONG_TOPIC_TYPE,
     WEAK_TOPIC_TYPE,
@@ -41,9 +36,12 @@ from bertrend_apps.prospective_demo import (
 )
 from bertrend_apps.prospective_demo.dashboard_common import choose_id_and_ts
 from bertrend_apps.prospective_demo.data_model import DetailedNewsletter, TopicOverTime
+from bertrend_apps.prospective_demo.report_generation_utils import (
+    render_html_report,
+    create_temp_report,
+    MAXIMUM_NUMBER_OF_ARTICLES,
+)
 from bertrend_apps.prospective_demo.utils import is_valid_email
-
-MAXIMUM_NUMBER_OF_ARTICLES = 3
 
 
 def reporting():
@@ -218,38 +216,6 @@ def generate_report(
         mail_title=f"{translate('report_mail_title')} {model_id}",
         recipients=recipients,
     )
-
-
-def render_html_report(
-    newsletter: DetailedNewsletter,
-    language: str = "fr",
-) -> str:
-
-    template_dirs = [
-        Path(__file__).parent,  # Current directory
-        Path(
-            inspect.getfile(generate_newsletter)
-        ).parent,  # Main template ("newsletter_outlook_template.html")
-    ]
-
-    # Set up the Jinja2 environment to look in both directories
-    env = Environment(loader=FileSystemLoader(template_dirs))
-
-    # Render the template with data
-    template = env.get_template("detailed_report_template.html")
-    rendered_html = template.render(
-        newsletter=newsletter, language=language, custom_css=""
-    )
-
-    return rendered_html
-
-
-def create_temp_report(html_content) -> Path:
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".html", delete=False
-    ) as temp_file:
-        temp_file.write(html_content)
-        return Path(temp_file.name)
 
 
 def download_json(detailed_newsletter: DetailedNewsletter, model_id: str):

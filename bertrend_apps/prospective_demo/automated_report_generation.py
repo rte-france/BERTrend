@@ -25,14 +25,15 @@ from bertrend_apps.prospective_demo import (
     URLS_COLUMN,
     LLM_TOPIC_TITLE_COLUMN,
     LLM_TOPIC_DESCRIPTION_COLUMN,
-    get_model_cfg_path,
     DEFAULT_ANALYSIS_CFG,
+    get_model_cfg_path,
+    get_user_models_path,
 )
 from bertrend_apps.prospective_demo.data_model import DetailedNewsletter, TopicOverTime
-from bertrend_apps.prospective_demo.report_generation import (
-    MAXIMUM_NUMBER_OF_ARTICLES,
+from bertrend_apps.prospective_demo.report_generation_utils import (
     render_html_report,
     create_temp_report,
+    MAXIMUM_NUMBER_OF_ARTICLES,
 )
 from bertrend_apps.prospective_demo.utils import is_valid_email
 
@@ -250,33 +251,31 @@ def generate_automated_report(
     report_title = report_config.get("report_title", f"Automated Report - {model_id}")
 
     if not auto_send:
-        logger.info(
+        logger.warning(
             "auto_send is disabled in configuration. Skipping report generation."
         )
-        return
+        raise ValueError("auto_send is disabled in configuration")
 
     if not recipients:
         logger.warning("No email recipients configured. Skipping report generation.")
-        return
+        raise ValueError("No email recipients configured")
 
     # Determine reference timestamp
     if reference_date:
         reference_ts = pd.Timestamp(reference_date)
     else:
         # Find the most recent interpretation data
-        from bertrend_apps.prospective_demo import get_user_models_path
-
         models_path = get_user_models_path(user, model_id)
         interpretation_path = models_path / "interpretation"
         if not interpretation_path.exists():
             logger.error(f"No interpretation data found at {interpretation_path}")
-            return
+            raise FileNotFoundError(f"No interpretation data found at {interpretation_path}")
 
         # Get the most recent date directory
         date_dirs = sorted([d for d in interpretation_path.iterdir() if d.is_dir()])
         if not date_dirs:
             logger.error("No date directories found in interpretation path")
-            return
+            raise FileNotFoundError("No date directories found in interpretation path")
         reference_ts = pd.Timestamp(date_dirs[-1].name)
 
     logger.info(f"Using reference date: {reference_ts.date()}")
@@ -294,7 +293,7 @@ def generate_automated_report(
         strong_signals is None or strong_signals.empty
     ):
         logger.error("No signal data available for report generation")
-        return
+        raise ValueError("No signal data available for report generation")
 
     # Get analysis options
     analysis_config = model_config.get("analysis_config", {})
