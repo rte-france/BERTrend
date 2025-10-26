@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: bertrend-scheduler
     ports:
-      - "8081:8000"
+      - "8882:8000"
     volumes:
       # Mount data directory for persistent SQLite database
       - ./data:/app/data

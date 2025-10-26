@@ -60,6 +60,24 @@ def _list_jobs() -> list[dict]:
 
 class APSchedulerUtils(SchedulerUtils):
 
+    def __init__(self):
+        super().__init__()
+        # check if service is available
+        try:
+            r = _request("GET", "/health")
+            if r.status_code != 200:
+                logger.warning(
+                    f"Error from to scheduler service: {r.status_code} {r.text}."
+                )
+            else:
+                logger.info(
+                    f"Connected to scheduler service at {SCHEDULER_SERVICE_URL}."
+                )
+        except Exception:
+            logger.error(
+                f"Failed to connect to scheduler service at {SCHEDULER_SERVICE_URL}. Start it if you want to to use scheduled jobs."
+            )
+
     def add_job_to_crontab(
         self, schedule: str, command: str, env_vars: str = ""
     ) -> bool:
@@ -97,7 +115,7 @@ class APSchedulerUtils(SchedulerUtils):
         if "already exists" in str(detail):
             return True
         logger.error(f"Failed to create job: {r.status_code} {detail}")
-        return False
+        raise
 
     def check_cron_job(self, pattern: str) -> bool:
         """Check if a specific regex pattern matches any scheduled service job.
