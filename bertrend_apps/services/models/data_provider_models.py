@@ -51,23 +51,14 @@ class GenerateQueryFileRequest(BaseModel):
     keywords: str
     after: str
     before: str
-    save_path: str
+    save_path: Path
     interval: int = Field(default=30, description="Range of days of atomic requests")
 
 
 class GenerateQueryFileResponse(BaseModel):
-    save_path: str
+    save_path: Path
     line_count: int
 
 
 class ScrapeFeedRequest(BaseModel):
-    feed_cfg: str
-
-
-class ScrapeFeedResponse(BaseModel):
-    stored_path: str
-    article_count: int
-
-
-class ScheduleScrappingRequest(BaseModel):
-    feed_cfg: str
+    feed_cfg: Path

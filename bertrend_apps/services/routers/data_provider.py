@@ -27,8 +27,6 @@ from bertrend_apps.services.models.data_provider_models import (
     GenerateQueryFileRequest,
     GenerateQueryFileResponse,
     ScrapeFeedRequest,
-    ScrapeFeedResponse,
-    ScheduleScrappingRequest,
 )
 
 # Load the configuration
@@ -56,7 +54,9 @@ async def scrape_api(req: ScrapeRequest):
             req.save_path,
             req.language,
         )
-        return ScrapeResponse(stored_path=req.save_path, article_count=len(results))
+        return ScrapeResponse(
+            stored_path=req.save_path.resolve(), article_count=len(results)
+        )
     except Exception as e:
         logger.error(f"Error scrapping data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -79,7 +79,9 @@ async def auto_scrape_api(req: AutoScrapeRequest):
             req.evaluate_articles_quality,
             req.minimum_quality_level,
         )
-        return ScrapeResponse(stored_path=req.save_path, article_count=len(results))
+        return ScrapeResponse(
+            stored_path=req.save_path.resolve(), article_count=len(results)
+        )
     except Exception as e:
         logger.error(f"Error scrapping data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -102,7 +104,9 @@ async def generate_query_file_api(req: GenerateQueryFileRequest):
             req.interval,
             req.save_path,
         )
-        return GenerateQueryFileResponse(save_path=req.save_path, line_count=line_count)
+        return GenerateQueryFileResponse(
+            save_path=req.save_path.resolve(), line_count=line_count
+        )
     except Exception as e:
         logger.error(f"Error scrapping data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -110,7 +114,7 @@ async def generate_query_file_api(req: GenerateQueryFileRequest):
 
 @router.post(
     "/scrape-feed",
-    response_model=ScrapeFeedResponse,
+    response_model=ScrapeResponse,
     summary="Scrape data from Arxiv, ATOM/RSS feeds, Google, Bing news or NewsCatcher on the basis of a feed configuration file",
 )
 async def scrape_from_feed_api(req: ScrapeFeedRequest):
@@ -128,8 +132,8 @@ async def scrape_from_feed_api(req: ScrapeFeedRequest):
         from bertrend_apps.data_provider.data_provider_utils import count_articles
 
         article_count = count_articles(result_path)
-        return ScrapeFeedResponse(
-            stored_path=str(result_path), article_count=article_count
+        return ScrapeResponse(
+            stored_path=result_path.resolve(), article_count=article_count
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error scraping feed: {str(e)}")
@@ -139,7 +143,7 @@ async def scrape_from_feed_api(req: ScrapeFeedRequest):
     "/schedule-scrapping",
     summary="Schedule data scrapping on the basis of a feed configuration file",
 )
-async def automate_scrapping_api(req: ScheduleScrappingRequest):
+async def automate_scrapping_api(req: ScrapeFeedRequest):
     try:
         await asyncio.to_thread(SCHEDULER_UTILS.schedule_scrapping, Path(req.feed_cfg))
     except Exception as e:

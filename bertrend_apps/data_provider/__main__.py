@@ -129,7 +129,7 @@ if __name__ == "__main__":
         before: str = typer.Option(
             None, help="date before which to consider news [format YYYY-MM-DD]"
         ),
-        save_path: str = typer.Option(
+        save_path: Path = typer.Option(
             None, help="Path for writing results. File is in jsonl format."
         ),
         interval: int = typer.Option(30, help="Range of days of atomic requests"),

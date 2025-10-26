@@ -87,7 +87,7 @@ def generate_query_file(
     after: str,
     before: str,
     interval: int,
-    save_path: str,
+    save_path: Path,
 ):
     """Generates a query file to be used with the auto-scrape command."""
     date_format = "%Y-%m-%d"
@@ -157,7 +157,7 @@ def scrape_feed_from_config(
             )
         else:
             generate_query_file(
-                keywords, after, before, interval=1, save_path=query_file.name
+                keywords, after, before, interval=1, save_path=Path(query_file.name)
             )
             auto_scrape(
                 requests_file=query_file.name,

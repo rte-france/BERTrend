@@ -151,7 +151,7 @@ class DataProvider(ABC):
     def store_articles(self, data: list[dict], file_path: Path):
         """Store articles to a specific path as json lines"""
         if not data:
-            logger.error("No data to be stored!")
+            logger.warning("No data to be stored!")
             return -1
         with jsonlines.open(file_path, "a") as writer:
             # append to existing file
