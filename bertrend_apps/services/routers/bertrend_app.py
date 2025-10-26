@@ -15,6 +15,7 @@ from bertrend_apps.prospective_demo.process_new_data import (
     regenerate_models,
     train_new_model,
 )
+from bertrend_apps.services.logging_utils import get_file_logger
 from bertrend_apps.services.models.bertrend_app_models import (
     TrainNewModelRequest,
     RegenerateRequest,
@@ -38,6 +39,11 @@ async def train_new(req: TrainNewModelRequest):
     filtering data according to the configured granularity and training
     a new model for the most recent period.
     """
+    # Create a unique log file for this call
+    logger_id = get_file_logger(
+        id="train-new-model", user_name=req.user_name, model_id=req.model_id
+    )
+
     try:
         result = await asyncio.to_thread(
             train_new_model,
@@ -48,6 +54,9 @@ async def train_new(req: TrainNewModelRequest):
     except Exception as e:
         logger.error(f"Error training new model: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Remove the logger to prevent writing to this file for other calls
+        logger.remove(logger_id)
 
 
 @router.post(
@@ -62,6 +71,11 @@ async def regenerate(req: RegenerateRequest):
     This endpoint regenerates all models for a specific user and model ID,
     optionally with LLM-based analysis and filtering by a start date.
     """
+    # Create a unique log file for this call
+    logger_id = get_file_logger(
+        id="regenerate", user_name=req.user, model_id=req.model_id
+    )
+
     try:
         # Regenerate models
         await asyncio.to_thread(
@@ -80,6 +94,9 @@ async def regenerate(req: RegenerateRequest):
     except Exception as e:
         logger.error(f"Error regenerating models: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Remove the logger to prevent writing to this file for other calls
+        logger.remove(logger_id)
 
 
 @router.post(
@@ -95,6 +112,11 @@ async def generate_report(req: GenerateReportRequest):
     optionally using a reference date. If no reference date is provided,
     it uses the most recent data available.
     """
+    # Create a unique log file for this call
+    logger_id = get_file_logger(
+        id="regenerate", user_name=req.user_name, model_id=req.model_id
+    )
+
     try:
         # Generate report
         await asyncio.to_thread(
@@ -112,3 +134,7 @@ async def generate_report(req: GenerateReportRequest):
     except Exception as e:
         logger.error(f"Error generating report: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+    finally:
+        # Remove the logger to prevent writing to this file for other calls
+        logger.remove(logger_id)

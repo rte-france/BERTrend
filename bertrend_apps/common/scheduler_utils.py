@@ -3,6 +3,8 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import locale
+import random
+import sys
 from abc import abstractmethod, ABC
 from pathlib import Path
 
@@ -12,12 +14,26 @@ from cron_descriptor import (
     ExpressionDescriptor,
     DescriptionTypeEnum,
 )
+from loguru import logger
 
-from bertrend import BEST_CUDA_DEVICE
+from bertrend import BEST_CUDA_DEVICE, BERTREND_LOG_PATH
 from bertrend.demos.demos_utils.i18n import get_current_internationalization_language
 
 
 class SchedulerUtils(ABC):
+
+    @staticmethod
+    def generate_crontab_expression(days_interval: int) -> str:
+        # Random hour between 0 and 6 (inclusive)
+        hour = random.randint(0, 6)  # run during the night
+        # Random minute rounded to the nearest 10
+        minute = random.choice([0, 10, 20, 30, 40, 50])
+        # Compute days
+        days = [str(i) for i in range(1, 31, days_interval)]
+        # Crontab expression format: minute hour day_of_month month day_of_week
+        crontab_expression = f"{minute} {hour} {','.join(days)} * *"
+        return crontab_expression
+
     @staticmethod
     def get_understandable_cron_description(cron_expression: str) -> str:
         """Returns a human understandable crontab description."""
@@ -52,7 +68,9 @@ class SchedulerUtils(ABC):
         return description
 
     @abstractmethod
-    def add_job_to_crontab(self, schedule, command, env_vars="") -> bool:
+    def add_job_to_crontab(
+        self, schedule: str, command: str, env_vars=None, command_kwargs: dict = None
+    ) -> bool:
         """Add the specified job to the crontab."""
         pass
 
@@ -81,6 +99,18 @@ class SchedulerUtils(ABC):
         """Schedule data scrapping on the basis of a feed configuration file"""
         pass
 
+    @abstractmethod
+    def schedule_training_for_user(self, schedule: str, model_id: str, user: str):
+        """Schedule data scrapping on the basis of a feed configuration file"""
+        pass
+
+    @abstractmethod
+    def schedule_report_generation_for_user(
+        self, schedule: str, model_id: str, user: str, report_config: dict
+    ) -> bool:
+        """Schedule automated report generation based on model configuration"""
+        pass
+
     def check_if_scrapping_active_for_user(
         self, feed_id: str, user: str | None = None
     ) -> bool:
@@ -100,3 +130,58 @@ class SchedulerUtils(ABC):
             )
         else:
             return self.remove_from_crontab(rf"scrape-feed.*/{feed_id}_feed.toml")
+
+    def check_if_learning_active_for_user(self, model_id: str, user: str):
+        """Checks if a given scrapping feed is active (registered in the crontab"""
+        if user:
+            return self.check_cron_job(
+                rf"process_new_data train-new-model.*{user}.*{model_id}"
+            )
+        else:
+            return False
+
+    def remove_scheduled_training_for_user(self, model_id: str, user: str):
+        """Removes from the crontab the training job matching the provided model_id"""
+        if user:
+            return self.remove_from_crontab(
+                rf"process_new_data train-new-model {user} {model_id}"
+            )
+        return False
+
+    def update_scheduled_training_for_user(self, model_id: str, user: str):
+        """Updates the crontab with the new training job"""
+        if self.check_if_learning_active_for_user(model_id, user):
+            self.remove_scheduled_training_for_user(model_id, user)
+            self.schedule_training_for_user(model_id, user)
+            return True
+        return False
+
+    def check_if_report_generation_active_for_user(
+        self, model_id: str, user: str
+    ) -> bool:
+        """Checks if automated report generation is active (registered in the crontab)"""
+        if user:
+            return self.check_cron_job(
+                rf"automated_report_generation.*{user}.*{model_id}"
+            )
+        else:
+            return False
+
+    def remove_scheduled_report_generation_for_user(
+        self, model_id: str, user: str
+    ) -> bool:
+        """Removes from the crontab the report generation job matching the provided model_id"""
+        if user:
+            return self.remove_from_crontab(
+                rf"automated_report_generation {user} {model_id}"
+            )
+        return False
+
+    def update_scheduled_report_generation_for_user(
+        self, model_id: str, user: str
+    ) -> bool:
+        """Updates the crontab with the new report generation job"""
+        if self.check_if_report_generation_active_for_user(model_id, user):
+            self.remove_scheduled_report_generation_for_user(model_id, user)
+            return self.schedule_report_generation_for_user(model_id, user)
+        return False

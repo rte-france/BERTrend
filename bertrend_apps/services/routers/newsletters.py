@@ -3,6 +3,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import asyncio
+import os
 
 from fastapi import APIRouter, HTTPException
 from loguru import logger
@@ -52,7 +53,7 @@ async def automate_newsletter(req: ScheduleNewsletterRequest):
     Schedule data scrapping on the basis of a feed configuration file.
     """
     try:
-        cuda_devices = req.cuda_devices if req.cuda_devices else BEST_CUDA_DEVICE
+        cuda_devices = os.environ.get("CUDA_VISIBLE_DEVICES", "0")
         await asyncio.to_thread(
             SCHEDULER_UTILS.schedule_newsletter,
             req.newsletter_toml_cfg_path,

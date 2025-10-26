@@ -10,6 +10,7 @@ replacement where we want to rely on the new scheduler service.
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import sys
@@ -27,7 +28,11 @@ from bertrend_apps.common.scheduler_utils import SchedulerUtils
 load_dotenv(override=True)
 
 # Base URL for the scheduling service (FastAPI). Can be overridden via env var.
-SCHEDULER_SERVICE_URL = os.getenv("SCHEDULER_SERVICE_URL", "http://localhost:8000/")
+SCHEDULER_SERVICE_URL = os.getenv("SCHEDULER_SERVICE_URL", "http://localhost:8882/")
+
+BERTREND_APPS_SERVICE_URL = os.getenv(
+    "BERTREND_APPS_SERVICE_URL", "http://localhost:8881/"
+)
 
 # Single shared session for connection pooling
 _session = requests.Session()
@@ -79,30 +84,39 @@ class APSchedulerUtils(SchedulerUtils):
             )
 
     def add_job_to_crontab(
-        self, schedule: str, command: str, env_vars: str = ""
+        self,
+        schedule: str,
+        command: str,
+        env_vars: str = None,
+        command_kwargs: dict = None,
     ) -> bool:
         """Add the specified job to the scheduler service via HTTP.
-
         We preserve the original signature; internally we create a cron job calling
-        the service's sample_job with the command embedded as a message. To allow
+        the service's http_request with the command embedded as a message. To allow
         regex-based discovery like the legacy crontab, we embed the command text in
         the job name (which is searchable) and use a hash-based job_id (URL-safe).
         """
+        if command_kwargs is None:
+            command_kwargs = {}
         logger.debug(f"Scheduling via service (HTTP): {schedule} {env_vars} {command}")
         # Use hash for job_id (URL-safe), but put full command in name for regex checks
         full_command = f"{env_vars} {command}".strip() if env_vars else command
-        job_id = _job_id_from_string(f"cron|{schedule}|{full_command}")
-        job_name = f"cron|{schedule}|{full_command}"
+        job_id = _job_id_from_string(f"{command}|{schedule}|{command_kwargs}")
+        job_name = f"cron|{schedule}|{full_command}|{command_kwargs}"
         payload = {
             "job_id": job_id,
             "job_name": job_name,
             "job_type": "cron",
-            "function_name": "sample_job",
+            "function_name": "http_request",  # curl-like job
             "cron_expression": schedule,
-            "args": [],
-            "kwargs": {"message": full_command},
+            "kwargs": {
+                "url": urljoin(BERTREND_APPS_SERVICE_URL, command),
+                "method": command_kwargs.get("method", "GET"),
+                "json_data": command_kwargs.get("json_data", {}),
+            },
             "max_instances": 3,
             "coalesce": True,
+            "replace_existing": True,
         }
         r = _request("POST", "/jobs", json=payload)
         if r.status_code in (200, 201):
@@ -112,10 +126,8 @@ class APSchedulerUtils(SchedulerUtils):
             detail = r.json().get("detail", "")
         except Exception:
             detail = r.text
-        if "already exists" in str(detail):
-            return True
         logger.error(f"Failed to create job: {r.status_code} {detail}")
-        raise
+        return False
 
     def check_cron_job(self, pattern: str) -> bool:
         """Check if a specific regex pattern matches any scheduled service job.
@@ -175,42 +187,78 @@ class APSchedulerUtils(SchedulerUtils):
         return ok
 
     def schedule_scrapping(self, feed_cfg: Path, user: str | None = None):
-        """Schedule data scrapping based on a feed configuration file using the service.
-
-        We keep the same semantics for building the command string (for traceability in
-        logs and for regex checks), but the scheduler will run the service's sample_job
-        carrying this command as a message.
-        """
+        """Schedule data scrapping based on a feed configuration file using the service."""
         data_feed_cfg = load_toml_config(feed_cfg)
         schedule = data_feed_cfg["data-feed"]["update_frequency"]
         id = data_feed_cfg["data-feed"]["id"]
-
-        # Prepare log path like the original util for consistency
-        log_path = BERTREND_LOG_PATH if not user else BERTREND_LOG_PATH / "users" / user
-        log_path.mkdir(parents=True, exist_ok=True)
-
-        command = (
-            f"{sys.executable} -m bertrend_apps.data_provider scrape-feed {feed_cfg.resolve()} > "
-            f"{log_path}/cron_feed_{id}.log 2>&1"
-        )
-
+        command = "/scape-feed"
+        command_kwargs = {
+            "method": "POST",
+            "json_data": {
+                "feed_cfg": feed_cfg.resolve().name,
+                "user_id": user,
+                "model_id": id,
+            },
+        }
         # Use schedule+command in job_id to keep determinism and allow pattern search
-        self.add_job_to_crontab(schedule, command, "")
+        self.add_job_to_crontab(
+            schedule=schedule, command=command, command_kwargs=command_kwargs
+        )
 
     def schedule_newsletter(
         self,
         newsletter_cfg_path: Path,
         data_feed_cfg_path: Path,
-        cuda_devices: str = BEST_CUDA_DEVICE,
+        cuda_devices: str = "0",
     ):
         """Schedule newsletter generation based on configuration using the service."""
         newsletter_cfg = load_toml_config(newsletter_cfg_path)
         schedule = newsletter_cfg["newsletter"]["update_frequency"]
-        id = newsletter_cfg["newsletter"]["id"]
-        command = (
-            f"{sys.executable} -m bertrend_apps.newsletters newsletters "
-            f"{newsletter_cfg_path.resolve()} {data_feed_cfg_path.resolve()} > "
-            f"{BERTREND_LOG_PATH}/cron_newsletter_{id}.log 2>&1"
+        command = "/schedule-newsletters"
+        command_kwargs = {
+            "method": "POST",
+            "json_data": {
+                "newsletter_toml_cfg_path": newsletter_cfg_path.resolve().name,
+                "data_feed_toml_cfg_path": data_feed_cfg_path.resolve().name,
+                "cuda_devices": cuda_devices,
+            },
+        }
+        self.add_job_to_crontab(
+            schedule=schedule, command=command, command_kwargs=command_kwargs
         )
-        env_vars = f"CUDA_VISIBLE_DEVICES={cuda_devices}"
-        self.add_job_to_crontab(schedule, command, env_vars)
+
+    def schedule_training_for_user(self, schedule: str, model_id: str, user: str):
+        """Schedule data scrapping on the basis of a feed configuration file"""
+        command = "/train-new-model"
+        command_kwargs = {
+            "method": "POST",
+            "json_data": {"user_name": user, "model_id": model_id},
+        }
+        return self.add_job_to_crontab(
+            schedule=schedule, command=command, command_kwargs=command_kwargs
+        )
+
+    def schedule_report_generation_for_user(
+        self, schedule: str, model_id: str, user: str, report_config: dict
+    ) -> bool:
+        """Schedule automated report generation based on model configuration"""
+        auto_send = report_config.get("auto_send", False)
+        recipients = report_config.get("email_recipients", [])
+        if not auto_send:
+            logger.info(f"auto_send is disabled for model {model_id}")
+            return False
+        if not recipients:
+            logger.warning(f"No email recipients configured for model {model_id}")
+            return False
+        command = "/generate-report"
+        command_kwargs = {
+            "method": "POST",
+            "json_data": {
+                "user_name": user,
+                "model_id": model_id,
+                "reference_date": None,
+            },
+        }
+        return self.add_job_to_crontab(
+            schedule=schedule, command=command, command_kwargs=command_kwargs
+        )

@@ -212,7 +212,9 @@ def test_scrape_feed_with_arxiv_provider(tmp_path, client, monkeypatch):
 
     resp = client.post(
         "/scrape-feed",
-        json={"feed_cfg": str(tmp_path / "fake_cfg.toml")},
+        json={
+            "feed_cfg": str(tmp_path / "fake_cfg.toml"),
+        },
     )
 
     assert resp.status_code == 200
@@ -243,7 +245,9 @@ def test_scrape_feed_with_google_provider(tmp_path, client, monkeypatch):
 
     resp = client.post(
         "/scrape-feed",
-        json={"feed_cfg": str(tmp_path / "fake_cfg.toml")},
+        json={
+            "feed_cfg": str(tmp_path / "fake_cfg.toml"),
+        },
     )
 
     assert resp.status_code == 200

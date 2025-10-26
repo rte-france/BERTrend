@@ -18,7 +18,15 @@ load_dotenv(override=True)
 
 
 class CrontabSchedulerUtils(SchedulerUtils):
-    def add_job_to_crontab(self, schedule, command, env_vars="") -> bool:
+    def add_job_to_crontab(
+        self,
+        schedule: str,
+        command: str,
+        env_vars: str = None,
+        command_kwargs: dict = None,
+    ) -> bool:
+        if env_vars is None:
+            env_vars = ""
         """Add the specified job to the crontab."""
         logger.debug(f"Adding to crontab: {schedule} {command}")
         home = os.getenv("HOME")
@@ -83,3 +91,39 @@ class CrontabSchedulerUtils(SchedulerUtils):
         command = f"{sys.executable} -m bertrend_apps.newsletters newsletters {newsletter_cfg_path.resolve()} {data_feed_cfg_path.resolve()} > {BERTREND_LOG_PATH}/cron_newsletter_{id}.log 2>&1"
         env_vars = f"CUDA_VISIBLE_DEVICES={cuda_devices}"
         self.add_job_to_crontab(schedule, command, env_vars)
+
+    def schedule_training_for_user(self, schedule: str, model_id: str, user: str):
+        """Schedule data scrapping on the basis of a feed configuration file"""
+        logpath = BERTREND_LOG_PATH / "users" / user
+        logpath.mkdir(parents=True, exist_ok=True)
+        command = (
+            f"{sys.executable} -m bertrend_apps.prospective_demo.process_new_data train-new-model {user} {model_id} "
+            f"> {logpath}/learning_{model_id}.log 2>&1"
+        )
+        env_vars = f"CUDA_VISIBLE_DEVICES={BEST_CUDA_DEVICE}"
+        return self.add_job_to_crontab(schedule, command, env_vars)
+
+    def schedule_report_generation_for_user(
+        self, schedule: str, model_id: str, user: str, report_config: dict
+    ) -> bool:
+        """Schedule automated report generation based on model configuration"""
+        auto_send = report_config.get("auto_send", False)
+        recipients = report_config.get("email_recipients", [])
+
+        if not auto_send:
+            logger.info(f"auto_send is disabled for model {model_id}")
+            return False
+
+        if not recipients:
+            logger.warning(f"No email recipients configured for model {model_id}")
+            return False
+
+        logpath = BERTREND_LOG_PATH / "users" / user
+        logpath.mkdir(parents=True, exist_ok=True)
+
+        command = (
+            f"{sys.executable} -m bertrend_apps.prospective_demo.automated_report_generation {user} {model_id} "
+            f"> {logpath}/report_{model_id}.log 2>&1"
+        )
+
+        return self.add_job_to_crontab(schedule, command, "")

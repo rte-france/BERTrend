@@ -20,13 +20,14 @@ from bertrend_apps.data_provider.data_provider_utils import (
     generate_query_file,
 )
 from bertrend_apps.services.config.settings import get_config
+from bertrend_apps.services.logging_utils import get_file_logger
 from bertrend_apps.services.models.data_provider_models import (
+    ScrapeFeedRequest,
     ScrapeRequest,
     ScrapeResponse,
     AutoScrapeRequest,
     GenerateQueryFileRequest,
     GenerateQueryFileResponse,
-    ScrapeFeedRequest,
 )
 
 # Load the configuration
@@ -123,11 +124,13 @@ async def scrape_from_feed_api(req: ScrapeFeedRequest):
 
     This is the async equivalent of the CLI scrape-feed command.
     """
+    # Create a unique log file for this call
+    user_id = "" if not req.user_id else req.user_id
+    model_id = "" if not req.model_id else req.model_id
 
+    logger_id = get_file_logger(id="scrape_feed", user_name=user_id, model_id=model_id)
     try:
-        result_path = await asyncio.to_thread(
-            scrape_feed_from_config, Path(req.feed_cfg)
-        )
+        result_path = await asyncio.to_thread(scrape_feed_from_config, req.feed_cfg)
         # Count the articles in the result file
         from bertrend_apps.data_provider.data_provider_utils import count_articles
 
@@ -137,6 +140,9 @@ async def scrape_from_feed_api(req: ScrapeFeedRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error scraping feed: {str(e)}")
+    finally:
+        # Remove the logger to prevent writing to this file for other calls
+        logger.remove(logger_id)
 
 
 @router.post(

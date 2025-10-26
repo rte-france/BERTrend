@@ -180,7 +180,7 @@ def create_job(job: JobCreate):
             kwargs=job.kwargs,
             max_instances=job.max_instances,
             coalesce=job.coalesce,
-            replace_existing=False,
+            replace_existing=job.replace_existing,
         )
 
         added_job = scheduler.get_job(job.job_id)
@@ -213,6 +213,9 @@ def list_jobs():
             name=job.name,
             next_run_time=job.next_run_time,
             trigger=str(job.trigger),
+            kwargs=job.kwargs,
+            args=job.args,
+            func=job.func_ref,
             executor=job.executor,
             max_instances=job.max_instances,
         )
@@ -232,6 +235,9 @@ def get_job(job_id: str):
         name=job.name,
         next_run_time=job.next_run_time,
         trigger=str(job.trigger),
+        kwargs=job.kwargs,
+        args=job.args,
+        func=job.func_ref,
         executor=job.executor,
         max_instances=job.max_instances,
     )

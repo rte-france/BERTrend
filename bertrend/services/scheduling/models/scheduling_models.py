@@ -22,6 +22,11 @@ class JobCreate(BaseModel):
         default={}, description="Keyword arguments"
     )
 
+    # Overwrite existing job
+    replace_existing: Optional[bool] = Field(
+        default=True, description="Overwrite existing job if it exists"
+    )
+
     # Interval trigger fields
     seconds: Optional[int] = None
     minutes: Optional[int] = None
@@ -80,6 +85,9 @@ class JobResponse(BaseModel):
     name: str
     next_run_time: Optional[datetime]
     trigger: str
+    kwargs: dict
+    args: list
+    func: str
     executor: str
     max_instances: int
 

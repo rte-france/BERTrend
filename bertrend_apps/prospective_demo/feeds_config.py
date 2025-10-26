@@ -31,9 +31,7 @@ from bertrend_apps.prospective_demo.feeds_common import (
     read_user_feeds,
 )
 from bertrend_apps.prospective_demo import CONFIG_FEEDS_BASE_PATH
-from bertrend_apps.prospective_demo.models_info import (
-    remove_scheduled_training_for_user,
-)
+from bertrend_apps.common.scheduler_utils import remove_scheduled_training_for_user
 
 # Default feed configs
 DEFAULT_CRONTAB_EXPRESSION = "1 0 * * 1"
