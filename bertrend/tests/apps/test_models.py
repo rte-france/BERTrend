@@ -188,12 +188,12 @@ class TestDataProviderModels:
             keywords="climate",
             after="2025-01-01",
             before="2025-01-31",
-            save_path=str(save_path),
+            save_path=save_path,
         )
         assert req.keywords == "climate"
         assert req.after == "2025-01-01"
         assert req.before == "2025-01-31"
-        assert req.save_path == str(save_path)
+        assert req.save_path == save_path
         assert req.interval == 30  # default
 
     def test_generate_query_file_request_custom_interval(self, tmp_path):
@@ -202,7 +202,7 @@ class TestDataProviderModels:
             keywords="climate",
             after="2025-01-01",
             before="2025-01-31",
-            save_path=str(save_path),
+            save_path=save_path,
             interval=7,
         )
         assert req.interval == 7

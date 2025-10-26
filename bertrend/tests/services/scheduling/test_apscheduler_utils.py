@@ -10,6 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from bertrend.services.scheduling import scheduling_service as svc
+from bertrend.services.scheduling.routers import scheduling
 from bertrend_apps.common import apscheduler_utils as su
 
 scheduler = su.APSchedulerUtils()
@@ -102,7 +103,7 @@ class FakeScheduler:
 def client_and_http_adapter(monkeypatch):
     # Use a fake in-memory scheduler inside the service
     fake = FakeScheduler()
-    monkeypatch.setattr(svc, "scheduler", fake)
+    monkeypatch.setattr(scheduling, "scheduler", fake)
 
     client = TestClient(svc.app)
 

@@ -10,6 +10,8 @@ from fastapi.testclient import TestClient
 
 # Import the module under test
 from bertrend.services.scheduling import scheduling_service as svc
+from bertrend.services.scheduling.routers import scheduling
+from bertrend.services.scheduling.models.scheduling_models import JobCreate
 
 
 class FakeJob:
@@ -99,9 +101,9 @@ class FakeScheduler:
 
 @pytest.fixture()
 def client(monkeypatch):
-    # Monkeypatch the scheduler instance in the service module with our FakeScheduler
+    # Monkeypatch the scheduler instance in the scheduling router module with our FakeScheduler
     fake = FakeScheduler()
-    monkeypatch.setattr(svc, "scheduler", fake)
+    monkeypatch.setattr(scheduling, "scheduler", fake)
     return TestClient(svc.app)
 
 
@@ -183,7 +185,7 @@ def test_run_job_now_executes(client):
         return x + y
 
     # Insert job directly into fake scheduler
-    svc.scheduler.jobs["runme"] = FakeJob(
+    scheduling.scheduler.jobs["runme"] = FakeJob(
         "runme", func=myjob, args=[2], kwargs={"y": 3}
     )
 
@@ -221,43 +223,43 @@ def test_cron_examples(client):
 
 
 def test_get_trigger_interval():
-    jc = svc.JobCreate(
+    jc = JobCreate(
         job_id="t1", job_type="interval", function_name="sample_job", seconds=5
     )
-    trig = svc.get_trigger(jc)
+    trig = scheduling.get_trigger(jc)
     # Avoid importing trigger classes to keep this test lightweight, just check attribute presence
     assert hasattr(trig, "__class__") and "IntervalTrigger" in trig.__class__.__name__
 
 
 def test_get_trigger_cron_by_string():
-    jc = svc.JobCreate(
+    jc = JobCreate(
         job_id="t2",
         job_type="cron",
         function_name="sample_job",
         cron_expression="0 12 * * *",
     )
-    trig = svc.get_trigger(jc)
+    trig = scheduling.get_trigger(jc)
     assert "CronTrigger" in trig.__class__.__name__
 
 
 def test_get_trigger_cron_invalid_parts():
-    jc = svc.JobCreate(
+    jc = JobCreate(
         job_id="t3",
         job_type="cron",
         function_name="sample_job",
         cron_expression="0 12 * *",
     )
     with pytest.raises(ValueError):
-        svc.get_trigger(jc)
+        scheduling.get_trigger(jc)
 
 
 def test_get_trigger_date_requires_run_date():
-    jc = svc.JobCreate(job_id="t4", job_type="date", function_name="sample_job")
+    jc = JobCreate(job_id="t4", job_type="date", function_name="sample_job")
     with pytest.raises(ValueError):
-        svc.get_trigger(jc)
+        scheduling.get_trigger(jc)
 
 
 def test_get_trigger_invalid_type():
-    jc = svc.JobCreate(job_id="t5", job_type="unknown", function_name="sample_job")
+    jc = JobCreate(job_id="t5", job_type="unknown", function_name="sample_job")
     with pytest.raises(ValueError):
-        svc.get_trigger(jc)
+        scheduling.get_trigger(jc)
