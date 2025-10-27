@@ -13,13 +13,12 @@ import hashlib
 import json
 import os
 import re
-import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
 from loguru import logger
 
-from bertrend import BEST_CUDA_DEVICE, BERTREND_LOG_PATH, load_toml_config
+from bertrend import load_toml_config
 import requests
 from urllib.parse import urljoin, quote
 
@@ -83,6 +82,29 @@ class APSchedulerUtils(SchedulerUtils):
                 f"Failed to connect to scheduler service at {SCHEDULER_SERVICE_URL}. Start it if you want to to use scheduled jobs."
             )
 
+    @staticmethod
+    def find_jobs(patterns: dict, match_all: bool = True) -> list[str]:
+        """Find jobs matching the provided patterns and return their ids."""
+        payload = {"match_all": match_all, "kwargs_patterns": patterns}
+        r = _request("POST", "/jobs/find", json=payload)
+        if not r.status_code in (200, 201):
+            logger.error(f"Failed to find jobs: {r.status_code} {r.text}")
+            raise Exception(f"Failed to find jobs: {r.status_code} {r.text}")
+        # Process results
+        results_d = r.json()
+        if results_d["matches_found"] == 0:
+            logger.warning("No jobs found matching the provided patterns")
+            return []
+        return [job["job_id"] for job in results_d["jobs"]]
+
+    @staticmethod
+    def remove_jobs(job_ids: list[str]):
+        """Remove jobs matching the provided ids from the scheduler service."""
+        for job_id in job_ids:
+            r = _request("DELETE", f"/jobs/{job_id}")
+            if r.status_code != 200:
+                logger.error(f"Failed to delete job {job_id}: {r.status_code} {r.text}")
+
     def add_job_to_crontab(
         self,
         schedule: str,
@@ -128,63 +150,6 @@ class APSchedulerUtils(SchedulerUtils):
             detail = r.text
         logger.error(f"Failed to create job: {r.status_code} {detail}")
         return False
-
-    def check_cron_job(self, pattern: str) -> bool:
-        """Check if a specific regex pattern matches any scheduled service job.
-
-        We search over job id, name and trigger string returned by the service. The
-        job_id includes the original command text, so existing regex patterns keep working.
-        """
-        try:
-            regex = re.compile(pattern)
-        except re.error:
-            logger.error(f"Invalid regex pattern: {pattern}")
-            return False
-
-        for job in _list_jobs():
-            hay = " ".join(
-                [
-                    str(job.get("job_id", "")),
-                    str(job.get("name", "")),
-                    str(job.get("trigger", "")),
-                ]
-            )
-            if regex.search(hay):
-                return True
-        return False
-
-    def remove_from_crontab(self, pattern: str) -> bool:
-        """Remove jobs from the scheduler service whose properties match the regex pattern via HTTP."""
-        try:
-            regex = re.compile(pattern)
-        except re.error:
-            logger.error(f"Invalid regex pattern: {pattern}")
-            return False
-
-        to_delete: list[str] = []
-        for job in _list_jobs():
-            hay = " ".join(
-                [
-                    str(job.get("job_id", "")),
-                    str(job.get("name", "")),
-                    str(job.get("trigger", "")),
-                ]
-            )
-            if regex.search(hay):
-                to_delete.append(job.get("job_id"))
-
-        if not to_delete:
-            logger.warning("No job matching the provided pattern")
-            return False
-
-        ok = True
-        for jid in to_delete:
-            # URL-encode the id for path safety
-            r = _request("DELETE", f"/jobs/{quote(jid, safe='')}")
-            if r.status_code != 200:
-                ok = False
-                logger.error(f"Failed to delete job {jid}: {r.status_code} {r.text}")
-        return ok
 
     def schedule_scrapping(self, feed_cfg: Path, user: str | None = None):
         """Schedule data scrapping based on a feed configuration file using the service."""
@@ -262,3 +227,102 @@ class APSchedulerUtils(SchedulerUtils):
         return self.add_job_to_crontab(
             schedule=schedule, command=command, command_kwargs=command_kwargs
         )
+
+    def remove_scrapping_for_user(self, feed_id: str, user: str | None = None):
+        """Removes from the scheduler service the job matching the provided feed_id"""
+        try:
+            job_ids = self.find_jobs(
+                patterns={
+                    "url": ".*/scrape-feed.*",
+                    "json_data": {"user_id": user, "model_id": feed_id},
+                }
+            )
+            self.remove_jobs(job_ids)
+            return True
+        except Exception as e:
+            logger.error(f"Error occurred while removing scrapping job: {e}")
+            return False
+
+    def remove_scheduled_training_for_user(self, model_id: str, user: str):
+        """Removes from the crontab the training job matching the provided model_id"""
+        try:
+            job_ids = self.find_jobs(
+                patterns={
+                    "url": ".*/train-new-model.*",
+                    "json_data": {"user_name": user, "model_id": model_id},
+                }
+            )
+            self.remove_jobs(job_ids)
+            return True
+        except Exception as e:
+            logger.error(f"Error occurred while removing scrapping job: {e}")
+            return False
+
+    def remove_scheduled_report_generation_for_user(
+        self, model_id: str, user: str
+    ) -> bool:
+        """Removes from the crontab the report generation job matching the provided model_id"""
+        try:
+            job_ids = self.find_jobs(
+                patterns={
+                    "url": ".*/generate-report.*",
+                    "json_data": {"user_name": user, "model_id": model_id},
+                }
+            )
+            self.remove_jobs(job_ids)
+            return True
+        except Exception as e:
+            logger.error(f"Error occurred while removing scrapping job: {e}")
+            return False
+
+    def check_if_scrapping_active_for_user(
+        self, feed_id: str, user: str | None = None
+    ) -> bool:
+        """Checks if a given scrapping feed is active (registered with the service)."""
+        try:
+            job_ids = self.find_jobs(
+                patterns={
+                    "url": ".*/scrape-feed.*",
+                    "json_data": {"user_id": user, "model_id": feed_id},
+                }
+            )
+            return len(job_ids) > 0
+        except Exception as e:
+            logger.error(
+                f"Error occurred while checking if scrapping is active for {user},{feed_id}: {e}"
+            )
+            return False
+
+    def check_if_learning_active_for_user(self, model_id: str, user: str):
+        """Checks if a given scrapping feed is active (registered in the crontab"""
+        try:
+            job_ids = self.find_jobs(
+                patterns={
+                    "url": ".*/train-new-model.*",
+                    "json_data": {"user_name": user, "model_id": model_id},
+                }
+            )
+            return len(job_ids) > 0
+        except Exception as e:
+            logger.error(
+                f"Error occurred while checking if learning is active for {user},{model_id}: {e}"
+            )
+            return False
+
+    def check_if_report_generation_active_for_user(
+        self, model_id: str, user: str
+    ) -> bool:
+        """Checks if automated report generation is active (registered in the crontab)"""
+        try:
+            job_ids = self.find_jobs(
+                patterns={
+                    "url": ".*/generate-report.*",
+                    "json_data": {"user_name": user, "model_id": model_id},
+                }
+            )
+            return len(job_ids) > 0
+        except Exception as e:
+            logger.error(
+                f"Error occurred while checking if reporting is active for {user},{model_id}: {e}"
+            )
+            return False

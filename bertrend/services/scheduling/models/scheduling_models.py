@@ -3,7 +3,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 from datetime import datetime
-from typing import Optional, List, Any, Dict
+from typing import Optional, List, Any, Dict, Union
 
 from pydantic import BaseModel, Field
 
@@ -113,3 +113,25 @@ class CronExpressionResponse(BaseModel):
     next_runs: List[datetime]
     is_valid: bool
     timezone: str
+
+
+class JobFindRequest(BaseModel):
+    """Request model for finding jobs based on kwargs patterns"""
+
+    kwargs_patterns: Dict[str, Union[str, Dict[str, Any]]] = Field(
+        ...,
+        description="Dictionary where keys are kwargs field names and values are either regex patterns (strings) or nested dictionaries for deep matching",
+    )
+    match_all: Optional[bool] = Field(
+        default=True,
+        description="If True, all patterns must match (AND logic). If False, any pattern match is sufficient (OR logic)",
+    )
+
+
+class JobFindResponse(BaseModel):
+    """Response model for job search results"""
+
+    matches_found: int = Field(description="Number of jobs found matching the criteria")
+    jobs: List[JobResponse] = Field(
+        description="List of jobs that matched the search criteria"
+    )

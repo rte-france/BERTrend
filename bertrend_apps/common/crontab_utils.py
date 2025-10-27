@@ -37,7 +37,7 @@ class CrontabSchedulerUtils(SchedulerUtils):
         )  # returns the exit code in unix
         return returned_value == 0
 
-    def check_cron_job(seld, pattern: str) -> bool:
+    def _check_cron_job(self, pattern: str) -> bool:
         """Check if a specific pattern (expressed as a regular expression) matches crontab entries."""
         try:
             # Run `crontab -l` and capture the output
@@ -54,9 +54,9 @@ class CrontabSchedulerUtils(SchedulerUtils):
             # If crontab fails (e.g., no crontab for the user), return False
             return False
 
-    def remove_from_crontab(self, pattern: str) -> bool:
+    def _remove_from_crontab(self, pattern: str) -> bool:
         """Removes from the crontab the job matching the provided pattern (expressed as a regular expression)"""
-        if not (self.check_cron_job(pattern)):
+        if not (self._check_cron_job(pattern)):
             logger.warning("No job matching the provided pattern")
             return False
         try:
@@ -127,3 +127,61 @@ class CrontabSchedulerUtils(SchedulerUtils):
         )
 
         return self.add_job_to_crontab(schedule, command, "")
+
+    def remove_scrapping_for_user(self, feed_id: str, user: str | None = None):
+        """Removes from the scheduler service the job matching the provided feed_id"""
+        if user:
+            return self._remove_from_crontab(
+                rf"scrape-feed.*/users/{user}/{feed_id}_feed.toml"
+            )
+        else:
+            return self._remove_from_crontab(rf"scrape-feed.*/{feed_id}_feed.toml")
+
+    def remove_scheduled_training_for_user(self, model_id: str, user: str):
+        """Removes from the crontab the training job matching the provided model_id"""
+        if user:
+            return self._remove_from_crontab(
+                rf"process_new_data train-new-model {user} {model_id}"
+            )
+        return False
+
+    def remove_scheduled_report_generation_for_user(
+        self, model_id: str, user: str
+    ) -> bool:
+        """Removes from the crontab the report generation job matching the provided model_id"""
+        if user:
+            return self._remove_from_crontab(
+                rf"automated_report_generation {user} {model_id}"
+            )
+        return False
+
+    def check_if_scrapping_active_for_user(
+        self, feed_id: str, user: str | None = None
+    ) -> bool:
+        """Checks if a given scrapping feed is active (registered with the service)."""
+        if user:
+            return self._check_cron_job(
+                rf"scrape-feed.*/users/{user}/{feed_id}_feed.toml"
+            )
+        else:
+            return self._check_cron_job(rf"scrape-feed.*/{feed_id}_feed.toml")
+
+    def check_if_learning_active_for_user(self, model_id: str, user: str):
+        """Checks if a given scrapping feed is active (registered in the crontab"""
+        if user:
+            return self._check_cron_job(
+                rf"process_new_data train-new-model.*{user}.*{model_id}"
+            )
+        else:
+            return False
+
+    def check_if_report_generation_active_for_user(
+        self, model_id: str, user: str
+    ) -> bool:
+        """Checks if automated report generation is active (registered in the crontab)"""
+        if user:
+            return self._check_cron_job(
+                rf"automated_report_generation.*{user}.*{model_id}"
+            )
+        else:
+            return False

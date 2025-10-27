@@ -2,8 +2,8 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
+import re
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import HTTPException, APIRouter, FastAPI
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -13,7 +13,7 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
 from datetime import datetime
-from typing import List
+from typing import List, Union, Any
 
 from loguru import logger
 
@@ -25,11 +25,11 @@ from bertrend.services.scheduling.models.scheduling_models import (
     JobExecutionResponse,
     CronExpressionRequest,
     CronExpressionResponse,
+    JobFindResponse,
+    JobFindRequest,
 )
 
 DATA_DIR = "data"
-DATA_PATH = Path(DATA_DIR)
-DATA_PATH.mkdir(parents=True, exist_ok=True)
 
 
 router = APIRouter()
@@ -131,7 +131,7 @@ async def lifespan(app: FastAPI):
     logger.info("Scheduler shutdown complete")
 
 
-@router.get("/functions")
+@router.get("/functions", summary="List available job functions")
 def list_functions():
     """List available job functions"""
     return {
@@ -151,7 +151,7 @@ def list_functions():
 
 
 @router.post("/jobs", response_model=JobResponse, status_code=201)
-def create_job(job: JobCreate):
+def create_job(job: JobCreate, summary="Create a new scheduled job"):
     """Create a new scheduled job"""
     try:
         # Check if job_id already exists
@@ -203,7 +203,9 @@ def create_job(job: JobCreate):
         raise HTTPException(status_code=500, detail=f"Error creating job: {str(e)}")
 
 
-@router.get("/jobs", response_model=List[JobResponse])
+@router.get(
+    "/jobs", response_model=List[JobResponse], summary="List all scheduled jobs"
+)
 def list_jobs():
     """List all scheduled jobs"""
     jobs = scheduler.get_jobs()
@@ -223,7 +225,9 @@ def list_jobs():
     ]
 
 
-@router.get("/jobs/{job_id}", response_model=JobResponse)
+@router.get(
+    "/jobs/{job_id}", response_model=JobResponse, summary="Get details of a job"
+)
 def get_job(job_id: str):
     """Get details of a specific job"""
     job = scheduler.get_job(job_id)
@@ -243,7 +247,9 @@ def get_job(job_id: str):
     )
 
 
-@router.put("/jobs/{job_id}", response_model=JobResponse)
+@router.put(
+    "/jobs/{job_id}", response_model=JobResponse, summary="Update an existing job"
+)
 def update_job(job_id: str, job_update: JobUpdate):
     """Update an existing job"""
     job = scheduler.get_job(job_id)
@@ -326,7 +332,7 @@ def update_job(job_id: str, job_update: JobUpdate):
         raise HTTPException(status_code=500, detail=f"Error updating job: {str(e)}")
 
 
-@router.delete("/jobs/{job_id}")
+@router.delete("/jobs/{job_id}", summary="Remove a scheduled job")
 def delete_job(job_id: str):
     """Remove a scheduled job"""
     job = scheduler.get_job(job_id)
@@ -336,6 +342,121 @@ def delete_job(job_id: str):
     scheduler.remove_job(job_id)
     logger.info(f"Job '{job_id}' removed successfully")
     return {"message": f"Job '{job_id}' removed successfully"}
+
+
+def _match_pattern(value: Any, pattern: Union[str, dict[str, Any]]) -> bool:
+    """
+    Recursively match a value against a pattern.
+
+    Args:
+        value: The value to check (can be string, dict, list, etc.)
+        pattern: Either a regex string or a dict with nested patterns
+
+    Returns:
+        True if the pattern matches, False otherwise
+    """
+    # If pattern is a string (regex), convert value to string and match
+    if isinstance(pattern, str):
+        try:
+            regex = re.compile(pattern)
+            return regex.search(str(value)) is not None
+        except re.error:
+            return False
+
+    # If pattern is a dict, value must also be a dict for deep matching
+    elif isinstance(pattern, dict):
+        if not isinstance(value, dict):
+            return False
+
+        # Check all pattern keys against value
+        for key, sub_pattern in pattern.items():
+            if key not in value:
+                return False
+            if not _match_pattern(value[key], sub_pattern):
+                return False
+        return True
+
+    # For other types, do string comparison
+    else:
+        return str(value) == str(pattern)
+
+
+def _validate_patterns(patterns: Union[str, dict[str, Any]], path: str = ""):
+    """Recursively validate regex patterns"""
+    if isinstance(patterns, str):
+        try:
+            re.compile(patterns)
+        except re.error as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid regex pattern at '{path}': {str(e)}",
+            )
+    elif isinstance(patterns, dict):
+        for key, value in patterns.items():
+            _validate_patterns(value, f"{path}.{key}" if path else key)
+
+
+@router.post("/jobs/find", response_model=JobFindResponse)
+def find_job(request: JobFindRequest):
+    """Find scheduled jobs based on regex patterns on their kwargs"""
+    try:
+        # Validate all regex patterns in the request
+        _validate_patterns(request.kwargs_patterns)
+
+        # Get all jobs from the scheduler
+        all_jobs = scheduler.get_jobs()
+
+        # Filter jobs based on pattern matching in kwargs
+        matching_jobs = []
+        for job in all_jobs:
+            if not job.kwargs:
+                # Skip jobs without kwargs if we're searching for kwargs patterns
+                continue
+
+            # Check each pattern against the job's kwargs
+            matches = []
+            for key, pattern in request.kwargs_patterns.items():
+                # Check if the key exists in kwargs and if the pattern matches
+                if key in job.kwargs:
+                    matches.append(_match_pattern(job.kwargs[key], pattern))
+                else:
+                    matches.append(False)
+
+            # Determine if this job should be included based on match_all flag
+            should_include = all(matches) if request.match_all else any(matches)
+
+            if should_include:
+                matching_jobs.append(
+                    JobResponse(
+                        job_id=job.id,
+                        name=job.name,
+                        next_run_time=job.next_run_time,
+                        trigger=str(job.trigger),
+                        kwargs=job.kwargs,
+                        args=job.args,
+                        func=job.func_ref,
+                        executor=job.executor,
+                        max_instances=job.max_instances,
+                    )
+                )
+
+        logger.info(
+            f"Job search completed: {len(matching_jobs)} matches found "
+            f"for patterns {request.kwargs_patterns} (match_all={request.match_all})"
+        )
+
+        return JobFindResponse(
+            matches_found=len(matching_jobs),
+            jobs=matching_jobs,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error searching for jobs: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error searching for jobs: {str(e)}"
+        )
 
 
 @router.post("/jobs/{job_id}/pause")
