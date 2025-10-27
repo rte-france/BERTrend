@@ -35,6 +35,12 @@ class FakeJob:
         # FastAPI response model expects a string executor
         self.executor = "default"
         self.next_run_time = datetime.now() + timedelta(seconds=1)
+        # Add func_ref for JobResponse compatibility
+        self.func_ref = (
+            getattr(func, "__name__", "unknown_function")
+            if func
+            else "unknown_function"
+        )
 
 
 class FakeScheduler:
@@ -60,7 +66,7 @@ class FakeScheduler:
         coalesce,
         replace_existing,
     ):
-        if id in self.jobs:
+        if id in self.jobs and not replace_existing:
             raise Exception("Job already exists")
         self.jobs[id] = FakeJob(
             id,

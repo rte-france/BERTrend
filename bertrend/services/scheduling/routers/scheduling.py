@@ -4,6 +4,7 @@
 #  This file is part of BERTrend.
 import re
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import HTTPException, APIRouter, FastAPI
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -29,29 +30,45 @@ from bertrend.services.scheduling.models.scheduling_models import (
     JobFindRequest,
 )
 
-DATA_DIR = "data"
-
-
 router = APIRouter()
 
-# Configure job stores and executors
-jobstores = {"default": SQLAlchemyJobStore(url=f"sqlite:///{DATA_DIR}/jobs.sqlite")}
+DB_PATH = Path.home() / ".bertrend" / "db"
+DB_PATH.mkdir(parents=True, exist_ok=True)
 
-executors = {"default": ProcessPoolExecutor(max_workers=5)}
+# Scheduler will be initialized on first use or set by tests
+scheduler = None
 
-job_defaults = {
-    "coalesce": False,  # Run all missed executions
-    "max_instances": 3,  # Maximum instances of the job running concurrently
-}
 
-# Initialize APScheduler with persistence (Paris timezone)
-scheduler = BackgroundScheduler(
-    jobstores=jobstores,
-    executors=executors,
-    job_defaults=job_defaults,
-    timezone="Europe/Paris",
-)
-scheduler.start()
+def _init_scheduler():
+    """Initialize the scheduler if not already set (e.g., by tests)"""
+    global scheduler
+    if scheduler is None:
+        # Configure job stores and executors
+        jobstores = {
+            "default": SQLAlchemyJobStore(url=f"sqlite:///{DB_PATH}/jobs.sqlite")
+        }
+        executors = {"default": ProcessPoolExecutor(max_workers=5)}
+        job_defaults = {
+            "coalesce": False,  # Run all missed executions
+            "max_instances": 3,  # Maximum instances of the job running concurrently
+        }
+        # Initialize APScheduler with persistence (Paris timezone)
+        scheduler = BackgroundScheduler(
+            jobstores=jobstores,
+            executors=executors,
+            job_defaults=job_defaults,
+            timezone="Europe/Paris",
+        )
+        scheduler.start()
+
+
+# Initialize scheduler at module load if not in test environment
+# Tests will monkeypatch this before it's used
+try:
+    _init_scheduler()
+except Exception:
+    # If initialization fails (e.g., in test environment), scheduler will be set by tests
+    pass
 
 
 def get_trigger(job_data: JobCreate):
@@ -192,6 +209,9 @@ def create_job(job: JobCreate, summary="Create a new scheduled job"):
             name=added_job.name,
             next_run_time=added_job.next_run_time,
             trigger=str(added_job.trigger),
+            kwargs=added_job.kwargs,
+            args=added_job.args,
+            func=added_job.func_ref,
             executor=added_job.executor,
             max_instances=added_job.max_instances,
         )

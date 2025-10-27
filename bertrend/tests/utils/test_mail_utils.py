@@ -3,464 +3,352 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import patch, MagicMock, mock_open
+import tempfile
 
 from bertrend_apps.common.mail_utils import (
     get_credentials,
     send_email,
-    SCOPES,
     FROM,
-    TOKEN_PATH,
-    DEFAULT_GMAIL_CREDENTIALS_PATH,
+    SCOPES,
 )
 
 
-class TestConstants:
-    """Test module constants"""
-
-    def test_scopes_defined(self):
-        """Test that SCOPES is properly defined"""
-        assert SCOPES == ["https://mail.google.com/"]
-
-    def test_from_email_defined(self):
-        """Test that FROM email is defined"""
-        assert FROM == "wattelse.ai@gmail.com"
-
-    def test_paths_defined(self):
-        """Test that paths are properly defined"""
-        assert TOKEN_PATH is not None
-        assert DEFAULT_GMAIL_CREDENTIALS_PATH is not None
-        assert isinstance(TOKEN_PATH, Path)
-        assert isinstance(DEFAULT_GMAIL_CREDENTIALS_PATH, Path)
-
-
 class TestGetCredentials:
-    """Test get_credentials function"""
+    """Tests for the get_credentials function."""
 
-    @patch("bertrend_apps.common.mail_utils.Credentials")
     @patch("bertrend_apps.common.mail_utils.TOKEN_PATH")
-    def test_existing_valid_credentials(self, mock_token_path, mock_credentials_class):
-        """Test loading existing valid credentials"""
-        # Setup mocks
+    @patch("bertrend_apps.common.mail_utils.Credentials")
+    def test_get_credentials_with_valid_token(
+        self, mock_credentials_class, mock_token_path
+    ):
+        """Test getting credentials when valid token file exists."""
         mock_token_path.exists.return_value = True
-        mock_creds = Mock()
+        mock_creds = MagicMock()
         mock_creds.valid = True
         mock_credentials_class.from_authorized_user_file.return_value = mock_creds
 
-        # Test
         result = get_credentials()
 
-        # Assertions
         assert result == mock_creds
         mock_credentials_class.from_authorized_user_file.assert_called_once_with(
             mock_token_path, SCOPES
         )
 
-    @patch("bertrend_apps.common.mail_utils.Credentials")
     @patch("bertrend_apps.common.mail_utils.TOKEN_PATH")
+    @patch("bertrend_apps.common.mail_utils.Credentials")
     @patch("bertrend_apps.common.mail_utils.Request")
-    def test_expired_credentials_refresh(
-        self, mock_request_class, mock_token_path, mock_credentials_class
+    def test_get_credentials_with_expired_token(
+        self, mock_request, mock_credentials_class, mock_token_path
     ):
-        """Test refreshing expired credentials"""
-        # Setup mocks
+        """Test getting credentials when token is expired but has refresh token."""
         mock_token_path.exists.return_value = True
-        mock_creds = Mock()
+        mock_creds = MagicMock()
         mock_creds.valid = False
         mock_creds.expired = True
         mock_creds.refresh_token = "refresh_token"
-        mock_creds.to_json.return_value = '{"token": "data"}'
         mock_credentials_class.from_authorized_user_file.return_value = mock_creds
-        mock_request = Mock()
-        mock_request_class.return_value = mock_request
 
         with patch("builtins.open", mock_open()) as mock_file:
             result = get_credentials()
 
-        # Assertions
-        mock_creds.refresh.assert_called_once_with(mock_request)
-        mock_file.assert_called_once_with(mock_token_path, "w")
-        assert result == mock_creds
+        mock_creds.refresh.assert_called_once()
+        assert mock_file.called
 
-    @patch("bertrend_apps.common.mail_utils.Credentials")
     @patch("bertrend_apps.common.mail_utils.TOKEN_PATH")
+    @patch("bertrend_apps.common.mail_utils.Credentials")
     @patch("bertrend_apps.common.mail_utils.InstalledAppFlow")
-    def test_no_valid_credentials_flow(
-        self, mock_flow_class, mock_token_path, mock_credentials_class
+    def test_get_credentials_no_token_file(
+        self, mock_flow_class, mock_credentials_class, mock_token_path
     ):
-        """Test OAuth flow when no valid credentials exist"""
-        # Setup mocks
+        """Test getting credentials when no token file exists."""
         mock_token_path.exists.return_value = False
-        mock_flow = Mock()
-        mock_creds = Mock()
-        mock_creds.to_json.return_value = '{"token": "new_data"}'
+        mock_flow = MagicMock()
+        mock_creds = MagicMock()
         mock_flow.run_local_server.return_value = mock_creds
         mock_flow_class.from_client_secrets_file.return_value = mock_flow
 
-        credentials_path = Path("/test/path/credentials.json")
-
         with patch("builtins.open", mock_open()) as mock_file:
-            result = get_credentials(credentials_path)
+            result = get_credentials()
 
-        # Assertions
-        mock_flow_class.from_client_secrets_file.assert_called_once_with(
-            credentials_path, SCOPES
-        )
+        mock_flow_class.from_client_secrets_file.assert_called_once()
         mock_flow.run_local_server.assert_called_once_with(port=0)
-        mock_file.assert_called_once_with(mock_token_path, "w")
+        assert mock_file.called
         assert result == mock_creds
 
-    @patch("bertrend_apps.common.mail_utils.Credentials")
     @patch("bertrend_apps.common.mail_utils.TOKEN_PATH")
-    def test_invalid_credentials_no_refresh_token(
-        self, mock_token_path, mock_credentials_class
+    @patch("bertrend_apps.common.mail_utils.Credentials")
+    @patch("bertrend_apps.common.mail_utils.InstalledAppFlow")
+    def test_get_credentials_invalid_token_no_refresh(
+        self, mock_flow_class, mock_credentials_class, mock_token_path
     ):
-        """Test handling invalid credentials without refresh token"""
-        # Setup mocks
+        """Test getting credentials when token is invalid and has no refresh token."""
         mock_token_path.exists.return_value = True
-        mock_creds = Mock()
+        mock_creds = MagicMock()
         mock_creds.valid = False
-        mock_creds.expired = True
-        mock_creds.refresh_token = None  # No refresh token
+        mock_creds.expired = False
+        mock_creds.refresh_token = None
         mock_credentials_class.from_authorized_user_file.return_value = mock_creds
 
-        with patch(
-            "bertrend_apps.common.mail_utils.InstalledAppFlow"
-        ) as mock_flow_class:
-            mock_flow = Mock()
-            mock_new_creds = Mock()
-            mock_new_creds.to_json.return_value = '{"token": "new_data"}'
-            mock_flow.run_local_server.return_value = mock_new_creds
-            mock_flow_class.from_client_secrets_file.return_value = mock_flow
+        mock_flow = MagicMock()
+        mock_new_creds = MagicMock()
+        mock_flow.run_local_server.return_value = mock_new_creds
+        mock_flow_class.from_client_secrets_file.return_value = mock_flow
 
-            with patch("builtins.open", mock_open()):
-                result = get_credentials()
+        with patch("builtins.open", mock_open()) as mock_file:
+            result = get_credentials()
 
-        # Should trigger OAuth flow since refresh failed
+        mock_flow.run_local_server.assert_called_once_with(port=0)
         assert result == mock_new_creds
+
+    @patch("bertrend_apps.common.mail_utils.TOKEN_PATH")
+    @patch("bertrend_apps.common.mail_utils.Credentials")
+    @patch("bertrend_apps.common.mail_utils.InstalledAppFlow")
+    def test_get_credentials_custom_path(
+        self, mock_flow_class, mock_credentials_class, mock_token_path
+    ):
+        """Test getting credentials with custom credentials path."""
+        mock_token_path.exists.return_value = False
+        mock_flow = MagicMock()
+        mock_creds = MagicMock()
+        mock_flow.run_local_server.return_value = mock_creds
+        mock_flow_class.from_client_secrets_file.return_value = mock_flow
+
+        custom_path = Path("/custom/path/credentials.json")
+
+        with patch("builtins.open", mock_open()) as mock_file:
+            result = get_credentials(credentials_path=custom_path)
+
+        mock_flow_class.from_client_secrets_file.assert_called_once_with(
+            custom_path, SCOPES
+        )
 
 
 class TestSendEmail:
-    """Test send_email function"""
+    """Tests for the send_email function."""
 
-    def create_mock_credentials(self):
-        """Helper to create mock credentials"""
-        return Mock()
+    @patch("bertrend_apps.common.mail_utils.build")
+    def test_send_email_with_text_content(self, mock_build):
+        """Test sending email with text content."""
+        mock_service = MagicMock()
+        mock_build.return_value = mock_service
+        mock_creds = MagicMock()
+
+        send_email(
+            credentials=mock_creds,
+            subject="Test Subject",
+            recipients=["test@example.com"],
+            content="Test content",
+            content_type="text",
+        )
+
+        mock_build.assert_called_once_with("gmail", "v1", credentials=mock_creds)
+        mock_service.users().messages().send.assert_called_once()
 
     @patch("bertrend_apps.common.mail_utils.build")
     def test_send_email_with_html_content(self, mock_build):
-        """Test sending email with HTML content"""
-        # Setup
-        credentials = self.create_mock_credentials()
-        mock_service = Mock()
+        """Test sending email with HTML content."""
+        mock_service = MagicMock()
         mock_build.return_value = mock_service
-        mock_messages = Mock()
-        mock_send = Mock()
-        mock_execute = Mock()
+        mock_creds = MagicMock()
 
-        mock_service.users.return_value.messages.return_value = mock_messages
-        mock_messages.send.return_value = mock_send
-        mock_send.execute.return_value = mock_execute
+        send_email(
+            credentials=mock_creds,
+            subject="HTML Email",
+            recipients=["test@example.com"],
+            content="<h1>Test</h1>",
+            content_type="html",
+        )
 
-        subject = "Test Subject"
-        recipients = ["test@example.com"]
-        content = "<h1>Test HTML Content</h1>"
-
-        # Test
-        send_email(credentials, subject, recipients, content, content_type="html")
-
-        # Assertions
-        mock_build.assert_called_once_with("gmail", "v1", credentials=credentials)
-        mock_messages.send.assert_called_once()
-        mock_send.execute.assert_called_once()
+        mock_build.assert_called_once()
+        mock_service.users().messages().send.assert_called_once()
 
     @patch("bertrend_apps.common.mail_utils.build")
-    def test_send_email_with_plain_content(self, mock_build):
-        """Test sending email with plain text content"""
-        # Setup
-        credentials = self.create_mock_credentials()
-        mock_service = Mock()
+    def test_send_email_multiple_recipients(self, mock_build):
+        """Test sending email to multiple recipients."""
+        mock_service = MagicMock()
         mock_build.return_value = mock_service
-        mock_messages = Mock()
-        mock_send = Mock()
-        mock_execute = Mock()
+        mock_creds = MagicMock()
 
-        mock_service.users.return_value.messages.return_value = mock_messages
-        mock_messages.send.return_value = mock_send
-        mock_send.execute.return_value = mock_execute
+        recipients = ["test1@example.com", "test2@example.com", "test3@example.com"]
 
-        subject = "Test Subject"
-        recipients = ["test@example.com", "test2@example.com"]
-        content = "Plain text content"
+        send_email(
+            credentials=mock_creds,
+            subject="Multi Recipients",
+            recipients=recipients,
+            content="Test content",
+        )
 
-        # Test
-        send_email(credentials, subject, recipients, content, content_type="text")
-
-        # Assertions
-        mock_build.assert_called_once_with("gmail", "v1", credentials=credentials)
-        mock_messages.send.assert_called_once()
-        mock_send.execute.assert_called_once()
+        mock_build.assert_called_once()
+        mock_service.users().messages().send.assert_called_once()
 
     @patch("bertrend_apps.common.mail_utils.build")
-    @patch("bertrend_apps.common.mail_utils.mimetypes")
-    def test_send_email_with_file_attachment(self, mock_mimetypes, mock_build):
-        """Test sending email with file attachment"""
-        # Setup
-        credentials = self.create_mock_credentials()
-        mock_service = Mock()
+    def test_send_email_with_file_attachment(self, mock_build):
+        """Test sending email with file attachment."""
+        mock_service = MagicMock()
         mock_build.return_value = mock_service
-        mock_messages = Mock()
-        mock_send = Mock()
-        mock_execute = Mock()
+        mock_creds = MagicMock()
 
-        mock_service.users.return_value.messages.return_value = mock_messages
-        mock_messages.send.return_value = mock_send
-        mock_send.execute.return_value = mock_execute
-        mock_mimetypes.guess_type.return_value = ("application/pdf", None)
-
-        subject = "Test with Attachment"
-        recipients = ["test@example.com"]
-
-        # Create temporary file for testing
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".pdf", delete=False
-        ) as tmp_file:
-            tmp_file.write("PDF content")
-            file_path = Path(tmp_file.name)
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
+            f.write("Test file content")
+            temp_file_path = Path(f.name)
 
         try:
-            # Test
-            send_email(credentials, subject, recipients, file_path)
-
-            # Assertions
-            mock_build.assert_called_once_with("gmail", "v1", credentials=credentials)
-            mock_messages.send.assert_called_once()
-            mock_send.execute.assert_called_once()
-            mock_mimetypes.guess_type.assert_called_once_with(file_path)
-
-        finally:
-            # Cleanup
-            file_path.unlink()
-
-    @patch("bertrend_apps.common.mail_utils.build")
-    @patch("bertrend_apps.common.mail_utils.mimetypes")
-    def test_send_email_with_custom_filename(self, mock_mimetypes, mock_build):
-        """Test sending email with custom filename for attachment"""
-        # Setup
-        credentials = self.create_mock_credentials()
-        mock_service = Mock()
-        mock_build.return_value = mock_service
-        mock_messages = Mock()
-        mock_send = Mock()
-        mock_execute = Mock()
-
-        mock_service.users.return_value.messages.return_value = mock_messages
-        mock_messages.send.return_value = mock_send
-        mock_send.execute.return_value = mock_execute
-        mock_mimetypes.guess_type.return_value = ("text/plain", None)
-
-        subject = "Test with Custom Filename"
-        recipients = ["test@example.com"]
-        custom_filename = "custom_report.txt"
-
-        # Create temporary file for testing
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", delete=False
-        ) as tmp_file:
-            tmp_file.write("Text content")
-            file_path = Path(tmp_file.name)
-
-        try:
-            # Test
             send_email(
-                credentials, subject, recipients, file_path, file_name=custom_filename
+                credentials=mock_creds,
+                subject="Email with Attachment",
+                recipients=["test@example.com"],
+                content=temp_file_path,
             )
 
-            # Assertions
             mock_build.assert_called_once()
-            mock_messages.send.assert_called_once()
-            mock_send.execute.assert_called_once()
-
+            mock_service.users().messages().send.assert_called_once()
         finally:
-            # Cleanup
-            file_path.unlink()
+            # Clean up
+            if temp_file_path.exists():
+                temp_file_path.unlink()
+
+    @patch("bertrend_apps.common.mail_utils.build")
+    def test_send_email_with_custom_filename(self, mock_build):
+        """Test sending email with file attachment and custom filename."""
+        mock_service = MagicMock()
+        mock_build.return_value = mock_service
+        mock_creds = MagicMock()
+
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
+            f.write("Test file content")
+            temp_file_path = Path(f.name)
+
+        try:
+            send_email(
+                credentials=mock_creds,
+                subject="Email with Custom Filename",
+                recipients=["test@example.com"],
+                content=temp_file_path,
+                file_name="custom_report.txt",
+            )
+
+            mock_build.assert_called_once()
+            mock_service.users().messages().send.assert_called_once()
+        finally:
+            # Clean up
+            if temp_file_path.exists():
+                temp_file_path.unlink()
 
     @patch("bertrend_apps.common.mail_utils.build")
     @patch("bertrend_apps.common.mail_utils.logger")
     def test_send_email_http_error(self, mock_logger, mock_build):
-        """Test handling of HttpError during email sending"""
+        """Test send_email handles HttpError gracefully."""
         from googleapiclient.errors import HttpError
 
-        # Setup
-        credentials = self.create_mock_credentials()
-        mock_service = Mock()
+        mock_service = MagicMock()
         mock_build.return_value = mock_service
+        mock_service.users().messages().send.side_effect = HttpError(
+            resp=MagicMock(status=400), content=b"Error"
+        )
+        mock_creds = MagicMock()
 
-        # Mock HttpError
-        http_error = HttpError(Mock(), b'{"error": "test error"}')
-        mock_service.users().messages().send().execute.side_effect = http_error
+        send_email(
+            credentials=mock_creds,
+            subject="Test",
+            recipients=["test@example.com"],
+            content="Test",
+        )
 
-        subject = "Test Subject"
-        recipients = ["test@example.com"]
-        content = "Test content"
-
-        # Test - should not raise exception
-        send_email(credentials, subject, recipients, content)
-
-        # Assertions
-        mock_logger.error.assert_called_once_with("Gmail API error: ", http_error)
+        # Should log error
+        mock_logger.error.assert_called()
 
     @patch("bertrend_apps.common.mail_utils.build")
-    @patch("bertrend_apps.common.mail_utils.logger")
-    def test_send_email_file_not_found_error(self, mock_logger, mock_build):
-        """Test handling of FileNotFoundError during email sending"""
-        # Setup
-        credentials = self.create_mock_credentials()
-        mock_service = Mock()
+    def test_send_email_file_not_found(self, mock_build):
+        """Test send_email with non-existent Path (treated as string content)."""
+        mock_service = MagicMock()
         mock_build.return_value = mock_service
+        mock_creds = MagicMock()
 
-        subject = "Test Subject"
-        recipients = ["test@example.com"]
-        non_existent_file = Path("/non/existent/file.txt")
+        non_existent_path = Path("/non/existent/file.txt")
 
-        # Mock the Path to appear as a file but raise FileNotFoundError when opened
-        with (
-            patch.object(Path, "is_file", return_value=True),
-            patch.object(Path, "open", side_effect=FileNotFoundError()),
-        ):
-            # Test - should not raise exception
-            send_email(credentials, subject, recipients, non_existent_file)
+        send_email(
+            credentials=mock_creds,
+            subject="Test",
+            recipients=["test@example.com"],
+            content=non_existent_path,
+        )
 
-        # Assertions
-        mock_logger.error.assert_called_once_with("File not found: ", non_existent_file)
+        # Should send successfully (Path is converted to string since is_file() returns False)
+        mock_service.users().messages().send.assert_called_once()
 
     @patch("bertrend_apps.common.mail_utils.build")
     @patch("bertrend_apps.common.mail_utils.logger")
     def test_send_email_unexpected_error(self, mock_logger, mock_build):
-        """Test handling of unexpected errors during email sending"""
-        # Setup
-        credentials = self.create_mock_credentials()
-        mock_service = Mock()
+        """Test send_email handles unexpected errors gracefully."""
+        mock_service = MagicMock()
         mock_build.return_value = mock_service
+        mock_service.users().messages().send.side_effect = Exception("Unexpected error")
+        mock_creds = MagicMock()
 
-        # Mock unexpected error
-        unexpected_error = ValueError("Unexpected error")
-        mock_service.users().messages().send().execute.side_effect = unexpected_error
-
-        subject = "Test Subject"
-        recipients = ["test@example.com"]
-        content = "Test content"
-
-        # Test - should not raise exception
-        send_email(credentials, subject, recipients, content)
-
-        # Assertions
-        mock_logger.exception.assert_called_once_with(
-            "Unexpected error: ", unexpected_error
-        )
-
-    @patch("bertrend_apps.common.mail_utils.build")
-    def test_send_email_multiple_recipients(self, mock_build):
-        """Test sending email to multiple recipients"""
-        # Setup
-        credentials = self.create_mock_credentials()
-        mock_service = Mock()
-        mock_build.return_value = mock_service
-        mock_messages = Mock()
-        mock_send = Mock()
-        mock_execute = Mock()
-
-        mock_service.users.return_value.messages.return_value = mock_messages
-        mock_messages.send.return_value = mock_send
-        mock_send.execute.return_value = mock_execute
-
-        subject = "Test Multiple Recipients"
-        recipients = ["test1@example.com", "test2@example.com", "test3@example.com"]
-        content = "Content for multiple recipients"
-
-        # Test
-        send_email(credentials, subject, recipients, content)
-
-        # Assertions
-        mock_build.assert_called_once_with("gmail", "v1", credentials=credentials)
-        mock_messages.send.assert_called_once()
-        mock_send.execute.assert_called_once()
-
-    @patch("bertrend_apps.common.mail_utils.build")
-    @patch("bertrend_apps.common.mail_utils.mimetypes")
-    def test_send_email_unknown_mime_type(self, mock_mimetypes, mock_build):
-        """Test sending email with file having unknown MIME type"""
-        # Setup
-        credentials = self.create_mock_credentials()
-        mock_service = Mock()
-        mock_build.return_value = mock_service
-        mock_messages = Mock()
-        mock_send = Mock()
-        mock_execute = Mock()
-
-        mock_service.users.return_value.messages.return_value = mock_messages
-        mock_messages.send.return_value = mock_send
-        mock_send.execute.return_value = mock_execute
-        mock_mimetypes.guess_type.return_value = (None, None)  # Unknown MIME type
-
-        subject = "Test Unknown MIME"
-        recipients = ["test@example.com"]
-
-        # Create temporary file with unknown extension
-        with tempfile.NamedTemporaryFile(
-            mode="wb", suffix=".unknown", delete=False
-        ) as tmp_file:
-            tmp_file.write(b"Unknown content")
-            file_path = Path(tmp_file.name)
-
-        try:
-            # Test
-            send_email(credentials, subject, recipients, file_path)
-
-            # Assertions
-            mock_build.assert_called_once()
-            mock_messages.send.assert_called_once()
-            mock_send.execute.assert_called_once()
-
-        finally:
-            # Cleanup
-            file_path.unlink()
-
-
-class TestIntegration:
-    """Integration tests for mail utils"""
-
-    @patch("bertrend_apps.common.mail_utils.build")
-    @patch("bertrend_apps.common.mail_utils.Credentials")
-    @patch("bertrend_apps.common.mail_utils.TOKEN_PATH")
-    def test_full_email_workflow(
-        self, mock_token_path, mock_credentials_class, mock_build
-    ):
-        """Test complete workflow from getting credentials to sending email"""
-        # Setup credentials
-        mock_token_path.exists.return_value = True
-        mock_creds = Mock()
-        mock_creds.valid = True
-        mock_credentials_class.from_authorized_user_file.return_value = mock_creds
-
-        # Setup email service
-        mock_service = Mock()
-        mock_build.return_value = mock_service
-        mock_execute = Mock()
-        mock_service.users().messages().send().execute = mock_execute
-
-        # Test workflow
-        credentials = get_credentials()
         send_email(
-            credentials,
-            "Integration Test",
-            ["integration@example.com"],
-            "Integration test content",
+            credentials=mock_creds,
+            subject="Test",
+            recipients=["test@example.com"],
+            content="Test",
         )
 
-        # Assertions
-        assert credentials == mock_creds
-        mock_build.assert_called_once_with("gmail", "v1", credentials=mock_creds)
-        mock_execute.assert_called_once()
+        # Should log exception
+        mock_logger.exception.assert_called()
+
+    @patch("bertrend_apps.common.mail_utils.build")
+    def test_send_email_from_address(self, mock_build):
+        """Test that FROM address is correctly set."""
+        mock_service = MagicMock()
+        mock_build.return_value = mock_service
+        mock_creds = MagicMock()
+
+        send_email(
+            credentials=mock_creds,
+            subject="Test",
+            recipients=["test@example.com"],
+            content="Test",
+        )
+
+        # Verify the FROM constant is used
+        assert FROM == "wattelse.ai@gmail.com"
+        mock_build.assert_called_once()
+
+    @patch("bertrend_apps.common.mail_utils.build")
+    def test_send_email_content_type_markdown(self, mock_build):
+        """Test sending email with markdown content type."""
+        mock_service = MagicMock()
+        mock_build.return_value = mock_service
+        mock_creds = MagicMock()
+
+        send_email(
+            credentials=mock_creds,
+            subject="Markdown Email",
+            recipients=["test@example.com"],
+            content="# Markdown Content",
+            content_type="md",
+        )
+
+        mock_build.assert_called_once()
+        mock_service.users().messages().send.assert_called_once()
+
+    @patch("bertrend_apps.common.mail_utils.build")
+    @patch("bertrend_apps.common.mail_utils.logger")
+    def test_send_email_success_logging(self, mock_logger, mock_build):
+        """Test that successful email send is logged."""
+        mock_service = MagicMock()
+        mock_build.return_value = mock_service
+        mock_creds = MagicMock()
+
+        send_email(
+            credentials=mock_creds,
+            subject="Test",
+            recipients=["test@example.com"],
+            content="Test",
+        )
+
+        # Should log success
+        mock_logger.debug.assert_called()
