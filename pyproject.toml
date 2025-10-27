@@ -28,6 +28,7 @@ dependencies = [
     "dateparser (>=1.2.0)",
     "dask (==2024.12.0)", # issues with >=2025.x (https://github.com/dask/dask/issues/11678)
     "dill (>=0.4.0)",
+    "fastapi (>=0.120.0)",
     "gensim (>=4.3.3)",
     "hdbscan (>=0.8.40)",
     "joblib (>=1.4.2)",

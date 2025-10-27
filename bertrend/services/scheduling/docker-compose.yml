@@ -8,22 +8,21 @@ services:
       - "8882:8000"
     volumes:
       # Mount data directory for persistent SQLite database
-      - ./data:/app/data
-      # Mount logs directory
-      - ./logs:/app/logs
-      # Optional: Mount source code for development (comment out for production)
-      # - ./main.py:/app/main.py
+      - $HOME/.bertrend/db:/app/data
     environment:
       # Application settings
       - TZ=Europe/Paris
       - PYTHONUNBUFFERED=1
-      # Optional: Database path (if you want to customize)
-      - DB_PATH=/app/data/jobs.sqlite
       # Optional: Log level
-      - LOG_LEVEL=INFO
+      - LOG_LEVEL=DEBUG
       # Optional: Number of worker processes
       - MAX_WORKERS=5
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/')"]
       interval: 30s
