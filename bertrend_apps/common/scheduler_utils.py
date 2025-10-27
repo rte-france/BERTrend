@@ -4,7 +4,6 @@
 #  This file is part of BERTrend.
 import locale
 import random
-import sys
 from abc import abstractmethod, ABC
 from pathlib import Path
 
@@ -14,9 +13,8 @@ from cron_descriptor import (
     ExpressionDescriptor,
     DescriptionTypeEnum,
 )
-from loguru import logger
 
-from bertrend import BEST_CUDA_DEVICE, BERTREND_LOG_PATH
+from bertrend import BEST_CUDA_DEVICE
 from bertrend.demos.demos_utils.i18n import get_current_internationalization_language
 
 

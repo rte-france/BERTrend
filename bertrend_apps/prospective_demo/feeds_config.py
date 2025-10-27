@@ -31,7 +31,6 @@ from bertrend_apps.prospective_demo.feeds_common import (
     read_user_feeds,
 )
 from bertrend_apps.prospective_demo import CONFIG_FEEDS_BASE_PATH
-from bertrend_apps.common.scheduler_utils import remove_scheduled_training_for_user
 
 # Default feed configs
 DEFAULT_CRONTAB_EXPRESSION = "1 0 * * 1"
@@ -312,7 +311,7 @@ def handle_delete(row_dict: dict):
             delete_feed_config(feed_id)
             logger.info(f"Flux {feed_id} supprimé !")
             # Remove from crontab associated training
-            remove_scheduled_training_for_user(
+            SCHEDULER_UTILS.remove_scheduled_training_for_user(
                 model_id=feed_id, user=st.session_state.username
             )
             time.sleep(0.2)
