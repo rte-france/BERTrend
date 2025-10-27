@@ -2,17 +2,11 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-"""
-Utilities to schedule jobs using the internal scheduling_service instead of system crontab.
-This module mirrors the public API of crontab_utils.py so it can be used as a drop-in
-replacement where we want to rely on the new scheduler service.
-"""
+
 from __future__ import annotations
 
 import hashlib
-import json
 import os
-import re
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -20,7 +14,7 @@ from loguru import logger
 
 from bertrend import load_toml_config
 import requests
-from urllib.parse import urljoin, quote
+from urllib.parse import urljoin
 
 from bertrend_apps.common.scheduler_utils import SchedulerUtils
 
@@ -122,9 +116,8 @@ class APSchedulerUtils(SchedulerUtils):
             command_kwargs = {}
         logger.debug(f"Scheduling via service (HTTP): {schedule} {env_vars} {command}")
         # Use hash for job_id (URL-safe), but put full command in name for regex checks
-        full_command = f"{env_vars} {command}".strip() if env_vars else command
         job_id = _job_id_from_string(f"{command}|{schedule}|{command_kwargs}")
-        job_name = f"cron|{schedule}|{full_command}|{command_kwargs}"
+        job_name = f"{command}|{command_kwargs}"
         payload = {
             "job_id": job_id,
             "job_name": job_name,
@@ -155,12 +148,12 @@ class APSchedulerUtils(SchedulerUtils):
         """Schedule data scrapping based on a feed configuration file using the service."""
         data_feed_cfg = load_toml_config(feed_cfg)
         schedule = data_feed_cfg["data-feed"]["update_frequency"]
-        id = data_feed_cfg["data-feed"]["id"]
+        id = data_feed_cfg["data-feed"]["id"].removeprefix("feed_")
         command = "/scape-feed"
         command_kwargs = {
             "method": "POST",
             "json_data": {
-                "feed_cfg": feed_cfg.resolve().name,
+                "feed_cfg": feed_cfg.resolve().as_posix(),
                 "user_id": user,
                 "model_id": id,
             },
@@ -183,8 +176,8 @@ class APSchedulerUtils(SchedulerUtils):
         command_kwargs = {
             "method": "POST",
             "json_data": {
-                "newsletter_toml_cfg_path": newsletter_cfg_path.resolve().name,
-                "data_feed_toml_cfg_path": data_feed_cfg_path.resolve().name,
+                "newsletter_toml_cfg_path": newsletter_cfg_path.resolve().as_posix(),
+                "data_feed_toml_cfg_path": data_feed_cfg_path.resolve().as_posix(),
                 "cuda_devices": cuda_devices,
             },
         }

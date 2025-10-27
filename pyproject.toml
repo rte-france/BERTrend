@@ -63,6 +63,7 @@ dependencies = [
     "sentencepiece (>=0.2.0)",
     "streamlit (>=1.50)",
     "streamlit-code-editor (>=0.1.22)",
+    "SQLAlchemy (>=2.0.40)",
     "supervisor (>=4.3.0)",
     "tldextract (>=2.0.1)",
     "thefuzz (>=0.22.1)",
