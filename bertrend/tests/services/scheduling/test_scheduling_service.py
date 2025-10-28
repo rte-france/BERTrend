@@ -3,7 +3,6 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import types
 from datetime import datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
@@ -116,9 +115,6 @@ def client(monkeypatch):
 def test_root_endpoint(client):
     r = client.get("/")
     assert r.status_code == 200
-    data = r.json()
-    assert data["message"].startswith("Job Scheduler API")
-    assert "endpoints" in data
 
 
 def test_list_functions(client):

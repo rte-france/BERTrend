@@ -6,21 +6,24 @@
 #
 # Use Python to load .env file and export variables
 eval $(python3 << 'EOF'
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 from dotenv import find_dotenv
-import os
 
 # Find .env file starting from current directory
 dotenv_path = find_dotenv(usecwd=True)
 
 if dotenv_path:
-    load_dotenv(dotenv_path)
-    # Export all environment variables that were loaded
-    for key, value in os.environ.items():
-        # Escape special characters in the value
-        value_escaped = value.replace('"', '\\"')
-        print(f'export {key}="{value_escaped}"')
+    # Load only the variables from .env file (not all environment)
+    env_vars = dotenv_values(dotenv_path)
+
+    # Export only the variables from .env
+    for key, value in env_vars.items():
+        if value is not None:  # Skip empty values
+            # Escape special characters in the value
+            value_escaped = value.replace('"', '\\"')
+            print(f'export {key}="{value_escaped}"')
 else:
+    import sys
     print('echo "Warning: .env file not found"', file=sys.stderr)
 EOF
 )
