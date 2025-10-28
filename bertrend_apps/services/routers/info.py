@@ -3,7 +3,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 from fastapi import APIRouter
-
+from fastapi.responses import RedirectResponse
 from bertrend_apps.services.config.settings import get_config
 
 # Load the configuration
@@ -21,3 +21,9 @@ def health():
 @router.get("/num_workers")
 def get_num_workers():
     return CONFIG.number_workers
+
+
+@router.get("/", summary="Redirect to API documentation")
+def root():
+    """Redirect root path to /docs"""
+    return RedirectResponse(url="/docs")

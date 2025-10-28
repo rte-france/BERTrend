@@ -15,7 +15,7 @@ from bertrend_apps.prospective_demo.process_new_data import (
     regenerate_models,
     train_new_model,
 )
-from bertrend_apps.services.logging_utils import get_file_logger
+from bertrend_apps.services.utils.logging_utils import get_file_logger
 from bertrend_apps.services.models.bertrend_app_models import (
     TrainNewModelRequest,
     RegenerateRequest,

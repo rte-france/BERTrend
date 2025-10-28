@@ -20,7 +20,7 @@ from bertrend_apps.data_provider.data_provider_utils import (
     generate_query_file,
 )
 from bertrend_apps.services.config.settings import get_config
-from bertrend_apps.services.logging_utils import get_file_logger
+from bertrend_apps.services.utils.logging_utils import get_file_logger
 from bertrend_apps.services.models.data_provider_models import (
     ScrapeFeedRequest,
     ScrapeRequest,

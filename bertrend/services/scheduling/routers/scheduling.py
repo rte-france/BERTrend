@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import HTTPException, APIRouter, FastAPI
+from fastapi.responses import RedirectResponse
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.executors.pool import ProcessPoolExecutor
@@ -17,7 +18,6 @@ from datetime import datetime
 from typing import List, Union, Any
 
 from loguru import logger
-
 from bertrend.services.scheduling.job_utils.job_functions import JOB_FUNCTIONS
 from bertrend.services.scheduling.models.scheduling_models import (
     JobCreate,
@@ -33,6 +33,7 @@ from bertrend.services.scheduling.models.scheduling_models import (
 router = APIRouter()
 
 DB_PATH = Path.home() / ".bertrend" / "db"
+DB_NAME = "bertrend_jobs.sqlite"
 DB_PATH.mkdir(parents=True, exist_ok=True)
 
 # Scheduler will be initialized on first use or set by tests
@@ -45,7 +46,7 @@ def _init_scheduler():
     if scheduler is None:
         # Configure job stores and executors
         jobstores = {
-            "default": SQLAlchemyJobStore(url=f"sqlite:///{DB_PATH}/jobs.sqlite")
+            "default": SQLAlchemyJobStore(url=f"sqlite:///{DB_PATH}/{DB_NAME}")
         }
         executors = {"default": ProcessPoolExecutor(max_workers=5)}
         job_defaults = {
