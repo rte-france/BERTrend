@@ -3,6 +3,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import os
+import sys
 from pathlib import Path
 
 from loguru import logger
@@ -23,6 +24,16 @@ if not _initialized:
 
     except Exception:
         pass
+
+    # First, remove the default handler (Loguru always adds one by default)
+    logger.remove()
+
+    # Add back a colorized stdout sink
+    logger.add(
+        sys.stdout,
+        colorize=True,
+        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+    )
 
     _initialized = True
 

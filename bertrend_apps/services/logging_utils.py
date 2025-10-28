@@ -23,7 +23,7 @@ def get_file_logger(id: str, user_name: str = "", model_id: str = "") -> int:
     logger_id = logger.add(
         log_file,
         level="DEBUG",
-        format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} - {message}",
+        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
         colorize=True,
         retention="60 days",  # Remove automatically logs after x days
     )
