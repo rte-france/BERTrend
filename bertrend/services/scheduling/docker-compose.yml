@@ -8,7 +8,7 @@ services:
       - "8882:8000"
     volumes:
       # Mount data directory for persistent SQLite database
-      - $HOME/.bertrend/db:/.bertrend/db
+      - $HOME/.bertrend/db:/root/.bertrend/db
     environment:
       # Application settings
       - TZ=Europe/Paris
