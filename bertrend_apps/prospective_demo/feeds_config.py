@@ -13,7 +13,7 @@ from loguru import logger
 
 from bertrend.article_scoring.article_scoring import QualityLevel
 from bertrend.config.parameters import LANGUAGES
-from bertrend.demos.demos_utils.i18n import translate
+from bertrend_apps.prospective_demo.i18n import translate
 from bertrend.demos.demos_utils.icons import (
     INFO_ICON,
     ERROR_ICON,

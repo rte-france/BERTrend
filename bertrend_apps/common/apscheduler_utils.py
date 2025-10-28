@@ -87,7 +87,7 @@ class APSchedulerUtils(SchedulerUtils):
         # Process results
         results_d = r.json()
         if results_d["matches_found"] == 0:
-            logger.warning("No jobs found matching the provided patterns")
+            logger.trace("No jobs found matching the provided patterns")
             return []
         return [job["job_id"] for job in results_d["jobs"]]
 
@@ -149,7 +149,7 @@ class APSchedulerUtils(SchedulerUtils):
         data_feed_cfg = load_toml_config(feed_cfg)
         schedule = data_feed_cfg["data-feed"]["update_frequency"]
         id = data_feed_cfg["data-feed"]["id"].removeprefix("feed_")
-        command = "/scape-feed"
+        command = "/scrape-feed"
         command_kwargs = {
             "method": "POST",
             "json_data": {

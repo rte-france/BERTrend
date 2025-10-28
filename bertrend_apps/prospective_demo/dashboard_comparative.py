@@ -29,7 +29,7 @@ from bertrend.demos.demos_utils.icons import (
     POPULARITY_ICON,
     SIGNAL_EVOLUTION_ICON,
 )
-from bertrend.demos.demos_utils.i18n import translate
+from bertrend_apps.prospective_demo.i18n import translate
 from bertrend_apps.prospective_demo import (
     NOISE,
     WEAK_SIGNALS,

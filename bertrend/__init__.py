@@ -20,8 +20,10 @@ if not _initialized:
             logger.info("Loaded .env file")
         else:
             logger.warning("Failed to load .env file")
+
     except Exception:
         pass
+
     _initialized = True
 
 from bertrend.utils.config_utils import load_toml_config

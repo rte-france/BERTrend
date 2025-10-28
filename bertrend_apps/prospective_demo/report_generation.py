@@ -9,7 +9,7 @@ import streamlit as st
 from google.auth.exceptions import RefreshError
 from loguru import logger
 
-from bertrend.demos.demos_utils.i18n import translate
+from bertrend_apps.prospective_demo.i18n import translate
 from bertrend.demos.demos_utils.icons import (
     NEWSLETTER_ICON,
     TOPIC_ICON,

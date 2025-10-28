@@ -71,6 +71,9 @@ class DummyProvider:
 
 @pytest.fixture
 def client(monkeypatch):
+    # Mock SEMANTIC_SCHOLAR_API_KEY to handle cases where it's not set
+    monkeypatch.setenv("SEMANTIC_SCHOLAR_API_KEY", "mock_api_key_for_testing")
+    
     # Ensure a fresh providers mapping with our dummy for relevant providers
     providers = dict(PROVIDERS)
     providers.update(

@@ -14,7 +14,7 @@ from loguru import logger
 
 from bertrend import load_toml_config
 from bertrend.config.parameters import LANGUAGES
-from bertrend.demos.demos_utils.i18n import translate
+from bertrend_apps.prospective_demo.i18n import translate
 from bertrend.demos.demos_utils.icons import (
     EDIT_ICON,
     DELETE_ICON,
