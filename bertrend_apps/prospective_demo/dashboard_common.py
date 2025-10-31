@@ -9,8 +9,8 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
-from bertrend.demos.demos_utils.i18n import translate
 from bertrend.demos.demos_utils.icons import WARNING_ICON
+from bertrend_apps.prospective_demo.i18n import translate
 from bertrend_apps.prospective_demo import NOISE, WEAK_SIGNALS, STRONG_SIGNALS
 from bertrend_apps.prospective_demo.models_info import get_models_info
 

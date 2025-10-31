@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from bertrend.demos.demos_utils.i18n import translate
+from bertrend_apps.prospective_demo.i18n import translate
 from bertrend.demos.demos_utils.icons import CYCLE_ICON
 from bertrend.utils.data_loading import (
     load_data,

@@ -24,7 +24,7 @@ from bertrend_apps.prospective_demo.dashboard_common import (
     choose_id_and_ts,
     get_df_topics,
 )
-from bertrend.demos.demos_utils.i18n import translate
+from bertrend_apps.prospective_demo.i18n import translate
 
 COLS_RATIO = [4 / 7, 3 / 7]
 

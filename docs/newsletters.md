@@ -31,7 +31,7 @@ To automatically send a newsletter at regular intervals, you should define a job
 Follow this example:
 
 ```bash
-python -m bertrend_apps.data_provider schedule-scrapping feed.cfg
+python -m bertrend_apps.routers schedule-scrapping feed.cfg
 ```
 
 ### New automatic newsletter installation

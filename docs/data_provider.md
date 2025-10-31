@@ -26,9 +26,9 @@ export SEMANTIC_SCHOLAR_API_KEY=<your_api_key>
 
 ## Usage
 ```bash
-python -m bertrend_apps.data_provider --help
+python -m bertrend_apps.routers --help
 
-Usage: python -m data_provider [OPTIONS] COMMAND [ARGS]...                                                                                           
+Usage: python -m routers [OPTIONS] COMMAND [ARGS]...                                                                                           
                                                                                                                                                       
 ╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --install-completion        [bash|zsh|fish|powershell|pwsh]  Install completion for the specified shell. [default: None]                           │
@@ -48,9 +48,9 @@ Usage: python -m data_provider [OPTIONS] COMMAND [ARGS]...
  ```
 
 ```bash
-python -m bertrend_apps.data_provider --help auto-scrape --help
+python -m bertrend_apps.routers --help auto-scrape --help
                                                                                                                                                       
-Usage: python -m data_provider auto-scrape [OPTIONS] [REQUESTS_FILE]                                                                                 
+Usage: python -m routers auto-scrape [OPTIONS] [REQUESTS_FILE]                                                                                 
                                                                                                                                                       
  Scrape data from Google, Bing news or NewsCatcher (multiple requests from a configuration file: each line of the file shall be compliant with the    
  following format: <keyword list>;<after_date, format YYYY-MM-DD>;<before_date, format YYYY-MM-DD>)                                                   
@@ -72,9 +72,9 @@ Usage: python -m data_provider auto-scrape [OPTIONS] [REQUESTS_FILE]
 ```
 
 ```bash
-python -m bertrend_apps.data_provider generate-query-file --help
+python -m bertrend_apps.routers generate-query-file --help
 
-Usage: python -m data_provider generate-query-file [OPTIONS] [KEYWORDS]                                                                              
+Usage: python -m routers generate-query-file [OPTIONS] [KEYWORDS]                                                                              
                                                                                                                                                       
  Generates a query file to be used with the auto-scrape command. This is useful for queries generating many results. This will split the broad query  
  into many ones, each one covering an 'interval' (range) in days covered by each atomic request. If you want to cover several keywords, run the       

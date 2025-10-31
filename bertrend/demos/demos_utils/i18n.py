@@ -8,12 +8,10 @@ Provides functionality for translating text between French and English.
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import streamlit as st
 from typing import Optional
 
-from bertrend_apps.prospective_demo.i18n_translations import (
-    TRANSLATIONS as PROSPECTIVE_TRANSLATIONS,
-)
+import streamlit as st
+
 from bertrend.demos.topic_analysis.i18n_translations import (
     TRANSLATIONS as TOPIC_ANALYSIS_TRANSLATIONS,
 )
@@ -26,9 +24,8 @@ from bertrend.demos.weak_signals.i18n_translations import (
 
 # Merge all translations
 TRANSLATIONS = {
-    **PROSPECTIVE_TRANSLATIONS,
-    **TOPIC_ANALYSIS_TRANSLATIONS,
     **DEMOS_UTILS_TRANSLATIONS,
+    **TOPIC_ANALYSIS_TRANSLATIONS,
     **WEAK_SIGNALS_TRANSLATIONS,
 }
 
@@ -37,12 +34,6 @@ LANGUAGES = {"fr": "Français", "en": "English"}
 
 # Default language
 DEFAULT_LANGUAGE = "en"
-
-
-def set_default_internationalization_language(language: str) -> None:
-    """Set the default language for the application."""
-    global DEFAULT_LANGUAGE
-    DEFAULT_LANGUAGE = language
 
 
 def get_current_internationalization_language() -> str:
@@ -73,6 +64,30 @@ def create_internationalization_language_selector() -> None:
         st.rerun()
 
 
+def translate_helper(key: str, default: Optional[str] = None, translations=None) -> str:
+    """
+    Translate a text key to the current language.
+
+    Args:
+        key: The translation key to look up
+        default: Default text to return if the key is not found
+
+    Returns:
+        The translated text in the current language
+    """
+    if translations is None:
+        return key
+    lang = get_current_internationalization_language()
+
+    if key in translations and lang in translations[key]:
+        return translations[key][lang]
+
+    # If the key doesn't exist, or the language is not available for this key
+    if default:
+        return default
+    return key  # Return the key itself as fallback
+
+
 def translate(key: str, default: Optional[str] = None) -> str:
     """
     Translate a text key to the current language.
@@ -84,12 +99,4 @@ def translate(key: str, default: Optional[str] = None) -> str:
     Returns:
         The translated text in the current language
     """
-    lang = get_current_internationalization_language()
-
-    if key in TRANSLATIONS and lang in TRANSLATIONS[key]:
-        return TRANSLATIONS[key][lang]
-
-    # If the key doesn't exist, or the language is not available for this key
-    if default:
-        return default
-    return key  # Return the key itself as fallback
+    return translate_helper(key, default, TRANSLATIONS)

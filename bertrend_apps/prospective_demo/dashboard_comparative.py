@@ -29,7 +29,7 @@ from bertrend.demos.demos_utils.icons import (
     POPULARITY_ICON,
     SIGNAL_EVOLUTION_ICON,
 )
-from bertrend.demos.demos_utils.i18n import translate
+from bertrend_apps.prospective_demo.i18n import translate
 from bertrend_apps.prospective_demo import (
     NOISE,
     WEAK_SIGNALS,
@@ -78,7 +78,9 @@ def choose_two_periods() -> tuple[str, datetime, datetime]:
             st.error(translate("no_available_model_warning"), icon=ERROR_ICON)
             st.stop()
     except (AttributeError, KeyError) as e:
-        st.error(translate("error_accessing_user_feeds").format(error=e), icon=ERROR_ICON)
+        st.error(
+            translate("error_accessing_user_feeds").format(error=e), icon=ERROR_ICON
+        )
         st.stop()
 
     # Initialize model_id in session state if not present
@@ -278,13 +280,19 @@ def plot_topic_popularity_over_time(
             ]
 
             # Format topic label
-            topic_label = (
-                translate("topic_with_title").format(
-                    topic_id=topic_id, title=topic_titles.get(topic_id, translate("not_available"))[:50]
+            if topic_id in topic_titles:
+                raw_title = topic_titles.get(topic_id)
+                # Handle None/NaN and ensure string
+                if raw_title is None or pd.isna(raw_title):
+                    safe_title = translate("not_available")
+                else:
+                    safe_title = str(raw_title)
+                topic_label = translate("topic_with_title").format(
+                    topic_id=topic_id,
+                    title=safe_title[:50],
                 )
-                if topic_id in topic_titles
-                else translate("topic_without_title").format(topic_id=topic_id)
-            )
+            else:
+                topic_label = translate("topic_without_title").format(topic_id=topic_id)
 
             fig.add_trace(
                 go.Scatter(
@@ -293,8 +301,10 @@ def plot_topic_popularity_over_time(
                     mode="lines+markers",
                     name=topic_label,
                     hovertemplate="<b>%{fullData.name}</b><br>"
-                    + translate("date_label") + ": %{x|%d/%m/%Y}<br>"
-                    + translate("popularity") + ": %{y:.2f}<br>"
+                    + translate("date_label")
+                    + ": %{x|%d/%m/%Y}<br>"
+                    + translate("popularity")
+                    + ": %{y:.2f}<br>"
                     + "<extra></extra>",
                 )
             )
@@ -322,7 +332,9 @@ def plot_topic_popularity_over_time(
         )
 
     except Exception as e:
-        st.error(translate("error_plotting_popularity").format(error=e), icon=ERROR_ICON)
+        st.error(
+            translate("error_plotting_popularity").format(error=e), icon=ERROR_ICON
+        )
         import traceback
 
         with st.expander(translate("error_details_debugging")):
@@ -421,7 +433,9 @@ def analyze_topic_evolution(
                 )
 
     except Exception as e:
-        st.error(translate("error_analyzing_evolution").format(error=e), icon=ERROR_ICON)
+        st.error(
+            translate("error_analyzing_evolution").format(error=e), icon=ERROR_ICON
+        )
 
 
 def display_topic_list(data: dict[str, pd.DataFrame], topic_ids: list[int]) -> None:
@@ -494,7 +508,9 @@ def display_topic_list(data: dict[str, pd.DataFrame], topic_ids: list[int]) -> N
             st.info(translate("no_data"))
 
     except Exception as e:
-        st.error(translate("error_displaying_topic_list").format(error=e), icon=ERROR_ICON)
+        st.error(
+            translate("error_displaying_topic_list").format(error=e), icon=ERROR_ICON
+        )
 
 
 def compare_stable_topics(
@@ -619,7 +635,9 @@ def compare_stable_topics(
             )
 
             fig.update_layout(
-                title=translate("popularity_change") + " " + translate("top_n_topics").format(n=top_n),
+                title=translate("popularity_change")
+                + " "
+                + translate("top_n_topics").format(n=top_n),
                 xaxis_title=translate("topic"),
                 yaxis_title=translate("popularity_change"),
                 height=DEFAULT_CHART_HEIGHT,
@@ -632,7 +650,9 @@ def compare_stable_topics(
             st.info(translate("no_data"))
 
     except Exception as e:
-        st.error(translate("error_comparing_stable_topics").format(error=e), icon=ERROR_ICON)
+        st.error(
+            translate("error_comparing_stable_topics").format(error=e), icon=ERROR_ICON
+        )
 
 
 @st.fragment()
@@ -724,7 +744,9 @@ def dashboard_comparative() -> None:
             analyze_topic_evolution(data_period_1, data_period_2, period_1, period_2)
 
     except Exception as e:
-        st.error(translate("error_in_comparative_dashboard").format(error=e), icon=ERROR_ICON)
+        st.error(
+            translate("error_in_comparative_dashboard").format(error=e), icon=ERROR_ICON
+        )
         # Log the error for debugging (in production, use proper logging)
         import traceback
 

@@ -5,9 +5,8 @@
 from pathlib import Path
 
 import pandas as pd
-import streamlit
 
-from bertrend import MODELS_DIR, FEED_BASE_PATH, CONFIG_PATH
+from bertrend import MODELS_DIR, CONFIG_PATH
 
 # Config path for users
 CONFIG_FEEDS_BASE_PATH = CONFIG_PATH / "users"

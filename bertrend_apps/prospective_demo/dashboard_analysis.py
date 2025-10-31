@@ -21,10 +21,7 @@ from bertrend_apps.prospective_demo.dashboard_common import (
     choose_id_and_ts,
     get_df_topics,
 )
-from bertrend.demos.demos_utils.i18n import (
-    translate,
-    get_current_internationalization_language,
-)
+from bertrend_apps.prospective_demo.i18n import translate
 
 
 @st.fragment()

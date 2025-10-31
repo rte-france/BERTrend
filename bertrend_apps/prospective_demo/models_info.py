@@ -4,9 +4,7 @@
 #  This file is part of BERTrend.
 import multiprocessing
 import os
-import random
 import shutil
-import sys
 import time
 
 import pandas as pd
@@ -14,9 +12,9 @@ import streamlit as st
 import toml
 from loguru import logger
 
-from bertrend import BERTREND_LOG_PATH, BEST_CUDA_DEVICE, load_toml_config
+from bertrend import load_toml_config
 from bertrend.config.parameters import LANGUAGES
-from bertrend.demos.demos_utils.i18n import translate
+from bertrend_apps.prospective_demo.i18n import translate
 from bertrend.demos.demos_utils.icons import (
     EDIT_ICON,
     DELETE_ICON,
@@ -31,11 +29,8 @@ from bertrend.demos.streamlit_components.clickable_df_component import clickable
 from bertrend.demos.streamlit_components.input_with_pills_component import (
     input_with_pills,
 )
-from bertrend_apps.common.crontab_utils import (
-    check_cron_job,
-    remove_from_crontab,
-    add_job_to_crontab,
-)
+from bertrend_apps import SCHEDULER_UTILS
+
 from bertrend_apps.prospective_demo import (
     get_user_models_path,
     get_model_cfg_path,
@@ -284,8 +279,12 @@ def edit_model_parameters(row_dict: dict):
             model_id, st.session_state.username
         )
 
-        update_scheduled_training_for_user(model_id, st.session_state.username)
-        update_scheduled_report_generation_for_user(model_id, st.session_state.username)
+        SCHEDULER_UTILS.update_scheduled_training_for_user(
+            model_id, st.session_state.username
+        )
+        SCHEDULER_UTILS.update_scheduled_report_generation_for_user(
+            model_id, st.session_state.username
+        )
         st.rerun()
 
 
@@ -308,7 +307,7 @@ def handle_delete_models(row_dict: dict):
     col1, col2, _ = st.columns([2, 2, 8])
     with col1:
         if st.button(translate("btn_yes"), type="primary"):
-            remove_scheduled_training_for_user(
+            SCHEDULER_UTILS.remove_scheduled_training_for_user(
                 model_id=model_id, user=st.session_state.username
             )
             delete_cached_models(model_id)
@@ -369,10 +368,10 @@ def handle_regenerate_models(row_dict: dict):
 def toggle_learning(cfg: dict):
     """Activate / deactivate the learning from the crontab"""
     model_id = cfg[translate("col_id")]
-    if check_if_learning_active_for_user(
+    if SCHEDULER_UTILS.check_if_learning_active_for_user(
         model_id=model_id, user=st.session_state.username
     ):
-        if remove_scheduled_training_for_user(
+        if SCHEDULER_UTILS.remove_scheduled_training_for_user(
             model_id=model_id, user=st.session_state.username
         ):
             st.toast(
@@ -381,20 +380,52 @@ def toggle_learning(cfg: dict):
             )
             logger.info(f"Learning for {model_id} deactivated !")
             # Also remove report generation if it was scheduled
-            if check_if_report_generation_active_for_user(
+            if SCHEDULER_UTILS.check_if_report_generation_active_for_user(
                 model_id, st.session_state.username
             ):
-                remove_scheduled_report_generation_for_user(
+                SCHEDULER_UTILS.remove_scheduled_report_generation_for_user(
                     model_id, st.session_state.username
                 )
                 logger.info(f"Automated report generation for {model_id} deactivated !")
     else:
-        schedule_training_for_user(model_id, st.session_state.username)
+        schedule = SCHEDULER_UTILS.generate_crontab_expression(
+            st.session_state.model_analysis_cfg[model_id]["model_config"]["granularity"]
+        )
+        SCHEDULER_UTILS.schedule_training_for_user(
+            schedule, model_id, st.session_state.username
+        )
         st.toast(translate("learning_activated").format(model_id), icon=WARNING_ICON)
         logger.info(f"Learning for {model_id} activated !")
+
         # Also schedule report generation if configured
-        if schedule_report_generation_for_user(model_id, st.session_state.username):
-            logger.info(f"Automated report generation for {model_id} activated !")
+        if model_id not in st.session_state.model_analysis_cfg:
+            logger.warning(f"Model config not found for {model_id}")
+        else:
+            report_config = st.session_state.model_analysis_cfg[model_id].get(
+                "report_config", {}
+            )
+            # Generate cron schedule based on granularity (same as training)
+            schedule = SCHEDULER_UTILS.generate_crontab_expression(
+                st.session_state.model_analysis_cfg[model_id]["model_config"][
+                    "granularity"
+                ]
+            )
+            # Add a small delay after training completes (run 1 hour after training schedule)
+            # Parse the schedule and add 1 hour
+            parts = schedule.split()
+            hour = int(parts[1])
+            # Add 1 hour, wrapping around if necessary
+            hour = (hour + 1) % 24
+            parts[1] = str(hour)
+            adjusted_schedule = " ".join(parts)
+
+            if SCHEDULER_UTILS.schedule_report_generation_for_user(
+                adjusted_schedule,
+                model_id,
+                st.session_state.username,
+                report_config=report_config,
+            ):
+                logger.info(f"Automated report generation for {model_id} activated !")
     # Clear cache to reflect updated crontab state
     st.cache_data.clear()
     time.sleep(0.2)
@@ -405,7 +436,7 @@ def toggle_learning(cfg: dict):
 def handle_toggle_learning(cfg: dict):
     """Function to handle remove click events"""
     model_id = cfg[translate("col_id")]
-    if check_if_learning_active_for_user(
+    if SCHEDULER_UTILS.check_if_learning_active_for_user(
         model_id=model_id, user=st.session_state.username
     ):
         st.write(
@@ -432,140 +463,17 @@ def toggle_icon(df: pd.DataFrame, index: int) -> str:
     model_id = df[translate("col_id")][index]
     return (
         f":green[{TOGGLE_ON_ICON}]"
-        if check_if_learning_active_for_user(
+        if SCHEDULER_UTILS.check_if_learning_active_for_user(
             model_id=model_id, user=st.session_state.username
         )
         else f":red[{TOGGLE_OFF_ICON}]"
     )
 
 
-@st.cache_data(ttl=30)
-def check_if_learning_active_for_user(model_id: str, user: str):
-    """Checks if a given scrapping feed is active (registered in the crontab"""
-    if user:
-        return check_cron_job(rf"process_new_data train-new-model.*{user}.*{model_id}")
-    else:
-        return False
-
-
-def remove_scheduled_training_for_user(model_id: str, user: str):
-    """Removes from the crontab the training job matching the provided model_id"""
-    if user:
-        return remove_from_crontab(
-            rf"process_new_data train-new-model {user} {model_id}"
-        )
-    return False
-
-
-def update_scheduled_training_for_user(model_id: str, user: str):
-    """Updates the crontab with the new training job"""
-    if check_if_learning_active_for_user(model_id, user):
-        remove_scheduled_training_for_user(model_id, user)
-        schedule_training_for_user(model_id, user)
-        return True
-    return False
-
-
-def schedule_training_for_user(model_id: str, user: str):
-    """Schedule data scrapping on the basis of a feed configuration file"""
-    schedule = generate_crontab_expression(
-        st.session_state.model_analysis_cfg[model_id]["model_config"]["granularity"]
-    )
-    logpath = BERTREND_LOG_PATH / "users" / user
-    logpath.mkdir(parents=True, exist_ok=True)
-    command = (
-        f"{sys.executable} -m bertrend_apps.prospective_demo.process_new_data train-new-model {user} {model_id} "
-        f"> {logpath}/learning_{model_id}.log 2>&1"
-    )
-    env_vars = f"CUDA_VISIBLE_DEVICES={BEST_CUDA_DEVICE}"
-    add_job_to_crontab(schedule, command, env_vars)
-
-
 def delete_cached_models(model_id: str):
     """Removes models from the cache"""
     # Remove the directory and all its contents
     shutil.rmtree(st.session_state.models_paths[model_id])
-
-
-def generate_crontab_expression(days_interval: int) -> str:
-    # Random hour between 0 and 6 (inclusive)
-    hour = random.randint(0, 6)  # run during the night
-    # Random minute rounded to the nearest 10
-    minute = random.choice([0, 10, 20, 30, 40, 50])
-    # Compute days
-    days = [str(i) for i in range(1, 31, days_interval)]
-    # Crontab expression format: minute hour day_of_month month day_of_week
-    crontab_expression = f"{minute} {hour} {','.join(days)} * *"
-    return crontab_expression
-
-
-def check_if_report_generation_active_for_user(model_id: str, user: str) -> bool:
-    """Checks if automated report generation is active (registered in the crontab)"""
-    if user:
-        return check_cron_job(rf"automated_report_generation.*{user}.*{model_id}")
-    else:
-        return False
-
-
-def remove_scheduled_report_generation_for_user(model_id: str, user: str) -> bool:
-    """Removes from the crontab the report generation job matching the provided model_id"""
-    if user:
-        return remove_from_crontab(rf"automated_report_generation {user} {model_id}")
-    return False
-
-
-def schedule_report_generation_for_user(model_id: str, user: str) -> bool:
-    """Schedule automated report generation based on model configuration"""
-    # Check if report generation is configured in the model config
-    if model_id not in st.session_state.model_analysis_cfg:
-        logger.warning(f"Model config not found for {model_id}")
-        return False
-
-    report_config = st.session_state.model_analysis_cfg[model_id].get(
-        "report_config", {}
-    )
-    auto_send = report_config.get("auto_send", False)
-    recipients = report_config.get("email_recipients", [])
-
-    if not auto_send:
-        logger.info(f"auto_send is disabled for model {model_id}")
-        return False
-
-    if not recipients:
-        logger.warning(f"No email recipients configured for model {model_id}")
-        return False
-
-    # Generate cron schedule based on granularity (same as training)
-    schedule = generate_crontab_expression(
-        st.session_state.model_analysis_cfg[model_id]["model_config"]["granularity"]
-    )
-
-    # Add a small delay after training completes (run 1 hour after training schedule)
-    # Parse the schedule and add 1 hour
-    parts = schedule.split()
-    hour = int(parts[1])
-    # Add 1 hour, wrapping around if necessary
-    hour = (hour + 1) % 24
-    parts[1] = str(hour)
-    adjusted_schedule = " ".join(parts)
-
-    logpath = BERTREND_LOG_PATH / "users" / user
-    logpath.mkdir(parents=True, exist_ok=True)
-
-    command = (
-        f"{sys.executable} -m bertrend_apps.prospective_demo.automated_report_generation {user} {model_id} "
-        f"> {logpath}/report_{model_id}.log 2>&1"
-    )
-
-    return add_job_to_crontab(adjusted_schedule, command, "")
-
-
-def update_scheduled_report_generation_for_user(model_id: str, user: str) -> bool:
-    """Updates the crontab with the new report generation job"""
-    if check_if_report_generation_active_for_user(model_id, user):
-        remove_scheduled_report_generation_for_user(model_id, user)
-        return schedule_report_generation_for_user(model_id, user)
-    return False
 
 
 def safe_timestamp(x: str) -> pd.Timestamp | None:

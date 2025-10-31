@@ -6,7 +6,6 @@
 import base64
 import os
 from email.message import EmailMessage
-from email.utils import COMMASPACE
 import mimetypes
 from pathlib import Path
 
@@ -19,6 +18,9 @@ from googleapiclient.errors import HttpError
 from loguru import logger
 
 from bertrend import BASE_PATH
+
+COMMASPACE = ", "
+
 
 SCOPES = ["https://mail.google.com/"]  # full access to mail API
 FROM = "wattelse.ai@gmail.com"
@@ -111,7 +113,9 @@ def send_email(
                 if content_type.lower() in {"md", "text", "txt"}
                 else content_type
             )
-            msg.set_content(content, subtype=subtype)
+            # Convert Path to string if needed (e.g., for non-existent paths)
+            content_str = str(content) if isinstance(content, Path) else content
+            msg.set_content(content_str, subtype=subtype)
 
         # ------------------------------------------------------------------ #
         # 3. Send through Gmail API                                          #

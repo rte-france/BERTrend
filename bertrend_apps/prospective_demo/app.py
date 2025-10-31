@@ -30,10 +30,10 @@ from bertrend_apps.prospective_demo.dashboard_comparative import dashboard_compa
 from bertrend_apps.prospective_demo.feeds_config import configure_information_sources
 from bertrend_apps.prospective_demo.feeds_data import display_data_status
 from bertrend.demos.demos_utils.i18n import (
-    translate,
-    create_internationalization_language_selector,
     set_internationalization_language,
+    create_internationalization_language_selector,
 )
+from bertrend_apps.prospective_demo.i18n import translate
 from bertrend_apps.prospective_demo.models_info import models_monitoring
 from bertrend_apps.prospective_demo.report_generation import reporting
 from bertrend_apps.prospective_demo.dashboard_signals import signal_analysis
