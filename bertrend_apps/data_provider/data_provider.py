@@ -19,7 +19,7 @@ from newspaper import Article
 from bertrend.article_scoring.article_scoring import QualityLevel
 from bertrend.article_scoring.scoring_agent import score_articles
 from bertrend.utils.data_loading import TEXT_COLUMN
-from bertrend_apps.data_provider.utils import wait_if_seen_url
+from bertrend_apps.data_provider.utils import wait_if_seen_url, decode_google_news_url
 
 # Ensures to write with +rw for both user and groups
 os.umask(0o002)
@@ -172,6 +172,10 @@ class DataProvider(ABC):
         if any(ele in url for ele in BLACKLISTED_URL):
             logger.warning(f"Source of {url} is blacklisted!")
             return "", ""
+
+        # some feeds other than google news provider may contain google encoded urls that require decoding before parsing
+        if "news.google" in url:
+            url = decode_google_news_url(url)
 
         logger.debug(f"Extracting text from {url}")
         try:
