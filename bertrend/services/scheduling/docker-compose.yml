@@ -25,7 +25,7 @@ services:
         max-file: "3"
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/')"]
-      interval: 30s
+      interval: 180s
       timeout: 10s
       retries: 3
       start_period: 10s

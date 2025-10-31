@@ -5,6 +5,7 @@
 import time
 
 import requests
+from fastapi import HTTPException
 from loguru import logger
 
 
@@ -35,11 +36,15 @@ def http_request(
             json=json_data,
             timeout=timeout,
         )
+        if response.status_code != 200:
+            response.raise_for_status()
         logger.info(f"HTTP request completed with status code: {response.status_code}")
         return f"Request to {url} completed with status {response.status_code}"
     except Exception as e:
         logger.error(f"HTTP request failed: {str(e)}")
-        raise
+        raise HTTPException(
+            status_code=500, detail=f"Error executing request: {str(e)}"
+        )
 
 
 # Job function registry
