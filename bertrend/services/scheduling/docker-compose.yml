@@ -10,6 +10,8 @@ services:
       # Mount data directory for persistent SQLite database
       - $HOME/.bertrend/db:/root/.bertrend/db
     environment:
+      - NO_PROXY=$NO_PROXY # to avoid communication issues
+      - no_proxy=$no_proxy # to avoid communication issues
       # Application settings
       - TZ=Europe/Paris
       - PYTHONUNBUFFERED=1

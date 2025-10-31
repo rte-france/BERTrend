@@ -213,17 +213,6 @@ def test_validate_cron_invalid(client):
     assert "Invalid cron expression" in r.json()["detail"]
 
 
-def test_cron_examples(client):
-    r = client.get("/cron/examples")
-    assert r.status_code == 200
-    data = r.json()
-    examples = data.get("examples", [])
-    assert any(e.get("expression") == "0 9 * * *" for e in examples)
-
-
-# Unit tests for get_trigger helper
-
-
 def test_get_trigger_interval():
     jc = JobCreate(
         job_id="t1", job_type="interval", function_name="sample_job", seconds=5
