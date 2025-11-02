@@ -62,5 +62,5 @@ class GenerateQueryFileResponse(BaseModel):
 
 class ScrapeFeedRequest(BaseModel):
     feed_cfg: Path
-    user_id: Optional[str] = None
+    user: Optional[str] = None
     model_id: Optional[str] = None

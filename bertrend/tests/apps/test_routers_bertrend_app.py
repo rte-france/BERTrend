@@ -53,7 +53,7 @@ class TestTrainNewModel:
         response = client.post(
             "/train-new-model",
             json={
-                "user_name": "test_user",
+                "user": "test_user",
                 "model_id": "test_model",
             },
         )
@@ -82,7 +82,7 @@ class TestTrainNewModel:
         response = client.post(
             "/train-new-model",
             json={
-                "user_name": "test_user",
+                "user": "test_user",
                 "model_id": "test_model",
             },
         )
@@ -110,7 +110,7 @@ class TestTrainNewModel:
         response = client.post(
             "/train-new-model",
             json={
-                "user_name": "test_user",
+                "user": "test_user",
                 "model_id": "test_model",
             },
         )
@@ -134,7 +134,7 @@ class TestTrainNewModel:
         response = client.post(
             "/train-new-model",
             json={
-                "user_name": "test_user",
+                "user": "test_user",
                 "model_id": "test_model",
             },
         )
@@ -162,7 +162,7 @@ class TestTrainNewModel:
         response = client.post(
             "/train-new-model",
             json={
-                "user_name": "test_user",
+                "user": "test_user",
                 "model_id": "test_model",
             },
         )

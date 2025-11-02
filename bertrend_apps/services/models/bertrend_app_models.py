@@ -16,7 +16,7 @@ class StatusResponse(BaseModel):
 class TrainNewModelRequest(BaseModel):
     """Request model for training a new BERTrend model incrementally"""
 
-    user_name: str = Field(..., description="Identifier of the user")
+    user: str = Field(..., description="Identifier of the user")
     model_id: str = Field(..., description="ID of the model/data to train")
 
 

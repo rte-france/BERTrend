@@ -125,10 +125,10 @@ async def scrape_from_feed_api(req: ScrapeFeedRequest):
     This is the async equivalent of the CLI scrape-feed command.
     """
     # Create a unique log file for this call
-    user_id = "" if not req.user_id else req.user_id
+    user = "" if not req.user else req.user
     model_id = "" if not req.model_id else req.model_id
 
-    logger_id = get_file_logger(id="scrape_feed", user_name=user_id, model_id=model_id)
+    logger_id = get_file_logger(id="scrape_feed", user_name=user, model_id=model_id)
     try:
         result_path = await asyncio.to_thread(scrape_feed_from_config, req.feed_cfg)
         # Count the articles in the result file

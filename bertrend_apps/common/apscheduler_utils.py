@@ -154,7 +154,7 @@ class APSchedulerUtils(SchedulerUtils):
             "method": "POST",
             "json_data": {
                 "feed_cfg": feed_cfg.resolve().as_posix(),
-                "user_id": user,
+                "user": user,
                 "model_id": id,
             },
         }
@@ -190,7 +190,7 @@ class APSchedulerUtils(SchedulerUtils):
         command = "/train-new-model"
         command_kwargs = {
             "method": "POST",
-            "json_data": {"user_name": user, "model_id": model_id},
+            "json_data": {"user": user, "model_id": model_id},
         }
         return self.add_job_to_crontab(
             schedule=schedule, command=command, command_kwargs=command_kwargs
@@ -212,7 +212,7 @@ class APSchedulerUtils(SchedulerUtils):
         command_kwargs = {
             "method": "POST",
             "json_data": {
-                "user_name": user,
+                "user": user,
                 "model_id": model_id,
                 "reference_date": None,
             },
@@ -227,7 +227,7 @@ class APSchedulerUtils(SchedulerUtils):
             job_ids = self.find_jobs(
                 patterns={
                     "url": ".*/scrape-feed.*",
-                    "json_data": {"user_id": user, "model_id": feed_id},
+                    "json_data": {"user": user, "model_id": feed_id},
                 }
             )
             self.remove_jobs(job_ids)
@@ -242,7 +242,7 @@ class APSchedulerUtils(SchedulerUtils):
             job_ids = self.find_jobs(
                 patterns={
                     "url": ".*/train-new-model.*",
-                    "json_data": {"user_name": user, "model_id": model_id},
+                    "json_data": {"user": user, "model_id": model_id},
                 }
             )
             self.remove_jobs(job_ids)
@@ -259,7 +259,7 @@ class APSchedulerUtils(SchedulerUtils):
             job_ids = self.find_jobs(
                 patterns={
                     "url": ".*/generate-report.*",
-                    "json_data": {"user_name": user, "model_id": model_id},
+                    "json_data": {"user": user, "model_id": model_id},
                 }
             )
             self.remove_jobs(job_ids)
@@ -276,7 +276,7 @@ class APSchedulerUtils(SchedulerUtils):
             job_ids = self.find_jobs(
                 patterns={
                     "url": ".*/scrape-feed.*",
-                    "json_data": {"user_id": user, "model_id": feed_id},
+                    "json_data": {"user": user, "model_id": feed_id},
                 }
             )
             return len(job_ids) > 0
@@ -292,7 +292,7 @@ class APSchedulerUtils(SchedulerUtils):
             job_ids = self.find_jobs(
                 patterns={
                     "url": ".*/train-new-model.*",
-                    "json_data": {"user_name": user, "model_id": model_id},
+                    "json_data": {"user": user, "model_id": model_id},
                 }
             )
             return len(job_ids) > 0
@@ -310,7 +310,7 @@ class APSchedulerUtils(SchedulerUtils):
             job_ids = self.find_jobs(
                 patterns={
                     "url": ".*/generate-report.*",
-                    "json_data": {"user_name": user, "model_id": model_id},
+                    "json_data": {"user": user, "model_id": model_id},
                 }
             )
             return len(job_ids) > 0

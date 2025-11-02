@@ -29,13 +29,13 @@ class TestBertrendAppModels:
     """Tests for bertrend_app_models.py"""
 
     def test_train_new_model_request_valid(self):
-        req = TrainNewModelRequest(user_name="test_user", model_id="model_123")
-        assert req.user_name == "test_user"
+        req = TrainNewModelRequest(user="test_user", model_id="model_123")
+        assert req.user == "test_user"
         assert req.model_id == "model_123"
 
     def test_train_new_model_request_missing_fields(self):
         with pytest.raises(ValidationError):
-            TrainNewModelRequest(user_name="test_user")
+            TrainNewModelRequest(user="test_user")
         with pytest.raises(ValidationError):
             TrainNewModelRequest(model_id="model_123")
 

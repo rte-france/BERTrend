@@ -41,14 +41,14 @@ async def train_new(req: TrainNewModelRequest):
     """
     # Create a unique log file for this call
     logger_id = get_file_logger(
-        id="train-new-model", user_name=req.user_name, model_id=req.model_id
+        id="train-new-model", user_name=req.user, model_id=req.model_id
     )
 
     try:
         result = await asyncio.to_thread(
             train_new_model,
             model_id=req.model_id,
-            user_name=req.user_name,
+            user_name=req.user,
         )
         return StatusResponse(**result)
     except Exception as e:
@@ -114,7 +114,7 @@ async def generate_report(req: GenerateReportRequest):
     """
     # Create a unique log file for this call
     logger_id = get_file_logger(
-        id="regenerate", user_name=req.user_name, model_id=req.model_id
+        id="regenerate", user_name=req.user, model_id=req.model_id
     )
 
     try:
