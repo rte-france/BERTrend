@@ -13,7 +13,7 @@ from loguru import logger
 
 from bertrend.article_scoring.article_scoring import QualityLevel
 from bertrend.config.parameters import LANGUAGES
-from bertrend.demos.demos_utils.i18n import translate
+from bertrend_apps.prospective_demo.i18n import translate
 from bertrend.demos.demos_utils.icons import (
     INFO_ICON,
     ERROR_ICON,
@@ -25,20 +25,12 @@ from bertrend.demos.demos_utils.icons import (
     TOGGLE_OFF_ICON,
 )
 from bertrend.demos.streamlit_components.clickable_df_component import clickable_df
-from bertrend_apps.common.crontab_utils import (
-    get_understandable_cron_description,
-    check_if_scrapping_active_for_user,
-    remove_scrapping_for_user,
-    schedule_scrapping,
-)
+from bertrend_apps import SCHEDULER_UTILS
 from bertrend_apps.data_provider import URL_PATTERN
 from bertrend_apps.prospective_demo.feeds_common import (
     read_user_feeds,
 )
 from bertrend_apps.prospective_demo import CONFIG_FEEDS_BASE_PATH
-from bertrend_apps.prospective_demo.models_info import (
-    remove_scheduled_training_for_user,
-)
 
 # Default feed configs
 DEFAULT_CRONTAB_EXPRESSION = "1 0 * * 1"
@@ -141,7 +133,9 @@ def edit_feed_monitoring(config: dict | None = None):
         )
 
     try:
-        get_understandable_cron_description(st.session_state.update_frequency)
+        SCHEDULER_UTILS.get_understandable_cron_description(
+            st.session_state.update_frequency
+        )
         valid_cron = True
     except:
         valid_cron = False
@@ -189,7 +183,9 @@ def edit_feed_monitoring(config: dict | None = None):
             del st.session_state["update_frequency"]  # to avoid memory effect
 
         # Remove prevous crontab if any
-        remove_scrapping_for_user(feed_id=chosen_id, user=st.session_state.username)
+        SCHEDULER_UTILS.remove_scrapping_for_user(
+            feed_id=chosen_id, user=st.session_state.username
+        )
 
         # Save feed config and update crontab
         save_feed_config(chosen_id, config)
@@ -204,13 +200,13 @@ def save_feed_config(chosen_id, feed_config: dict):
     with open(feed_path, "w") as toml_file:
         toml.dump({"data-feed": feed_config}, toml_file)
     logger.debug(f"Saved feed config {feed_config} to {feed_path}")
-    schedule_scrapping(feed_path, user=st.session_state.username)
+    SCHEDULER_UTILS.schedule_scrapping(feed_path, user=st.session_state.username)
     st.rerun()
 
 
 def display_crontab_description(crontab_expr: str) -> str:
     try:
-        return f":blue[{INFO_ICON} {get_understandable_cron_description(crontab_expr)}]"
+        return f":blue[{INFO_ICON} {SCHEDULER_UTILS.get_understandable_cron_description(crontab_expr)}]"
     except Exception:
         return f":red[{ERROR_ICON} {translate('cron_error_message')}]"
 
@@ -255,7 +251,7 @@ def toggle_icon(df: pd.DataFrame, index: int) -> str:
     feed_id = df["id"][index]
     return (
         f":green[{TOGGLE_ON_ICON}]"
-        if check_if_scrapping_active_for_user(
+        if SCHEDULER_UTILS.check_if_scrapping_active_for_user(
             feed_id=feed_id, user=st.session_state.username
         )
         else f":red[{TOGGLE_OFF_ICON}]"
@@ -265,17 +261,19 @@ def toggle_icon(df: pd.DataFrame, index: int) -> str:
 def toggle_feed(cfg: dict):
     """Activate / deactivate the feed from the crontab"""
     feed_id = cfg["id"]
-    if check_if_scrapping_active_for_user(
+    if SCHEDULER_UTILS.check_if_scrapping_active_for_user(
         feed_id=feed_id, user=st.session_state.username
     ):
-        if remove_scrapping_for_user(feed_id=feed_id, user=st.session_state.username):
+        if SCHEDULER_UTILS.remove_scrapping_for_user(
+            feed_id=feed_id, user=st.session_state.username
+        ):
             st.toast(
                 translate("feed_deactivated_message").format(feed_id=feed_id),
                 icon=INFO_ICON,
             )
             logger.info(f"Flux {feed_id} désactivé !")
     else:
-        schedule_scrapping(
+        SCHEDULER_UTILS.schedule_scrapping(
             st.session_state.feed_files[feed_id], user=st.session_state.username
         )
         st.toast(
@@ -307,11 +305,13 @@ def handle_delete(row_dict: dict):
     col1, col2, _ = st.columns([2, 2, 8])
     with col1:
         if st.button(translate("yes_button"), type="primary"):
-            remove_scrapping_for_user(feed_id=feed_id, user=st.session_state.username)
+            SCHEDULER_UTILS.remove_scrapping_for_user(
+                feed_id=feed_id, user=st.session_state.username
+            )
             delete_feed_config(feed_id)
             logger.info(f"Flux {feed_id} supprimé !")
             # Remove from crontab associated training
-            remove_scheduled_training_for_user(
+            SCHEDULER_UTILS.remove_scheduled_training_for_user(
                 model_id=feed_id, user=st.session_state.username
             )
             time.sleep(0.2)
@@ -325,7 +325,7 @@ def handle_delete(row_dict: dict):
 def handle_toggle_feed(row_dict: dict):
     """Function to handle remove click events"""
     feed_id = row_dict["id"]
-    if check_if_scrapping_active_for_user(
+    if SCHEDULER_UTILS.check_if_scrapping_active_for_user(
         feed_id=feed_id, user=st.session_state.username
     ):
         st.write(

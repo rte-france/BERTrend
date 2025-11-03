@@ -3,20 +3,39 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import os
+import sys
 from pathlib import Path
 
 from loguru import logger
 
-# Auto-load .env if python-dotenv is available
-try:
-    from dotenv import load_dotenv  # type: ignore
 
-    if load_dotenv(override=True):
-        logger.info("Loaded .env file")
-    else:
-        logger.warning("Failed to load .env file")
-except Exception:
-    pass
+# Global flag to track initialization
+_initialized = False
+
+# Auto-load .env if python-dotenv is available
+if not _initialized:
+    try:
+        from dotenv import load_dotenv  # type: ignore
+
+        if load_dotenv(override=True):
+            logger.info("Loaded .env file")
+        else:
+            logger.warning("Failed to load .env file")
+
+    except Exception:
+        pass
+
+    # First, remove the default handler (Loguru always adds one by default)
+    logger.remove()
+
+    # Add back a colorized stdout sink
+    logger.add(
+        sys.stdout,
+        colorize=True,
+        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+    )
+
+    _initialized = True
 
 from bertrend.utils.config_utils import load_toml_config
 
@@ -43,11 +62,7 @@ LLM_CONFIG = SERVICES_CONFIG["llm_service"]
 BEST_CUDA_DEVICE = r"\`nvidia-smi --query-gpu=index,memory.used --format=csv,nounits | tail -n +2 | sort -t',' -k2 -n  | head -n 1 | cut -d',' -f1\`"
 
 BERTREND_BASE_DIR = os.getenv("BERTREND_BASE_DIR", None)
-BASE_PATH = (
-    Path(BERTREND_BASE_DIR)
-    if BERTREND_BASE_DIR
-    else Path(__file__).parent.parent.parent
-)
+BASE_PATH = Path(BERTREND_BASE_DIR) if BERTREND_BASE_DIR else Path.home() / ".bertrend"
 
 # Base dirs
 DATA_PATH = BASE_PATH / "data"

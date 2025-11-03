@@ -5,18 +5,18 @@
 
 import os
 import pytest
-import numpy as np
 import pandas as pd
-from pathlib import Path
 from datetime import datetime, timedelta
-
-from bertopic import BERTopic
-from sentence_transformers import SentenceTransformer
+from unittest.mock import Mock, patch
 
 from bertrend.BERTrend import BERTrend
 from bertrend.BERTopicModel import BERTopicModel
 from bertrend.services.embedding_service import EmbeddingService
 from bertrend.utils.data_loading import load_data, split_data, group_by_days
+from bertrend.llm_utils.newsletter_features import (
+    generate_newsletter,
+    render_newsletter,
+)
 
 
 class TestEmbeddingServiceIntegration:
@@ -335,17 +335,16 @@ class TestNewsletterIntegration:
     """Integration tests for the newsletter generation functionality."""
 
     @pytest.mark.integration
+    @pytest.mark.skipif(
+        not os.environ.get("OPENAI_API_KEY"),
+        reason="OPENAI_API_KEY not set - required for integration test",
+    )
     def test_newsletter_generation(self, tmp_path):
-        """Test generating a newsletter from topic model results."""
-        # This test requires OpenAI API key, so we'll skip it if not available
-        if not os.environ.get("OPENAI_API_KEY"):
-            pytest.skip("OPENAI_API_KEY not set, skipping newsletter generation test")
+        """Test generating a newsletter from topic model results.
 
-        # Import here to avoid dependency issues if OpenAI is not available
-        from bertrend.llm_utils.newsletter_features import (
-            generate_newsletter,
-            render_newsletter,
-        )
+        This is a real integration test that exercises the full pipeline including
+        the LLM API. It requires OPENAI_API_KEY to be set in the environment.
+        """
 
         # Create a sample dataset
         docs = [
@@ -365,6 +364,7 @@ class TestNewsletterIntegration:
         df = pd.DataFrame(
             {
                 "text": docs,
+                "title": [f"Article {i} Title" for i in range(len(docs))],
                 "timestamp": [
                     datetime(2023, 1, 1) + timedelta(days=i) for i in range(len(docs))
                 ],
@@ -403,40 +403,33 @@ class TestNewsletterIntegration:
             docs=docs, embeddings=embeddings, embedding_model=model_name
         )
 
-        # Generate a newsletter
-        newsletter_params = {
-            "title": "Test Newsletter",
-            "subtitle": "Integration Test",
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "summary_mode": "document",
-            "max_topics": 3,
-            "max_docs_per_topic": 2,
-            "language": "English",
-        }
+        # Generate the newsletter
+        newsletter = generate_newsletter(
+            topic_model=output.topic_model,
+            topics=output.topics,
+            df=df,
+            top_n_topics=3,
+            top_n_docs=2,
+            newsletter_title="Test Newsletter",
+            summary_mode="document",
+        )
 
-        try:
-            # Generate the newsletter
-            newsletter = generate_newsletter(
-                topic_model=output.topic_model,
-                topics=output.topics,
-                docs=docs,
-                df=df,
-                **newsletter_params,
-            )
+        # Export the newsletter to markdown
+        md_path = tmp_path / "newsletter.md"
+        render_newsletter(newsletter, md_path, output_format="md")
 
-            # Export the newsletter to markdown
-            md_path = tmp_path / "newsletter.md"
-            render_newsletter(newsletter, str(md_path), format="md")
+        # Verify the results
+        assert newsletter is not None
+        assert newsletter.title == "Test Newsletter"
+        assert newsletter.period_start_date == df.timestamp.min().date()
+        assert newsletter.period_end_date == df.timestamp.max().date()
+        assert len(newsletter.topics) <= 3
+        assert md_path.exists()
 
-            # Verify the results
-            assert newsletter is not None
-            assert "title" in newsletter
-            assert "subtitle" in newsletter
-            assert "date" in newsletter
-            assert "topics" in newsletter
-            assert len(newsletter["topics"]) <= newsletter_params["max_topics"]
-            assert md_path.exists()
-
-        except Exception as e:
-            # If there's an error with the LLM service, we'll skip the test
-            pytest.skip(f"Error with LLM service: {str(e)}")
+        # Verify newsletter structure
+        for topic in newsletter.topics:
+            assert topic.topic_type is not None
+            assert len(topic.articles) > 0
+            for article in topic.articles:
+                assert article.title is not None
+                assert article.url is not None

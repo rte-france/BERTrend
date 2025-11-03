@@ -16,7 +16,7 @@ load_dotenv(override=True)
 
 API_KEY = os.getenv("NEWSCATCHER_API_KEY")
 if not API_KEY:
-    raise ValueError("NEWSCATCHER_API_KEY environment variable is not set")
+    logger.warning("NEWSCATCHER_API_KEY environment variable is not set")
 
 
 class NewsCatcherProvider(DataProvider):

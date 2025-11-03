@@ -1,0 +1,4 @@
+host = "0.0.0.0"
+port = 8881
+number_workers = 2
+cuda_visible_devices = "0"
