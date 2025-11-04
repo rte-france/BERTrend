@@ -6,7 +6,6 @@ services:
       dockerfile: Dockerfile.embedding_server
     image: bertrend-embedding-server:latest
     container_name: bertrend-embedding-server
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     ports:
       - "6464:6464"  # Embedding server API
     volumes:
