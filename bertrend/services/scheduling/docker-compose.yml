@@ -4,7 +4,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: bertrend-scheduler
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     ports:
       - "8882:8000"
     volumes:
