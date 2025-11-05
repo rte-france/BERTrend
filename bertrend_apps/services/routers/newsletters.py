@@ -3,12 +3,10 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import asyncio
-import os
 
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
-from bertrend import BEST_CUDA_DEVICE
 
 from bertrend_apps import SCHEDULER_UTILS
 from bertrend_apps.newsletters.newsletter_generation import process_newsletter
