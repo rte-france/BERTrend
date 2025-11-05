@@ -167,18 +167,16 @@ class APSchedulerUtils(SchedulerUtils):
         self,
         newsletter_cfg_path: Path,
         data_feed_cfg_path: Path,
-        cuda_devices: str = "0",
     ):
         """Schedule newsletter generation based on configuration using the service."""
         newsletter_cfg = load_toml_config(newsletter_cfg_path)
         schedule = newsletter_cfg["newsletter"]["update_frequency"]
-        command = "/schedule-newsletters"
+        command = "/generate-newsletters"
         command_kwargs = {
             "method": "POST",
             "json_data": {
                 "newsletter_toml_cfg_path": newsletter_cfg_path.resolve().as_posix(),
                 "data_feed_toml_cfg_path": data_feed_cfg_path.resolve().as_posix(),
-                "cuda_devices": cuda_devices,
             },
         }
         self.add_job_to_crontab(

@@ -82,9 +82,9 @@ class CrontabSchedulerUtils(SchedulerUtils):
         self,
         newsletter_cfg_path: Path,
         data_feed_cfg_path: Path,
-        cuda_devices: str = BEST_CUDA_DEVICE,
     ):
         """Schedule data scrapping on the basis of a feed configuration file"""
+        cuda_devices = BEST_CUDA_DEVICE
         newsletter_cfg = load_toml_config(newsletter_cfg_path)
         schedule = newsletter_cfg["newsletter"]["update_frequency"]
         id = newsletter_cfg["newsletter"]["id"]

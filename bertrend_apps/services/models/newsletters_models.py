@@ -29,6 +29,3 @@ class ScheduleNewsletterRequest(BaseModel):
     data_feed_toml_cfg_path: Path = Field(
         ..., description="Path to data feed toml config file"
     )
-    cuda_devices: Optional[str] = Field(
-        default=None, description="CUDA_VISIBLE_DEVICES parameters"
-    )

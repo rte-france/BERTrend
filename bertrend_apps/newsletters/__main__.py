@@ -37,11 +37,10 @@ if __name__ == "__main__":
         data_feed_toml_cfg_path: Path = typer.Argument(
             help="Path to data feed toml config file"
         ),
-        cuda_devices: str = typer.Option("0", help="CUDA_VISIBLE_DEVICES parameters"),
     ):
         """Schedule data scrapping on the basis of a feed configuration file"""
         SCHEDULER_UTILS.schedule_newsletter(
-            newsletter_toml_cfg_path, data_feed_toml_cfg_path, cuda_devices
+            newsletter_toml_cfg_path, data_feed_toml_cfg_path
         )
 
     # Main app

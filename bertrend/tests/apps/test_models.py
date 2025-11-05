@@ -98,17 +98,6 @@ class TestNewslettersModels:
         )
         assert req.newsletter_toml_cfg_path == newsletter_path
         assert req.data_feed_toml_cfg_path == feed_path
-        assert req.cuda_devices is None  # default value
-
-    def test_schedule_newsletter_request_with_cuda(self, tmp_path):
-        newsletter_path = tmp_path / "newsletter.toml"
-        feed_path = tmp_path / "feed.toml"
-        req = ScheduleNewsletterRequest(
-            newsletter_toml_cfg_path=newsletter_path,
-            data_feed_toml_cfg_path=feed_path,
-            cuda_devices="0,1",
-        )
-        assert req.cuda_devices == "0,1"
 
 
 class TestDataProviderModels:

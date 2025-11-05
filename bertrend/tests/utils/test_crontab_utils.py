@@ -190,7 +190,6 @@ class TestCrontabSchedulerUtils:
         "bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
     )
     @patch("bertrend_apps.common.crontab_utils.BERTREND_LOG_PATH", Path("/logs"))
-    @patch("bertrend_apps.common.crontab_utils.BEST_CUDA_DEVICE", "0")
     def test_schedule_newsletter(self, mock_add_job, mock_load_config):
         """Test scheduling a newsletter job."""
         mock_config = {
@@ -204,13 +203,12 @@ class TestCrontabSchedulerUtils:
 
         newsletter_cfg = Path("/path/to/newsletter.toml")
         feed_cfg = Path("/path/to/feed.toml")
-        self.scheduler.schedule_newsletter(newsletter_cfg, feed_cfg, cuda_devices="0")
+        self.scheduler.schedule_newsletter(newsletter_cfg, feed_cfg)
 
         mock_add_job.assert_called_once()
         call_args = mock_add_job.call_args
         assert call_args[0][0] == "0 8 * * *"
         assert "newsletters" in call_args[0][1]
-        assert "CUDA_VISIBLE_DEVICES=0" in call_args[0][2]
 
     @patch(
         "bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"

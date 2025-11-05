@@ -348,7 +348,7 @@ class TestAPSchedulerUtils:
         scheduler = APSchedulerUtils()
         newsletter_cfg = Path("/path/to/newsletter.toml")
         feed_cfg = Path("/path/to/feed.toml")
-        scheduler.schedule_newsletter(newsletter_cfg, feed_cfg, cuda_devices="1")
+        scheduler.schedule_newsletter(newsletter_cfg, feed_cfg)
 
         assert mock_request.call_count == 2
 

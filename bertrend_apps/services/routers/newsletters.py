@@ -27,7 +27,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/newsletters",
+    "/generate-newsletters",
     response_model=NewsletterResponse,
     summary="Generate newsletter from feed",
 )
@@ -53,12 +53,10 @@ async def automate_newsletter(req: ScheduleNewsletterRequest):
     Schedule data scrapping on the basis of a feed configuration file.
     """
     try:
-        cuda_devices = os.environ.get("CUDA_VISIBLE_DEVICES", "0")
         await asyncio.to_thread(
             SCHEDULER_UTILS.schedule_newsletter,
             req.newsletter_toml_cfg_path,
             req.data_feed_toml_cfg_path,
-            cuda_devices,
         )
         return {"status": "Newsletter scheduling completed successfully"}
     except Exception as e:
