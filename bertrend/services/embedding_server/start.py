@@ -4,15 +4,18 @@
 #  This file is part of BERTrend.
 
 import os
-import uvicorn
 
+# Load the configuration BEFORE any other imports that might use CUDA
 from bertrend.services.embedding_server.config.settings import get_config
 
-# Load the configuration
 CONFIG = get_config()
 
-# Set the CUDA_VISIBLE_DEVICES environment variable
+# Set the CUDA_VISIBLE_DEVICES environment variable BEFORE importing uvicorn
+# This is critical because uvicorn will import the app module, which imports torch
+# We override the value with the content of the config
 os.environ["CUDA_VISIBLE_DEVICES"] = CONFIG.cuda_visible_devices
+
+import uvicorn
 
 # Start the FastAPI application
 if __name__ == "__main__":

@@ -12,11 +12,8 @@ from bertrend_apps import SCHEDULER_UTILS
 from bertrend_apps.newsletters.newsletter_generation import process_newsletter
 
 from bertrend_apps.services.config.settings import get_config
-from bertrend_apps.services.models.newsletters_models import (
-    NewsletterRequest,
-    NewsletterResponse,
-    ScheduleNewsletterRequest,
-)
+from bertrend_apps.services.models.newsletters_models import NewsletterRequest
+
 
 # Load the configuration
 CONFIG = get_config()
@@ -26,7 +23,6 @@ router = APIRouter()
 
 @router.post(
     "/generate-newsletters",
-    response_model=NewsletterResponse,
     summary="Generate newsletter from feed",
 )
 async def newsletter_from_feed(req: NewsletterRequest):
@@ -46,15 +42,15 @@ async def newsletter_from_feed(req: NewsletterRequest):
 
 
 @router.post("/schedule-newsletters", summary="Schedule newsletter automation")
-async def automate_newsletter(req: ScheduleNewsletterRequest):
+async def automate_newsletter(req: NewsletterRequest):
     """
     Schedule data scrapping on the basis of a feed configuration file.
     """
     try:
         await asyncio.to_thread(
             SCHEDULER_UTILS.schedule_newsletter,
-            req.newsletter_toml_cfg_path,
-            req.data_feed_toml_cfg_path,
+            req.newsletter_toml_path,
+            req.data_feed_toml_path,
         )
         return {"status": "Newsletter scheduling completed successfully"}
     except Exception as e:

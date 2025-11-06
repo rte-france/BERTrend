@@ -14,8 +14,6 @@ from bertrend_apps.services.models.bertrend_app_models import (
 )
 from bertrend_apps.services.models.newsletters_models import (
     NewsletterRequest,
-    NewsletterResponse,
-    ScheduleNewsletterRequest,
 )
 from bertrend_apps.services.models.data_provider_models import (
     ScrapeRequest,
@@ -83,18 +81,12 @@ class TestNewslettersModels:
         with pytest.raises(ValidationError):
             NewsletterRequest(newsletter_toml_path=Path("test.toml"))
 
-    def test_newsletter_response_valid(self, tmp_path):
-        output_path = tmp_path / "output.html"
-        resp = NewsletterResponse(output_path=output_path, status="success")
-        assert resp.output_path == output_path
-        assert resp.status == "success"
-
     def test_schedule_newsletter_request_valid(self, tmp_path):
         newsletter_path = tmp_path / "newsletter.toml"
         feed_path = tmp_path / "feed.toml"
-        req = ScheduleNewsletterRequest(
-            newsletter_toml_cfg_path=newsletter_path,
-            data_feed_toml_cfg_path=feed_path,
+        req = NewsletterRequest(
+            newsletter_toml_path=newsletter_path,
+            data_feed_toml_path=feed_path,
         )
         assert req.newsletter_toml_cfg_path == newsletter_path
         assert req.data_feed_toml_cfg_path == feed_path
