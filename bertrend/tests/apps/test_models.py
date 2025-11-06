@@ -88,8 +88,8 @@ class TestNewslettersModels:
             newsletter_toml_path=newsletter_path,
             data_feed_toml_path=feed_path,
         )
-        assert req.newsletter_toml_cfg_path == newsletter_path
-        assert req.data_feed_toml_cfg_path == feed_path
+        assert req.newsletter_toml_path == newsletter_path
+        assert req.data_feed_toml_path == feed_path
 
 
 class TestDataProviderModels:

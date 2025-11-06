@@ -27,14 +27,23 @@ BERTREND_APPS_SERVICE_URL = os.getenv(
     "BERTREND_APPS_SERVICE_URL", "http://localhost:8881/"
 )
 
-# Single shared session for connection pooling
-_session = requests.Session()
+# Single shared session for connection pooling - lazily initialized to avoid fork issues
+_session = None
 _REQUEST_TIMEOUT = float(os.getenv("SCHEDULER_HTTP_TIMEOUT", "5"))
+
+
+def _get_session():
+    """Get or create a requests session for the current process."""
+    global _session
+    if _session is None:
+        _session = requests.Session()
+    return _session
 
 
 def _request(method: str, path: str, *, json: dict | None = None):
     url = urljoin(SCHEDULER_SERVICE_URL, path)
-    resp = _session.request(method.upper(), url, json=json, timeout=_REQUEST_TIMEOUT)
+    session = _get_session()
+    resp = session.request(method.upper(), url, json=json, timeout=_REQUEST_TIMEOUT)
     return resp
 
 
