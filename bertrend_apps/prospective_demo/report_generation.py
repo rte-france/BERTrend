@@ -150,16 +150,23 @@ def create_detailed_newsletter(
                 for link in list(set(row[URLS_COLUMN]))[:MAXIMUM_NUMBER_OF_ARTICLES]
             ]
 
+            # Handle nan values for summary and analysis
+            topic_evolution = None
+            if pd.notna(row["summary"]):
+                topic_evolution = TopicSummaryList.model_validate_json(row["summary"])
+
+            topic_analysis = None
+            if pd.notna(row["analysis"]):
+                topic_analysis = SignalAnalysis.model_validate_json(row["analysis"])
+
             topic: TopicOverTime = TopicOverTime(
                 title=row[LLM_TOPIC_TITLE_COLUMN],
                 hashtags=None,
                 summary=row[LLM_TOPIC_DESCRIPTION_COLUMN],
                 articles=articles,
                 topic_type=topic_type,
-                topic_evolution=TopicSummaryList.model_validate_json(row["summary"]),
-                topic_analysis=SignalAnalysis.model_validate_json(
-                    row["analysis"],
-                ),
+                topic_evolution=topic_evolution,
+                topic_analysis=topic_analysis,
             )
 
             if options is not None and not options["topic_evolution"]:

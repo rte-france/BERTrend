@@ -111,7 +111,7 @@ class TestAPSchedulerUtils:
         """Test successful initialization."""
         # Health check removed from __init__ to avoid blocking worker startup
         scheduler = APSchedulerUtils()
-        
+
         assert scheduler is not None
 
     def test_init_service_unavailable(self):

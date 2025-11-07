@@ -110,14 +110,20 @@ def display_detailed_analysis(
     st.write(desc[LLM_TOPIC_DESCRIPTION_COLUMN])
 
     # Detailed description (HTML formatted)
-    summaries: TopicSummaryList = TopicSummaryList.model_validate_json(desc["summary"])
-    signal_analysis: SignalAnalysis = SignalAnalysis.model_validate_json(
-        desc["analysis"]
-    )
-    # Use current language for HTML template
-    lang = st.session_state.model_analysis_cfg[model_id]["model_config"]["language"]
-    formatted_html = fill_html_template(summaries, signal_analysis, lang)
-    st.html(formatted_html)
+    # Handle nan values for summary and analysis
+    if pd.notna(desc["summary"]) and pd.notna(desc["analysis"]):
+        summaries: TopicSummaryList = TopicSummaryList.model_validate_json(
+            desc["summary"]
+        )
+        signal_analysis: SignalAnalysis = SignalAnalysis.model_validate_json(
+            desc["analysis"]
+        )
+        # Use current language for HTML template
+        lang = st.session_state.model_analysis_cfg[model_id]["model_config"]["language"]
+        formatted_html = fill_html_template(summaries, signal_analysis, lang)
+        st.html(formatted_html)
+    else:
+        st.warning(translate("no_analysis_available"))
 
     st.session_state.signal_interpretations[model_id] = interpretations
 
