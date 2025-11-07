@@ -107,23 +107,17 @@ class TestHelperFunctions:
 class TestAPSchedulerUtils:
     """Tests for APSchedulerUtils class."""
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
-    def test_init_success(self, mock_request):
+    def test_init_success(self):
         """Test successful initialization."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_request.return_value = mock_response
-
+        # Health check removed from __init__ to avoid blocking worker startup
         scheduler = APSchedulerUtils()
+        
+        assert scheduler is not None
 
-        mock_request.assert_called_once_with("GET", "/health")
-
-    @patch("bertrend_apps.common.apscheduler_utils._request")
-    def test_init_service_unavailable(self, mock_request):
+    def test_init_service_unavailable(self):
         """Test initialization when service is unavailable."""
-        mock_request.side_effect = Exception("Connection error")
-
-        # Should not raise, just log error
+        # Health check removed from __init__ to avoid blocking worker startup
+        # Initialization should always succeed regardless of service availability
         scheduler = APSchedulerUtils()
 
         assert scheduler is not None
@@ -233,15 +227,11 @@ class TestAPSchedulerUtils:
     @patch("bertrend_apps.common.apscheduler_utils._request")
     def test_add_job_to_crontab_success(self, mock_request):
         """Test successfully adding a job."""
-        # Mock health check
-        mock_health_response = MagicMock()
-        mock_health_response.status_code = 200
-
         # Mock job creation
         mock_job_response = MagicMock()
         mock_job_response.status_code = 201
 
-        mock_request.side_effect = [mock_health_response, mock_job_response]
+        mock_request.return_value = mock_job_response
 
         scheduler = APSchedulerUtils()
         result = scheduler.add_job_to_crontab(
@@ -251,7 +241,7 @@ class TestAPSchedulerUtils:
         )
 
         assert result is True
-        assert mock_request.call_count == 2
+        assert mock_request.call_count == 1
 
     @patch("bertrend_apps.common.apscheduler_utils._request")
     def test_add_job_to_crontab_with_kwargs(self, mock_request):
@@ -280,15 +270,12 @@ class TestAPSchedulerUtils:
     @patch("bertrend_apps.common.apscheduler_utils._request")
     def test_add_job_to_crontab_failure(self, mock_request):
         """Test adding a job when request fails."""
-        mock_health_response = MagicMock()
-        mock_health_response.status_code = 200
-
         mock_job_response = MagicMock()
         mock_job_response.status_code = 400
         mock_job_response.text = "Bad request"
         mock_job_response.json.return_value = {"detail": "Invalid data"}
 
-        mock_request.side_effect = [mock_health_response, mock_job_response]
+        mock_request.return_value = mock_job_response
 
         scheduler = APSchedulerUtils()
         result = scheduler.add_job_to_crontab(
@@ -310,20 +297,17 @@ class TestAPSchedulerUtils:
         }
         mock_load_config.return_value = mock_config
 
-        mock_health_response = MagicMock()
-        mock_health_response.status_code = 200
-
         mock_job_response = MagicMock()
         mock_job_response.status_code = 201
 
-        mock_request.side_effect = [mock_health_response, mock_job_response]
+        mock_request.return_value = mock_job_response
 
         scheduler = APSchedulerUtils()
         feed_cfg = Path("/path/to/feed.toml")
         scheduler.schedule_scrapping(feed_cfg, user="testuser")
 
         # Verify job creation was called
-        assert mock_request.call_count == 2
+        assert mock_request.call_count == 1
 
     @patch("bertrend_apps.common.apscheduler_utils.load_toml_config")
     @patch("bertrend_apps.common.apscheduler_utils._request")
@@ -337,20 +321,17 @@ class TestAPSchedulerUtils:
         }
         mock_load_config.return_value = mock_config
 
-        mock_health_response = MagicMock()
-        mock_health_response.status_code = 200
-
         mock_job_response = MagicMock()
         mock_job_response.status_code = 200
 
-        mock_request.side_effect = [mock_health_response, mock_job_response]
+        mock_request.return_value = mock_job_response
 
         scheduler = APSchedulerUtils()
         newsletter_cfg = Path("/path/to/newsletter.toml")
         feed_cfg = Path("/path/to/feed.toml")
         scheduler.schedule_newsletter(newsletter_cfg, feed_cfg)
 
-        assert mock_request.call_count == 2
+        assert mock_request.call_count == 1
 
     @patch("bertrend_apps.common.apscheduler_utils._request")
     def test_schedule_training_for_user(self, mock_request):
@@ -400,10 +381,6 @@ class TestAPSchedulerUtils:
     @patch("bertrend_apps.common.apscheduler_utils._request")
     def test_schedule_report_generation_auto_send_disabled(self, mock_request):
         """Test that report generation is not scheduled when auto_send is disabled."""
-        mock_health_response = MagicMock()
-        mock_health_response.status_code = 200
-        mock_request.return_value = mock_health_response
-
         scheduler = APSchedulerUtils()
         report_config = {
             "auto_send": False,
@@ -417,8 +394,8 @@ class TestAPSchedulerUtils:
         )
 
         assert result is False
-        # Only health check should be called
-        assert mock_request.call_count == 1
+        # No job creation should happen when auto_send is disabled
+        assert mock_request.call_count == 0
 
     @patch("bertrend_apps.common.apscheduler_utils._request")
     def test_schedule_report_generation_no_recipients(self, mock_request):

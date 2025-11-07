@@ -68,21 +68,8 @@ class APSchedulerUtils(SchedulerUtils):
 
     def __init__(self):
         super().__init__()
-        # check if service is available
-        try:
-            r = _request("GET", "/health")
-            if r.status_code != 200:
-                logger.warning(
-                    f"Error from to scheduler service: {r.status_code} {r.text}."
-                )
-            else:
-                logger.info(
-                    f"Connected to scheduler service at {SCHEDULER_SERVICE_URL}."
-                )
-        except Exception:
-            logger.error(
-                f"Failed to connect to scheduler service at {SCHEDULER_SERVICE_URL}. Start it if you want to to use scheduled jobs."
-            )
+        # Health check removed from __init__ to avoid blocking worker startup
+        # The service connection will be validated on first actual use
 
     @staticmethod
     def find_jobs(patterns: dict, match_all: bool = True) -> list[str]:
@@ -183,8 +170,8 @@ class APSchedulerUtils(SchedulerUtils):
         command_kwargs = {
             "method": "POST",
             "json_data": {
-                "newsletter_toml_cfg_path": newsletter_cfg_path.resolve().as_posix(),
-                "data_feed_toml_cfg_path": data_feed_cfg_path.resolve().as_posix(),
+                "newsletter_toml_path": newsletter_cfg_path.resolve().as_posix(),
+                "data_feed_toml_path": data_feed_cfg_path.resolve().as_posix(),
             },
         }
         self.add_job_to_crontab(
