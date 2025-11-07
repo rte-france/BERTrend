@@ -19,14 +19,7 @@ def _get_scheduler_utils():
     """Get or create the scheduler utils instance for the current process."""
     global _scheduler_utils
     if _scheduler_utils is None:
-        # Load .env at first access
-        if load_dotenv(override=True):
-            logger.info("Loaded .env file for scheduler configuration")
-        else:
-            logger.warning(
-                "Failed to load .env file, using default scheduler configuration"
-            )
-
+        # Note: .env is already loaded in bertrend/__init__.py
         # Load scheduler type and URL from environment variables
         scheduler_type = os.getenv("SCHEDULER_SERVICE_TYPE", "crontab").lower()
 

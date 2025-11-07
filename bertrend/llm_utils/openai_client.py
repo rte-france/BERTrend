@@ -8,17 +8,12 @@ import re
 from enum import Enum
 from typing import Type
 
-from dotenv import load_dotenv
 from openai import OpenAI, AzureOpenAI, Timeout, Stream
 from loguru import logger
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from pydantic import BaseModel
 
-# Load environment variables at module import
-if load_dotenv(override=True):
-    logger.info("Loaded .env file")
-else:
-    logger.warning("Failed to load .env file")
+# Note: .env is loaded in bertrend/__init__.py which is imported before this module
 
 MAX_ATTEMPTS = 3
 TIMEOUT = 60.0

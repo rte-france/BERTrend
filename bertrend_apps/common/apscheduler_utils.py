@@ -9,7 +9,6 @@ import hashlib
 import os
 from pathlib import Path
 
-from dotenv import load_dotenv
 from loguru import logger
 
 from bertrend import load_toml_config
@@ -18,7 +17,7 @@ from urllib.parse import urljoin
 
 from bertrend_apps.common.scheduler_utils import SchedulerUtils
 
-load_dotenv(override=True)
+# Note: .env is already loaded in bertrend/__init__.py
 
 # Base URL for the scheduling service (FastAPI). Can be overridden via env var.
 SCHEDULER_SERVICE_URL = os.getenv("SCHEDULER_SERVICE_URL", "http://localhost:8882/")

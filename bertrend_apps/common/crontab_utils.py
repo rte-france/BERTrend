@@ -8,13 +8,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dotenv import load_dotenv
 from loguru import logger
 
 from bertrend import BEST_CUDA_DEVICE, BERTREND_LOG_PATH, load_toml_config
 from bertrend_apps.common.scheduler_utils import SchedulerUtils
 
-load_dotenv(override=True)
+# Note: .env is already loaded in bertrend/__init__.py
 
 
 class CrontabSchedulerUtils(SchedulerUtils):
