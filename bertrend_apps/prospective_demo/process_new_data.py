@@ -101,6 +101,14 @@ def load_all_data(model_id: str, user: str, language_code: str):
     language = "French" if language_code == "fr" else "English"
     dfs = [load_data(Path(f), language=language) for f in files]
 
+    # Filter out None values (empty files)
+    dfs = [df for df in dfs if df is not None]
+
+    if not dfs:
+        raise NoDataAvailableError(
+            f"All data files for model '{model_id}' are empty in {feed_path}"
+        )
+
     new_data = pd.concat(dfs).drop_duplicates(
         subset=["title"], keep="first", inplace=False
     )

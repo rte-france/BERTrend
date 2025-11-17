@@ -106,9 +106,15 @@ def load_data(
         language (str): The language of the text data ('French' or 'English').
 
     Returns:
-        pd.DataFrame: The loaded and preprocessed DataFrame.
+        pd.DataFrame: The loaded and preprocessed DataFrame, or None if the file is empty.
     """
     df = _file_to_pd(selected_file)
+
+    # Check if the DataFrame is empty (no rows or no columns)
+    if df is None or df.empty or len(df.columns) == 0:
+        logger.warning(f"Skipping empty file: {selected_file.name}")
+        return None
+
     _check_data(df, selected_file)
     return _clean_data(df, language)
 

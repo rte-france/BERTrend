@@ -217,11 +217,13 @@ def create_detailed_newsletter_automated(
             if options is not None and not options.get("topic_evolution", True):
                 topic.topic_evolution = None
             if options is not None and not options.get("evolution_scenarios", True):
-                topic.topic_analysis.evolution_scenario = None
+                if topic.topic_analysis is not None:
+                    topic.topic_analysis.evolution_scenario = None
             if options is not None and not options.get("multifactorial_analysis", True):
-                topic.topic_analysis.potential_implications = None
-                topic.topic_analysis.topic_interconnexions = None
-                topic.topic_analysis.drivers_inhibitors = None
+                if topic.topic_analysis is not None:
+                    topic.topic_analysis.potential_implications = None
+                    topic.topic_analysis.topic_interconnexions = None
+                    topic.topic_analysis.drivers_inhibitors = None
 
             detailed_newsletter.topics.append(topic)
 
