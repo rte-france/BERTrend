@@ -18,6 +18,7 @@ from bertrend_apps.data_provider.data_provider_utils import (
     scrape,
     auto_scrape,
     generate_query_file,
+    count_articles,
 )
 from bertrend_apps.services.config.settings import get_config
 from bertrend_apps.services.utils.logging_utils import get_file_logger
@@ -132,8 +133,6 @@ async def scrape_from_feed_api(req: ScrapeFeedRequest):
     try:
         result_path = await asyncio.to_thread(scrape_feed_from_config, req.feed_cfg)
         # Count the articles in the result file
-        from bertrend_apps.data_provider.data_provider_utils import count_articles
-
         article_count = count_articles(result_path)
         return ScrapeResponse(
             stored_path=result_path.resolve(), article_count=article_count

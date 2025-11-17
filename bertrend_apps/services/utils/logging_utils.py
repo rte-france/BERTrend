@@ -11,6 +11,10 @@ from bertrend import BERTREND_LOG_PATH
 
 def get_file_logger(id: str, user_name: str = "", model_id: str = "") -> int:
     """Create a unique log file for this call"""
+    if user_name is None:
+        user_name = ""
+    if model_id is None:
+        model_id = ""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file = (
         BERTREND_LOG_PATH

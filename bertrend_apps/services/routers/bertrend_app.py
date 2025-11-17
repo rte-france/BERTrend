@@ -41,7 +41,7 @@ async def train_new(req: TrainNewModelRequest):
     """
     # Create a unique log file for this call
     logger_id = get_file_logger(
-        id="train-new-model", user_name=req.user, model_id=req.model_id
+        id="train_new_model", user_name=req.user, model_id=req.model_id
     )
 
     try:
@@ -114,7 +114,7 @@ async def generate_report(req: GenerateReportRequest):
     """
     # Create a unique log file for this call
     logger_id = get_file_logger(
-        id="regenerate", user_name=req.user, model_id=req.model_id
+        id="generate_report", user_name=req.user, model_id=req.model_id
     )
 
     try:
