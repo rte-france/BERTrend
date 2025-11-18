@@ -23,7 +23,7 @@ def http_request(
     method: str = "GET",
     headers: dict = None,
     json_data: dict = None,
-    timeout: int = 60,
+    timeout: int = 600,  # 10 min
 ):
     """Execute an HTTP request (curl-like functionality)"""
     logger.info(f"Executing HTTP {method} request to {url}")
