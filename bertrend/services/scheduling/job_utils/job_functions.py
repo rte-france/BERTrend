@@ -5,7 +5,6 @@
 import time
 
 import requests
-from fastapi import HTTPException
 from loguru import logger
 
 
@@ -24,7 +23,7 @@ def http_request(
     method: str = "GET",
     headers: dict = None,
     json_data: dict = None,
-    timeout: int = 30,
+    timeout: int = 60,
 ):
     """Execute an HTTP request (curl-like functionality)"""
     logger.info(f"Executing HTTP {method} request to {url}")
@@ -42,9 +41,7 @@ def http_request(
         return f"Request to {url} completed with status {response.status_code}"
     except Exception as e:
         logger.error(f"HTTP request failed: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Error executing request: {str(e)}"
-        )
+        raise RuntimeError(f"Error executing request: {str(e)}")
 
 
 # Job function registry

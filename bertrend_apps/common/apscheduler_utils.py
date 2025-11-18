@@ -26,6 +26,22 @@ BERTREND_APPS_SERVICE_URL = os.getenv(
     "BERTREND_APPS_SERVICE_URL", "http://localhost:8881/"
 )
 
+DEFAULT_COMMAND_TIMEOUT = 60  # in secs
+
+# commands
+SCRAPE_FEED_COMMAND = "/scrape-feed"
+TRAIN_NEW_MODEL = "/train-new-model"
+GENERATE_NEWSLETTERS = "/generate-newsletters"
+GENERATE_REPORT = "/generate-report"
+
+# default timeouts for BERTrend jobs
+BERTREND_COMMANDS_TIMEOUTS = {
+    SCRAPE_FEED_COMMAND: 600,
+    TRAIN_NEW_MODEL: 1200,
+    GENERATE_NEWSLETTERS: 300,
+    GENERATE_REPORT: 300,
+}
+
 # Single shared session for connection pooling - lazily initialized to avoid fork issues
 _session = None
 _REQUEST_TIMEOUT = float(os.getenv("SCHEDULER_HTTP_TIMEOUT", "5"))
@@ -123,6 +139,9 @@ class APSchedulerUtils(SchedulerUtils):
                 "url": urljoin(BERTREND_APPS_SERVICE_URL, command),
                 "method": command_kwargs.get("method", "GET"),
                 "json_data": command_kwargs.get("json_data", {}),
+                "timeout": BERTREND_COMMANDS_TIMEOUTS.get(
+                    command, DEFAULT_COMMAND_TIMEOUT
+                ),
             },
             "max_instances": 3,
             "coalesce": True,
@@ -144,7 +163,7 @@ class APSchedulerUtils(SchedulerUtils):
         data_feed_cfg = load_toml_config(feed_cfg)
         schedule = data_feed_cfg["data-feed"]["update_frequency"]
         id = data_feed_cfg["data-feed"]["id"].removeprefix("feed_")
-        command = "/scrape-feed"
+        command = SCRAPE_FEED_COMMAND
         command_kwargs = {
             "method": "POST",
             "json_data": {
@@ -166,7 +185,7 @@ class APSchedulerUtils(SchedulerUtils):
         """Schedule newsletter generation based on configuration using the service."""
         newsletter_cfg = load_toml_config(newsletter_cfg_path)
         schedule = newsletter_cfg["newsletter"]["update_frequency"]
-        command = "/generate-newsletters"
+        command = GENERATE_NEWSLETTERS
         command_kwargs = {
             "method": "POST",
             "json_data": {
@@ -180,7 +199,7 @@ class APSchedulerUtils(SchedulerUtils):
 
     def schedule_training_for_user(self, schedule: str, model_id: str, user: str):
         """Schedule data scrapping on the basis of a feed configuration file"""
-        command = "/train-new-model"
+        command = TRAIN_NEW_MODEL
         command_kwargs = {
             "method": "POST",
             "json_data": {"user": user, "model_id": model_id},
@@ -201,7 +220,7 @@ class APSchedulerUtils(SchedulerUtils):
         if not recipients:
             logger.warning(f"No email recipients configured for model {model_id}")
             return False
-        command = "/generate-report"
+        command = GENERATE_REPORT
         command_kwargs = {
             "method": "POST",
             "json_data": {
