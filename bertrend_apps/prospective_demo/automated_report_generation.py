@@ -263,18 +263,18 @@ def generate_automated_report(
 
     if not auto_send:
         logger.warning(
-            "auto_send is disabled in configuration. Skipping report generation. (user: '{user}', model: '{model_id}')"
+            f"auto_send is disabled in configuration. Skipping report generation. (user: '{user}', model: '{model_id}')"
         )
         raise ValueError(
-            "auto_send is disabled in configuration. (user: '{user}', model: '{model_id}')"
+            f"auto_send is disabled in configuration. (user: '{user}', model: '{model_id}')"
         )
 
     if not recipients:
         logger.warning(
-            "No email recipients configured. Skipping report generation. (user: '{user}', model: '{model_id}')"
+            f"No email recipients configured. Skipping report generation. (user: '{user}', model: '{model_id}')"
         )
         raise ValueError(
-            "No email recipients configured. (user: '{user}', model: '{model_id}')"
+            f"No email recipients configured. (user: '{user}', model: '{model_id}')"
         )
 
     # Determine reference timestamp
@@ -294,10 +294,10 @@ def generate_automated_report(
         date_dirs = sorted([d for d in interpretation_path.iterdir() if d.is_dir()])
         if not date_dirs:
             logger.error(
-                "No date directories found in interpretation path. (user: '{user}', model: '{model_id}')"
+                f"No date directories found in interpretation path. (user: '{user}', model: '{model_id}')"
             )
             raise FileNotFoundError(
-                "No date directories found in interpretation path. (user: '{user}', model: '{model_id}')"
+                f"No date directories found in interpretation path. (user: '{user}', model: '{model_id}')"
             )
         reference_ts = pd.Timestamp(date_dirs[-1].name)
 
@@ -316,10 +316,10 @@ def generate_automated_report(
         strong_signals is None or strong_signals.empty
     ):
         logger.error(
-            "No signal data available for report generation. (user: '{user}', model: '{model_id}')"
+            f"No signal data available for report generation. (user: '{user}', model: '{model_id}')"
         )
         raise ValueError(
-            "No signal data available for report generation. (user: '{user}', model: '{model_id}')"
+            f"No signal data available for report generation. (user: '{user}', model: '{model_id}')"
         )
 
     # Get analysis options
