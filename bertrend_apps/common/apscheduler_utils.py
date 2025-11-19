@@ -38,8 +38,8 @@ GENERATE_REPORT = "/generate-report"
 BERTREND_COMMANDS_TIMEOUTS = {
     SCRAPE_FEED_COMMAND: 1200,
     TRAIN_NEW_MODEL: 1800,
-    GENERATE_NEWSLETTERS: 300,
-    GENERATE_REPORT: 300,
+    GENERATE_NEWSLETTERS: 600,
+    GENERATE_REPORT: 600,
 }
 
 # Single shared session for connection pooling - lazily initialized to avoid fork issues
