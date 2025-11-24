@@ -15,7 +15,6 @@ class BERTrendAPIConfig(BaseSettings):
     host: str
     port: int
     number_workers: int
-    cuda_visible_devices: str
 
 
 # Use environment variable to specify which config to load

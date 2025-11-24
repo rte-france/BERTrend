@@ -219,14 +219,23 @@ def configure_information_sources():
     )
 
     displayed_list = []
+
     for k, v in st.session_state.user_feeds.items():
+        next_run = SCHEDULER_UTILS.get_next_learning(
+            model_id=k, user=st.session_state.username
+        )
+        if next_run:
+            next_run = next_run.strftime("%d-%m-%Y %H:%M")
         displayed_list.append(
             {
-                "id": k,
-                "provider": v["data-feed"]["provider"],
-                "query": v["data-feed"]["query"],
-                "language": v["data-feed"]["language"],
-                "update_frequency": v["data-feed"]["update_frequency"],
+                translate("col_id"): k,
+                translate("col_provider"): v["data-feed"]["provider"],
+                translate("col_query"): v["data-feed"]["query"],
+                translate("col_language"): v["data-feed"]["language"],
+                translate("col_data_update_frequency"): v["data-feed"][
+                    "update_frequency"
+                ],
+                translate("col_next_update"): next_run,
             }
         )
     df = pd.DataFrame(displayed_list)

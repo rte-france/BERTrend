@@ -406,9 +406,17 @@ TRANSLATIONS = {
     },
     # Column headers
     "col_id": {"fr": "id", "en": "id"},
+    "col_provider": {"fr": "source", "en": "provider"},
+    "col_query": {"fr": "requête", "en": "query"},
+    "col_language": {"fr": "langue", "en": "language"},
+    "col_data_update_frequency": {
+        "fr": "fréquence de mise à jour",
+        "en": "update frequency",
+    },
     "col_num_models": {"fr": "# modèles", "en": "# models"},
     "col_first_model_date": {"fr": "date 1er modèle", "en": "first model date"},
     "col_last_model_date": {"fr": "date dernier modèle", "en": "last model date"},
+    "col_next_update": {"fr": "prochaine m.à.j.", "en": "next update"},
     "col_update_frequency": {
         "fr": "fréquence mise à jour (# jours)",
         "en": "update frequency (# days)",

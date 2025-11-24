@@ -7,7 +7,7 @@ import os
 import dateparser
 from dotenv import load_dotenv
 from loguru import logger
-from newscatcherapi import NewsCatcherApiClient
+from newscatcher import NewscatcherApi
 
 from bertrend_apps.data_provider.data_provider import DataProvider
 from bertrend_apps.data_provider.utils import wait
@@ -27,7 +27,7 @@ class NewsCatcherProvider(DataProvider):
 
     def __init__(self):
         super().__init__()
-        self.api_client = NewsCatcherApiClient(x_api_key=API_KEY)
+        self.api_client = NewscatcherApi(api_key=API_KEY)
 
     @wait(1)
     def get_articles(
@@ -42,8 +42,12 @@ class NewsCatcherProvider(DataProvider):
 
         # Use the API to search articles
         logger.info(f"Querying NewsCatcher: {query}")
-        result = self.api_client.get_search(
-            q=query, lang="fr", page_size=max_results, from_=after, to_=before
+        result = self.api_client.search.post(
+            q=query,
+            lang=["fr"],
+            from_=after,
+            to=before,
+            is_news_domain=True,
         )
 
         entries = result["articles"][:max_results]

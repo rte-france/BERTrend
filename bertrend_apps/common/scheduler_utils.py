@@ -5,6 +5,7 @@
 import locale
 import random
 from abc import abstractmethod, ABC
+from datetime import datetime
 from pathlib import Path
 
 from cron_descriptor import (
@@ -123,8 +124,22 @@ class SchedulerUtils(ABC):
         pass
 
     @abstractmethod
-    def check_if_learning_active_for_user(self, model_id: str, user: str):
+    def check_if_learning_active_for_user(self, model_id: str, user: str) -> bool:
         """Checks if a given scrapping feed is active (registered in the crontab"""
+        pass
+
+    @abstractmethod
+    def get_next_scrapping(
+        self, feed_id: str, user: str | None = None
+    ) -> datetime | None:
+        """Return the next scrapping date for the given feed_id and user"""
+        pass
+
+    @abstractmethod
+    def get_next_learning(
+        self, model_id: str, user: str | None = None
+    ) -> datetime | None:
+        """Return the next scrapping date for the given feed_id and user"""
         pass
 
     @abstractmethod

@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from loguru import logger
@@ -165,7 +166,7 @@ class CrontabSchedulerUtils(SchedulerUtils):
         else:
             return self._check_cron_job(rf"scrape-feed.*/{feed_id}_feed.toml")
 
-    def check_if_learning_active_for_user(self, model_id: str, user: str):
+    def check_if_learning_active_for_user(self, model_id: str, user: str) -> bool:
         """Checks if a given scrapping feed is active (registered in the crontab"""
         if user:
             return self._check_cron_job(
@@ -184,3 +185,15 @@ class CrontabSchedulerUtils(SchedulerUtils):
             )
         else:
             return False
+
+    def get_next_scrapping(
+        self, feed_id: str, user: str | None = None
+    ) -> datetime | None:
+        """Return the next scrapping date for the given feed_id and user"""
+        return None
+
+    def get_next_learning(
+        self, model_id: str, user: str | None = None
+    ) -> datetime | None:
+        """Return the next scrapping date for the given feed_id and user"""
+        return None

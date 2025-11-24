@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+from datetime import datetime
 from pathlib import Path
 
 from loguru import logger
@@ -101,6 +102,21 @@ class APSchedulerUtils(SchedulerUtils):
             logger.trace("No jobs found matching the provided patterns")
             return []
         return [job["job_id"] for job in results_d["jobs"]]
+
+    @staticmethod
+    def find_jobs_description(patterns: dict, match_all: bool = True):
+        """Find jobs matching the provided patterns and return their full description."""
+        payload = {"match_all": match_all, "kwargs_patterns": patterns}
+        r = _request("POST", "/jobs/find", json=payload)
+        if not r.status_code in (200, 201):
+            logger.error(f"Failed to find jobs: {r.status_code} {r.text}")
+            raise Exception(f"Failed to find jobs: {r.status_code} {r.text}")
+        # Process results
+        results_d = r.json()
+        if results_d["matches_found"] == 0:
+            logger.trace("No jobs found matching the provided patterns")
+            return []
+        return results_d["jobs"]
 
     @staticmethod
     def remove_jobs(job_ids: list[str]):
@@ -298,7 +314,7 @@ class APSchedulerUtils(SchedulerUtils):
             )
             return False
 
-    def check_if_learning_active_for_user(self, model_id: str, user: str):
+    def check_if_learning_active_for_user(self, model_id: str, user: str) -> bool:
         """Checks if a given scrapping feed is active (registered in the crontab"""
         try:
             job_ids = self.find_jobs(
@@ -331,3 +347,43 @@ class APSchedulerUtils(SchedulerUtils):
                 f"Error occurred while checking if reporting is active for {user},{model_id}: {e}"
             )
             return False
+
+    def get_next_scrapping(
+        self, feed_id: str, user: str | None = None
+    ) -> datetime | None:
+        """Return the next scrapping date for the given feed_id and user"""
+        try:
+            jobs = self.find_jobs_description(
+                patterns={
+                    "url": ".*/scrape-feed.*",
+                    "json_data": {"user": user, "model_id": feed_id},
+                }
+            )
+            if len(jobs) == 0:
+                return None
+            return datetime.fromisoformat(jobs[0]["next_run_time"])
+        except Exception as e:
+            logger.error(
+                f"Error occurred while checking date of next scrapping for {user},{feed_id}: {e}"
+            )
+            return None
+
+    def get_next_learning(
+        self, model_id: str, user: str | None = None
+    ) -> datetime | None:
+        """Return the next scrapping date for the given feed_id and user"""
+        try:
+            jobs = self.find_jobs_description(
+                patterns={
+                    "url": ".*/train-new-model.*",
+                    "json_data": {"user": user, "model_id": model_id},
+                }
+            )
+            if len(jobs) == 0:
+                return None
+            return datetime.fromisoformat(jobs[0]["next_run_time"])
+        except Exception as e:
+            logger.error(
+                f"Error occurred while checking date of next learning for {user},{model_id}: {e}"
+            )
+            return None
