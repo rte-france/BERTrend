@@ -77,6 +77,12 @@ def models_monitoring():
             save_model_config(model_id, st.session_state.model_analysis_cfg[model_id])
 
         list_models = get_models_info(model_id, st.session_state.username)
+        next_run = SCHEDULER_UTILS.get_next_learning(
+            model_id=model_id, user=st.session_state.username
+        )
+        if next_run:
+            next_run = next_run.strftime("%d-%m-%Y %H:%M")
+
         displayed_list.append(
             {
                 translate("col_id"): model_id,
@@ -87,6 +93,7 @@ def models_monitoring():
                 translate("col_last_model_date"): (
                     list_models[-1] if list_models else None
                 ),
+                translate("col_next_update"): next_run,
                 translate("col_update_frequency"): st.session_state.model_analysis_cfg[
                     model_id
                 ]["model_config"]["granularity"],
