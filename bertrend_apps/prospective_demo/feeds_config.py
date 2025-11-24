@@ -221,8 +221,8 @@ def configure_information_sources():
     displayed_list = []
 
     for k, v in st.session_state.user_feeds.items():
-        next_run = SCHEDULER_UTILS.get_next_learning(
-            model_id=k, user=st.session_state.username
+        next_run = SCHEDULER_UTILS.get_next_scrapping(
+            feed_id=k, user=st.session_state.username
         )
         if next_run:
             next_run = next_run.strftime("%d-%m-%Y %H:%M")
