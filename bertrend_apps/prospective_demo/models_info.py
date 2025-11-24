@@ -286,12 +286,11 @@ def edit_model_parameters(row_dict: dict):
             model_id, st.session_state.username
         )
 
-        SCHEDULER_UTILS.update_scheduled_training_for_user(
-            model_id, st.session_state.username
-        )
-        SCHEDULER_UTILS.update_scheduled_report_generation_for_user(
-            model_id, st.session_state.username
-        )
+        # off
+        toggle_learning(model_id, display_messages=False)
+        # on to update schedule
+        toggle_learning(model_id, display_messages=False)
+
         st.rerun()
 
 
@@ -372,19 +371,19 @@ def handle_regenerate_models(row_dict: dict):
         st.info(f"{INFO_ICON} {translate('regeneration_close_info')}")
 
 
-def toggle_learning(cfg: dict):
+def toggle_learning(model_id, display_messages=True):
     """Activate / deactivate the learning from the crontab"""
-    model_id = cfg[translate("col_id")]
     if SCHEDULER_UTILS.check_if_learning_active_for_user(
         model_id=model_id, user=st.session_state.username
     ):
         if SCHEDULER_UTILS.remove_scheduled_training_for_user(
             model_id=model_id, user=st.session_state.username
         ):
-            st.toast(
-                translate("learning_deactivated").format(model_id),
-                icon=INFO_ICON,
-            )
+            if display_messages:
+                st.toast(
+                    translate("learning_deactivated").format(model_id),
+                    icon=INFO_ICON,
+                )
             logger.info(f"Learning for {model_id} deactivated !")
             # Also remove report generation if it was scheduled
             if SCHEDULER_UTILS.check_if_report_generation_active_for_user(
@@ -401,7 +400,10 @@ def toggle_learning(cfg: dict):
         SCHEDULER_UTILS.schedule_training_for_user(
             schedule, model_id, st.session_state.username
         )
-        st.toast(translate("learning_activated").format(model_id), icon=WARNING_ICON)
+        if display_messages:
+            st.toast(
+                translate("learning_activated").format(model_id), icon=WARNING_ICON
+            )
         logger.info(f"Learning for {model_id} activated !")
 
         # Also schedule report generation if configured
@@ -435,8 +437,9 @@ def toggle_learning(cfg: dict):
                 logger.info(f"Automated report generation for {model_id} activated !")
     # Clear cache to reflect updated crontab state
     st.cache_data.clear()
-    time.sleep(0.2)
-    st.rerun()
+    if display_messages:
+        time.sleep(0.1)
+        st.rerun()
 
 
 @st.dialog(translate("dialog_confirmation"))
@@ -452,7 +455,7 @@ def handle_toggle_learning(cfg: dict):
         col1, col2, _ = st.columns([2, 2, 8])
         with col1:
             if st.button(translate("btn_yes"), type="primary"):
-                toggle_learning(cfg)
+                toggle_learning(model_id)
                 st.rerun()
         with col2:
             if st.button(translate("btn_no")):
@@ -461,7 +464,7 @@ def handle_toggle_learning(cfg: dict):
         st.write(
             f":blue[{INFO_ICON}] {translate('activate_learning_info').format(model_id)}"
         )
-        toggle_learning(cfg)
+        toggle_learning(model_id)
         st.rerun()
 
 

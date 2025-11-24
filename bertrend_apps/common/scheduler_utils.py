@@ -148,20 +148,3 @@ class SchedulerUtils(ABC):
     ) -> bool:
         """Checks if automated report generation is active (registered in the crontab)"""
         pass
-
-    def update_scheduled_training_for_user(self, model_id: str, user: str):
-        """Updates the crontab with the new training job"""
-        if self.check_if_learning_active_for_user(model_id, user):
-            self.remove_scheduled_training_for_user(model_id, user)
-            self.schedule_training_for_user(model_id, user)
-            return True
-        return False
-
-    def update_scheduled_report_generation_for_user(
-        self, model_id: str, user: str
-    ) -> bool:
-        """Updates the crontab with the new report generation job"""
-        if self.check_if_report_generation_active_for_user(model_id, user):
-            self.remove_scheduled_report_generation_for_user(model_id, user)
-            return self.schedule_report_generation_for_user(model_id, user)
-        return False
