@@ -43,33 +43,33 @@ class EmbeddingAPIClient(SecureAPIClient, Embeddings):
         """
         Return currently loaded model name in Embedding API.
         """
-        response = requests.get(
+        with requests.get(
             self.url + "/model_name",
             verify=False,
-        )
-        if response.status_code == 200:
-            model_name = response.json()
-            logger.debug(f"Model name: {model_name}")
-            return model_name
-        else:
-            logger.error(f"Error: {response.status_code}")
-            raise Exception(f"Error: {response.status_code}")
+        ) as response:
+            if response.status_code == 200:
+                model_name = response.json()
+                logger.debug(f"Model name: {model_name}")
+                return model_name
+            else:
+                logger.error(f"Error: {response.status_code}")
+                raise Exception(f"Error: {response.status_code}")
 
     def get_num_workers(self) -> int:
         """
         Return currently loaded number of workers in Embedding API.
         """
-        response = requests.get(
+        with requests.get(
             self.url + "/num_workers",
             verify=False,
-        )
-        if response.status_code == 200:
-            num_workers = response.json()
-            logger.debug(f"Number of workers: {num_workers}")
-            return num_workers
-        else:
-            logger.error(f"Error: {response.status_code}")
-            raise Exception(f"Error: {response.status_code}")
+        ) as response:
+            if response.status_code == 200:
+                num_workers = response.json()
+                logger.debug(f"Number of workers: {num_workers}")
+                return num_workers
+            else:
+                logger.error(f"Error: {response.status_code}")
+                raise Exception(f"Error: {response.status_code}")
 
     def embed_query(
         self, text: str | list[str], show_progress_bar: bool = False
@@ -78,36 +78,36 @@ class EmbeddingAPIClient(SecureAPIClient, Embeddings):
             text = [text]
         logger.debug(f"Calling EmbeddingAPI using model: {self.model_name}")
         logger.debug(f"Computing embeddings...")
-        response = requests.post(
+        with requests.post(
             self.url + "/encode",
             data=json.dumps({"text": text, "show_progress_bar": show_progress_bar}),
             verify=False,
             headers=self._get_headers(),
-        )
-        if response.status_code == 200:
-            embeddings = np.array(response.json()["embeddings"])
-            logger.debug(f"Computing embeddings done")
-            return embeddings.tolist()[0]
-        else:
-            logger.error(f"Error: {response.status_code}")
+        ) as response:
+            if response.status_code == 200:
+                embeddings = np.array(response.json()["embeddings"])
+                logger.debug(f"Computing embeddings done")
+                return embeddings.tolist()[0]
+            else:
+                logger.error(f"Error: {response.status_code}")
 
     def embed_batch(
         self, texts: list[str], show_progress_bar: bool = True
     ) -> list[list[float]]:
         logger.debug(f"Computing embeddings...")
-        response = requests.post(
+        with requests.post(
             self.url + "/encode",
             data=json.dumps({"text": texts, "show_progress_bar": show_progress_bar}),
             verify=False,
             headers=self._get_headers(),
-        )
-        if response.status_code == 200:
-            embeddings = np.array(response.json()["embeddings"])
-            logger.debug(f"Computing embeddings done for batch")
-            return embeddings.tolist()
-        else:
-            logger.error(f"Error: {response.status_code}")
-            return []
+        ) as response:
+            if response.status_code == 200:
+                embeddings = np.array(response.json()["embeddings"])
+                logger.debug(f"Computing embeddings done for batch")
+                return embeddings.tolist()
+            else:
+                logger.error(f"Error: {response.status_code}")
+                return []
 
     def embed_documents(
         self,

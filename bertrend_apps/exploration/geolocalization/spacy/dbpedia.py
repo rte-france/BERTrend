@@ -102,11 +102,13 @@ class DBPediaEntityLinker(object):
 
         # TODO: application/ld+json would be more detailed? https://github.com/digitalbazaar/pyld
         try:
-            response = requests.post(
+            with requests.post(
                 f"{endpoint}/{self.process}",
                 headers={"accept": "application/json"},
                 data=params,
-            )
+            ) as response:
+                response.raise_for_status()
+                data = response.json()
         except HTTPError as e:
             # due to too many requests to the endpoint - this happens sometimes with the default public endpoint
             logger.warn(
@@ -114,15 +116,12 @@ class DBPediaEntityLinker(object):
             )
             logger.trace(str(e))
             return doc
-        except Exception as e:  # other erros
+        except Exception as e:  # other errors
             logger.error(
                 f"Endpoint {endpoint} unreachable, please check your connection. Document not updated."
             )
             logger.trace(str(e))
             return doc
-
-        response.raise_for_status()
-        data = response.json()
         logger.trace(f"Received data: {data}")
 
         doc._.dbpedia_raw_result = data

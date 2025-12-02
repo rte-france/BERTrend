@@ -134,13 +134,13 @@ class ArxivProvider(DataProvider):
         if not SEMANTIC_SCHOLAR_API_KEY:
             raise ValueError("SEMANTIC_SCHOLAR_API_KEY environment variable is not set")
         ids_list = ["URL:" + entry["id"] for entry in chunk]
-        response = requests.post(
+        with requests.post(
             "https://api.semanticscholar.org/graph/v1/paper/batch",
             params={"fields": SEMANTIC_SCHOLAR_FIELDS},
             json={"ids": ids_list},
             headers={"x-api-key": SEMANTIC_SCHOLAR_API_KEY},
-        )
-        return [item for item in response.json() if item is not None]
+        ) as response:
+            return [item for item in response.json() if item is not None]
 
     def add_citations_count(self, entries: list[dict]):
         """Uses the semantic_scholar API to get the number of counts per paper"""

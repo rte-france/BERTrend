@@ -77,17 +77,17 @@ def _fetch_decoded_batch_execute(id):
         "Referer": "https://news.google.com/",
     }
 
-    response = requests.post(
+    with requests.post(
         "https://news.google.com/_/DotsSplashUi/data/batchexecute?rpcids=Fbv4je",
         headers=headers,
         data={"f.req": s},
-    )
+    ) as response:
 
-    if response.status_code != 200:
-        logger.error("Failed to fetch data from Google.")
-        raise Exception("Failed to fetch data from Google.")
+        if response.status_code != 200:
+            logger.error("Failed to fetch data from Google.")
+            raise Exception("Failed to fetch data from Google.")
 
-    text = response.text
+        text = response.text
     header = '[\\"garturlres\\",\\"'
     footer = '\\",'
     if header not in text:

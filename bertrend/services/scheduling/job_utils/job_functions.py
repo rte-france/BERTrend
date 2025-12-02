@@ -28,17 +28,19 @@ def http_request(
     """Execute an HTTP request (curl-like functionality)"""
     logger.info(f"Executing HTTP {method} request to {url}")
     try:
-        response = requests.request(
+        with requests.request(
             method=method.upper(),
             url=url,
             headers=headers,
             json=json_data,
             timeout=timeout,
-        )
-        if response.status_code != 200:
-            response.raise_for_status()
-        logger.info(f"HTTP request completed with status code: {response.status_code}")
-        return f"Request to {url} completed with status {response.status_code}"
+        ) as response:
+            if response.status_code != 200:
+                response.raise_for_status()
+            logger.info(
+                f"HTTP request completed with status code: {response.status_code}"
+            )
+            return f"Request to {url} completed with status {response.status_code}"
     except Exception as e:
         logger.error(f"HTTP request failed: {str(e)}")
         raise RuntimeError(f"Error executing request: {str(e)}")

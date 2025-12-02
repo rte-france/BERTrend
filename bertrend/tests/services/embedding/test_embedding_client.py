@@ -23,6 +23,13 @@ class MockResponse:
     def json(self):
         return self.json_data
 
+    # Support context manager protocol so it can be used with `with` statements
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return False
+
 
 @pytest.fixture
 def mock_client_secret():

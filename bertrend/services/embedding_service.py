@@ -267,14 +267,14 @@ class EmbeddingService(BaseEmbedder):
         Exception
             If the API request fails.
         """
-        response = requests.get(self.url + "/model_name", verify=False)
-        if response.status_code == 200:
-            model_name = response.json()
-            logger.debug(f"Model name: {model_name}")
-            return model_name
-        else:
-            logger.error(f"Error: {response.status_code}")
-            raise Exception(f"Error: {response.status_code}")
+        with requests.get(self.url + "/model_name", verify=False) as response:
+            if response.status_code == 200:
+                model_name = response.json()
+                logger.debug(f"Remote model name: {model_name}")
+                return model_name
+            else:
+                logger.error(f"Error: {response.status_code}")
+                raise Exception(f"Error: {response.status_code}")
 
 
 def _convert_to_numpy(obj, type=None):
