@@ -21,7 +21,8 @@ from bertrend_apps.exploration.curebot.prompts import (
 )
 
 # Get configuration file
-CONFIG = tomllib.load(open(Path(__file__).parent / "config.toml", "rb"))
+with open(Path(__file__).parent / "config.toml", "rb") as f:
+    CONFIG = tomllib.load(f)
 
 # Set curebot column name
 URL_COLUMN = CONFIG["data"]["url_column"]
