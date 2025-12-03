@@ -44,7 +44,6 @@ FEED_SOURCES = ["google", "atom", "rss", "arxiv"]
 @st.dialog(translate("feed_config_dialog_title"))
 def edit_feed_monitoring(config: dict | None = None):
     """Create or update a feed monitoring configuration."""
-
     evaluate_articles_quality = False
 
     chosen_id = st.text_input(
@@ -56,7 +55,9 @@ def edit_feed_monitoring(config: dict | None = None):
     # Safely determine the provider for existing configurations.
     # Older or malformed configs might miss the "provider" key, leading to a KeyError.
     # In that case, we fallback to the default provider.
-    provider_default = FEED_SOURCES[0] if not config else config.get("provider", FEED_SOURCES[0])
+    provider_default = (
+        FEED_SOURCES[0] if not config else config.get("provider", FEED_SOURCES[0])
+    )
 
     provider = st.segmented_control(
         translate("feed_source_label"),
@@ -68,7 +69,7 @@ def edit_feed_monitoring(config: dict | None = None):
     if provider == "google" or provider == "arxiv":
         query = st.text_input(
             translate("feed_query_label") + " :red[*]",
-            value="" if not config else config.get("query",""),
+            value="" if not config else config.get("query", ""),
             help=translate("feed_query_help"),
         )
         language = st.segmented_control(
@@ -81,7 +82,9 @@ def edit_feed_monitoring(config: dict | None = None):
         )
         if "update_frequency" not in st.session_state:
             st.session_state.update_frequency = (
-                DEFAULT_CRONTAB_EXPRESSION if not config else config["update_frequency"]
+                DEFAULT_CRONTAB_EXPRESSION
+                if not config
+                else config.get("update_frequency", DEFAULT_CRONTAB_EXPRESSION)
             )
         new_freq = st.text_input(
             translate("feed_frequency_label"),
@@ -126,14 +129,14 @@ def edit_feed_monitoring(config: dict | None = None):
     elif provider == "atom":
         query = st.text_input(
             translate("feed_atom_label") + " :red[*]",
-            value="" if not config else config["query"],
+            value="" if not config else config.get("query", ""),
             help=translate("feed_atom_help"),
         )
 
     elif provider == "rss":
         query = st.text_input(
             translate("feed_rss_label") + " :red[*]",
-            value="" if not config else config["query"],
+            value="" if not config else config.get("query", ""),
             help=translate("feed_rss_help"),
         )
 
@@ -218,7 +221,6 @@ def display_crontab_description(crontab_expr: str) -> str:
 
 def configure_information_sources():
     """Configure Information Sources."""
-    # if "user_feeds" not in st.session_state:
     st.session_state.user_feeds, st.session_state.feed_files = read_user_feeds(
         st.session_state.username
     )
@@ -233,14 +235,12 @@ def configure_information_sources():
             next_run = next_run.strftime("%d-%m-%Y %H:%M")
         displayed_list.append(
             {
-                translate("col_id"): k,
-                translate("col_provider"): v["data-feed"]["provider"],
-                translate("col_query"): v["data-feed"]["query"],
-                translate("col_language"): v["data-feed"]["language"],
-                translate("col_data_update_frequency"): v["data-feed"][
-                    "update_frequency"
-                ],
-                translate("col_next_update"): next_run,
+                "id": k,
+                "provider": v["data-feed"]["provider"],
+                "query": v["data-feed"]["query"],
+                "language": v["data-feed"]["language"],
+                "update_frequency": v["data-feed"]["update_frequency"],
+                "next_update": next_run,
             }
         )
     df = pd.DataFrame(displayed_list)

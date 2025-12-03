@@ -8,6 +8,8 @@ from typing import Callable
 import pandas as pd
 import streamlit as st
 
+from bertrend_apps.prospective_demo.i18n import translate
+
 
 def clickable_df(
     df: pd.DataFrame, clickable_buttons: list[tuple[str | Callable, Callable, str]]
@@ -18,7 +20,7 @@ def clickable_df(
     cols = st.columns(len(df.columns) * [3] + len(clickable_buttons) * [1])
     for i, c in enumerate(df.columns):
         with cols[i]:
-            st.write(f"**{c}**")
+            st.write(f"**{translate("col_"+c, default=c)}**")
     # Generate a unique identifier, this will be used to identify the keys in case multiple clickable_df are used
     unique_id = zlib.crc32(" ".join(df.columns.tolist()).encode())
     for index, row in df.iterrows():
