@@ -53,17 +53,22 @@ def edit_feed_monitoring(config: dict | None = None):
         value=None if not config else config["id"],
     )
 
+    # Safely determine the provider for existing configurations.
+    # Older or malformed configs might miss the "provider" key, leading to a KeyError.
+    # In that case, we fallback to the default provider.
+    provider_default = FEED_SOURCES[0] if not config else config.get("provider", FEED_SOURCES[0])
+
     provider = st.segmented_control(
         translate("feed_source_label"),
         selection_mode="single",
         options=FEED_SOURCES,
-        default=FEED_SOURCES[0] if not config else config["provider"],
+        default=provider_default,
         help=translate("feed_source_help"),
     )
     if provider == "google" or provider == "arxiv":
         query = st.text_input(
             translate("feed_query_label") + " :red[*]",
-            value="" if not config else config["query"],
+            value="" if not config else config.get("query",""),
             help=translate("feed_query_help"),
         )
         language = st.segmented_control(

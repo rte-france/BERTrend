@@ -177,7 +177,8 @@ def process_newsletter(
     try:
         if recipients:
             credentials = get_credentials()
-            with open(output_path, "r") as file:
+            # Use Path.open to ensure consistent handling of file resources
+            with output_path.open("r", encoding="utf-8") as file:
                 content = file.read()
             send_email(
                 credentials=credentials,
