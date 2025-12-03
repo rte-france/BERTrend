@@ -215,11 +215,24 @@ class DataProvider(ABC):
         pass
 
     def process_entries(self, entries: list, lang_filter: str = None):
-        # Number of parallel jobs you want to run (adjust as needed)
-        num_jobs = -1  # all available cpus
+        """Process provider entries in parallel.
 
-        # Parallelize the loop using joblib
-        results = Parallel(n_jobs=num_jobs)(
+        Notes
+        -----
+        We explicitly use a *thread-based* backend for joblib.Parallel.
+        
+        A process-based backend (loky / multiprocessing) requires pickling the
+        bound ``self`` object, which may fail for providers holding
+        non-picklable state (e.g. network clients, parsers). Threads share the
+        same memory space and thus safely keep access to this context without
+        extra serialization.
+        """
+
+        # Use a thread-based backend to avoid pickling ``self`` and its state.
+        # ``n_jobs=-1`` keeps the previous behaviour of using all available
+        # CPUs, while prefer="threads" ensures we do not accidentally switch
+        # back to a multiprocessing backend.
+        results = Parallel(n_jobs=-1, prefer="threads")(
             delayed(self._parse_entry)(res) for res in entries
         )
         results = [res for res in results if res is not None]

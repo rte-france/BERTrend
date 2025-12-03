@@ -133,7 +133,13 @@ class EmbeddingAPIClient(SecureAPIClient, Embeddings):
         )
 
         # Parallel request
-        results = Parallel(n_jobs=MAX_N_JOBS)(
+        #
+        # We explicitly use a *thread-based* backend here. Using the default
+        # (process-based) backend would require pickling ``self`` and the
+        # underlying SecureAPIClient state (e.g. auth/session objects), which
+        # is fragile and can easily break. Threads share the same context and
+        # avoid these issues while still allowing concurrent HTTP requests.
+        results = Parallel(n_jobs=MAX_N_JOBS, prefer="threads")(
             delayed(self.embed_batch)(batch, show_progress_bar) for batch in batches
         )
 
