@@ -9,6 +9,11 @@
 ![Static Badge](https://img.shields.io/badge/python-%3E%3D3.12-blue)
 ![GitHub License](https://img.shields.io/github/license/rte-france/BERTrend)
 
+## News
+2025-11-24: BERTrend has been integrated into the [Netminer 5](https://netminer.gitbook.io/netminer5/module-reference/text/bertopic/bertrend) data analysis tool !
+
+## Overview
+
 ![BERTrend pipeline](./BERTrend_overview.png)
 
 ## Paper
