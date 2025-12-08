@@ -220,7 +220,7 @@ class DataProvider(ABC):
         Notes
         -----
         We explicitly use a *thread-based* backend for joblib.Parallel.
-        
+
         A process-based backend (loky / multiprocessing) requires pickling the
         bound ``self`` object, which may fail for providers holding
         non-picklable state (e.g. network clients, parsers). Threads share the

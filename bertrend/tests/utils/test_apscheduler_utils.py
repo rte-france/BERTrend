@@ -18,24 +18,30 @@ from bertrend_apps.common.apscheduler_utils import (
 class TestHelperFunctions:
     """Tests for module-level helper functions."""
 
-    @patch("bertrend_apps.common.apscheduler_utils._session")
-    def test_request_success(self, mock_session):
+    @patch("bertrend_apps.common.apscheduler_utils._get_session")
+    def test_request_success(self, mock_get_session):
         """Test successful HTTP request."""
+        mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
+        mock_response.content = b""
         mock_session.request.return_value = mock_response
+        mock_get_session.return_value.__enter__.return_value = mock_session
 
         result = _request("GET", "/test")
 
         assert result == mock_response
         mock_session.request.assert_called_once()
 
-    @patch("bertrend_apps.common.apscheduler_utils._session")
-    def test_request_with_json(self, mock_session):
+    @patch("bertrend_apps.common.apscheduler_utils._get_session")
+    def test_request_with_json(self, mock_get_session):
         """Test HTTP request with JSON payload."""
+        mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
+        mock_response.content = b""
         mock_session.request.return_value = mock_response
+        mock_get_session.return_value.__enter__.return_value = mock_session
 
         data = {"key": "value"}
         result = _request("POST", "/test", json=data)

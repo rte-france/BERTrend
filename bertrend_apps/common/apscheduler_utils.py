@@ -9,11 +9,13 @@ import hashlib
 import os
 from datetime import datetime
 from pathlib import Path
+from contextlib import contextmanager
 
 from loguru import logger
 
 from bertrend import load_toml_config
 import requests
+from requests.adapters import HTTPAdapter
 from urllib.parse import urljoin
 
 from bertrend_apps.common.scheduler_utils import SchedulerUtils
@@ -43,24 +45,47 @@ BERTREND_COMMANDS_TIMEOUTS = {
     GENERATE_REPORT: 600,
 }
 
-# Single shared session for connection pooling - lazily initialized to avoid fork issues
-_session = None
 _REQUEST_TIMEOUT = float(os.getenv("SCHEDULER_HTTP_TIMEOUT", "5"))
 
 
+@contextmanager
 def _get_session():
-    """Get or create a requests session for the current process."""
-    global _session
-    if _session is None:
-        _session = requests.Session()
-    return _session
+    """Context manager that creates and properly closes a session."""
+    session = requests.Session()
+    # Configure connection pooling limits
+    adapter = HTTPAdapter(
+        pool_connections=10, pool_maxsize=20, max_retries=0, pool_block=False
+    )
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    try:
+        yield session
+    finally:
+        # Ensure all connections are properly closed
+        try:
+            # Clear adapters which closes the connection pools
+            for adapter in session.adapters.values():
+                adapter.close()
+            session.adapters.clear()
+        except Exception as e:
+            logger.error(f"Error closing session adapters: {e}")
 
 
 def _request(method: str, path: str, *, json: dict | None = None):
+    """Make HTTP request and ensure response body is consumed."""
     url = urljoin(SCHEDULER_SERVICE_URL, path)
-    session = _get_session()
-    resp = session.request(method.upper(), url, json=json, timeout=_REQUEST_TIMEOUT)
-    return resp
+    with _get_session() as session:
+        try:
+            resp = session.request(
+                method.upper(), url, json=json, timeout=_REQUEST_TIMEOUT
+            )
+            # Force connection release by accessing content
+            # This ensures the response is fully read
+            _ = resp.content
+            return resp
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request failed for {method} {url}: {e}")
+            raise
 
 
 def _job_id_from_string(s: str) -> str:
@@ -71,13 +96,14 @@ def _job_id_from_string(s: str) -> str:
 
 def _list_jobs() -> list[dict]:
     """Return list of jobs using the HTTP API."""
-    r = _request("GET", "/jobs")
-    if r.status_code != 200:
-        logger.error(f"Failed to list jobs: {r.status_code} {r.text}")
-        return []
     try:
+        r = _request("GET", "/jobs")
+        if r.status_code != 200:
+            logger.error(f"Failed to list jobs: {r.status_code} {r.text}")
+            return []
         return r.json()
-    except Exception:
+    except Exception as e:
+        logger.error(f"Error listing jobs: {e}")
         return []
 
 
@@ -92,39 +118,53 @@ class APSchedulerUtils(SchedulerUtils):
     def find_jobs(patterns: dict, match_all: bool = True) -> list[str]:
         """Find jobs matching the provided patterns and return their ids."""
         payload = {"match_all": match_all, "kwargs_patterns": patterns}
-        r = _request("POST", "/jobs/find", json=payload)
-        if not r.status_code in (200, 201):
-            logger.error(f"Failed to find jobs: {r.status_code} {r.text}")
-            raise Exception(f"Failed to find jobs: {r.status_code} {r.text}")
-        # Process results
-        results_d = r.json()
-        if results_d["matches_found"] == 0:
-            logger.trace("No jobs found matching the provided patterns")
-            return []
-        return [job["job_id"] for job in results_d["jobs"]]
+        try:
+            r = _request("POST", "/jobs/find", json=payload)
+            if not r.status_code in (200, 201):
+                logger.error(f"Failed to find jobs: {r.status_code} {r.text}")
+                raise Exception(f"Failed to find jobs: {r.status_code} {r.text}")
+            # Process results
+            results_d = r.json()
+            if results_d["matches_found"] == 0:
+                logger.trace("No jobs found matching the provided patterns")
+                return []
+            return [job["job_id"] for job in results_d["jobs"]]
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request error finding jobs: {e}")
+            raise
 
     @staticmethod
     def find_jobs_description(patterns: dict, match_all: bool = True):
         """Find jobs matching the provided patterns and return their full description."""
         payload = {"match_all": match_all, "kwargs_patterns": patterns}
-        r = _request("POST", "/jobs/find", json=payload)
-        if not r.status_code in (200, 201):
-            logger.error(f"Failed to find jobs: {r.status_code} {r.text}")
-            raise Exception(f"Failed to find jobs: {r.status_code} {r.text}")
-        # Process results
-        results_d = r.json()
-        if results_d["matches_found"] == 0:
-            logger.trace("No jobs found matching the provided patterns")
-            return []
-        return results_d["jobs"]
+        try:
+            r = _request("POST", "/jobs/find", json=payload)
+            if not r.status_code in (200, 201):
+                logger.error(f"Failed to find jobs: {r.status_code} {r.text}")
+                raise Exception(f"Failed to find jobs: {r.status_code} {r.text}")
+            # Process results
+            results_d = r.json()
+            if results_d["matches_found"] == 0:
+                logger.trace("No jobs found matching the provided patterns")
+                return []
+            return results_d["jobs"]
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request error finding jobs: {e}")
+            raise
 
     @staticmethod
     def remove_jobs(job_ids: list[str]):
         """Remove jobs matching the provided ids from the scheduler service."""
         for job_id in job_ids:
-            r = _request("DELETE", f"/jobs/{job_id}")
-            if r.status_code != 200:
-                logger.error(f"Failed to delete job {job_id}: {r.status_code} {r.text}")
+            try:
+                r = _request("DELETE", f"/jobs/{job_id}")
+                if r.status_code != 200:
+                    logger.error(
+                        f"Failed to delete job {job_id}: {r.status_code} {r.text}"
+                    )
+                # Response body already consumed by _request()
+            except Exception as e:
+                logger.error(f"Error deleting job {job_id}: {e}")
 
     def add_job_to_crontab(
         self,
@@ -163,16 +203,20 @@ class APSchedulerUtils(SchedulerUtils):
             "coalesce": True,
             "replace_existing": True,
         }
-        r = _request("POST", "/jobs", json=payload)
-        if r.status_code in (200, 201):
-            return True
-        # Consider duplicates as success
         try:
-            detail = r.json().get("detail", "")
-        except Exception:
-            detail = r.text
-        logger.error(f"Failed to create job: {r.status_code} {detail}")
-        return False
+            r = _request("POST", "/jobs", json=payload)
+            if r.status_code in (200, 201):
+                return True
+            # Consider duplicates as success
+            try:
+                detail = r.json().get("detail", "")
+            except Exception:
+                detail = r.text
+            logger.error(f"Failed to create job: {r.status_code} {detail}")
+            return False
+        except Exception as e:
+            logger.error(f"Error creating job: {e}")
+            return False
 
     def schedule_scrapping(self, feed_cfg: Path, user: str | None = None):
         """Schedule data scrapping based on a feed configuration file using the service."""
