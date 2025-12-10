@@ -174,8 +174,11 @@ class DataProvider(ABC):
             return "", ""
 
         # some feeds other than google news provider may contain google encoded urls that require decoding before parsing
-        if "news.google" in url:
-            url = decode_google_news_url(url)
+        try:
+            if "news.google" in url:
+                url = decode_google_news_url(url)
+        except Exception:
+            return "", ""
 
         logger.debug(f"Extracting text from {url}")
         try:

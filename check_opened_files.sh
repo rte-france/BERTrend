@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: MPL-2.0
 # This file is part of BERTrend.
 #
+# Script to check which processes open a lot of file descriptors - used to track potential leaks
 
 for pid in /proc/[0-9]*; do
     p=${pid##*/}                                # extract pid number
