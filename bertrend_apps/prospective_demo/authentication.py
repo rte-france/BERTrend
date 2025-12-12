@@ -30,6 +30,14 @@ def password_entered():
         st.session_state["password_correct"] = False
 
 
+def logout():
+    """Clear authentication state to return to login page."""
+    if "password_correct" in st.session_state:
+        del st.session_state["password_correct"]
+    if "username" in st.session_state:
+        del st.session_state["username"]
+
+
 def check_password() -> str | None:
     """Returns the user name if the user had a correct password, otherwise None."""
 

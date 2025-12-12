@@ -24,7 +24,7 @@ from bertrend.demos.demos_utils.icons import (
     TIMELINE_ICON,
 )
 from bertrend.demos.demos_utils.state_utils import SessionStateManager
-from bertrend_apps.prospective_demo.authentication import check_password
+from bertrend_apps.prospective_demo.authentication import check_password, logout
 from bertrend_apps.prospective_demo.dashboard_analysis import dashboard_analysis
 from bertrend_apps.prospective_demo.dashboard_comparative import dashboard_comparative
 from bertrend_apps.prospective_demo.feeds_config import configure_information_sources
@@ -69,6 +69,32 @@ def display_version_number():
     st.markdown(footer, unsafe_allow_html=True)
 
 
+def display_current_user(username: str):
+    """Display the current user name in a discrete but nice way with logout button"""
+    user_display = f"""
+    <style>
+    .user-display {{
+        position: fixed;
+        right: 10px;
+        top: 60px;
+        color: #333;
+        font-size: 0.9em;
+        opacity: 0.8;
+        padding: 6px 12px;
+        border-radius: 15px;
+        background-color: rgba(240, 242, 246, 0.9);
+        user-select: none;
+        z-index: 999999;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }}
+    </style>
+    <div class="user-display">
+        <span>👤 {username}</span>
+    </div>
+    """
+    st.markdown(user_display, unsafe_allow_html=True)
+
+
 def main():
     """Main page"""
     set_internationalization_language("fr")
@@ -90,6 +116,7 @@ def main():
             st.stop()
         else:
             SessionStateManager.set("username", username)
+            display_current_user(username)
     else:
         SessionStateManager.get_or_set(
             "username", "nemo"
