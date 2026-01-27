@@ -94,11 +94,10 @@ Recommended steps:
      - Misc: `CUDA_VISIBLE_DEVICES`
 2. Use a virtual environment and install dependencies inside it:
    ```bash
-   python -m venv .venv
+   uv venv --python 3.13
    source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
-   pip install -U pip
-   pip install .  # or pip install ".[apps]"
-   pip install python-dotenv  # ensures .env is auto-loaded
+   uv pip install . # or uv pip install .[apps]
+   uv pip install python-dotenv  # ensures .env is auto-loaded
    ```
 3. Notes
    - If `python-dotenv` isn’t installed, `.env` won’t be auto-loaded; you can either install it or export variables via your shell/runner.
@@ -108,7 +107,7 @@ Recommended steps:
 ### Hardware and Software Requirements
 
 - Recommended: at least one GPU with 16GB RAM for faster processing
-- Python >= 3.12 is required
+- Python >= 3.13 is required
 
 ### Docker Installation
 
@@ -118,28 +117,28 @@ For detailed instructions on using BERTrend with Docker, see the [Docker documen
 
 ### Package Installation
 
-- (Recommended): create a new python environment using `venv` or `conda`: 
+- (Recommended): create a new python environment using `uv`: 
 
-  `python -m venv <path>/bertrend`
+  `uv venv --python 3.13`
 
 
 - Installation from pypi
 
-  `pip install bertrend` 
+  `uv pip install bertrend` 
 
 
 - Install using pip or poetry in the BERTrend home directory:
 
   ```bash
   # Basic installation with core dependencies
-  pip install .  # or poetry install
+  uv pip install . 
 
     # Installation with apps dependencies
-  pip install ".[apps]"  # or poetry install --extras apps
+  uv pip install .[apps]
 
   ```
 
-- (Use `pip install -e .` for a local installation)
+- (Use `uv pip install -e .` for a local installation)
 
 NB. Due to the number of dependencies, the installation may take some time on an empty environment.
 
