@@ -35,6 +35,11 @@ DB_PATH = Path.home() / ".bertrend" / "db"
 DB_NAME = "bertrend_jobs.sqlite"
 DB_PATH.mkdir(parents=True, exist_ok=True)
 
+# Number of jobs executed simultaneously
+MAX_WORKERS=50 # some data gathering may be triggered at the same time
+# Number of instances of a same job that can run concurrently
+MAX_INSTANCES=3
+
 # Scheduler will be initialized on first use or set by tests
 scheduler = None
 
@@ -47,10 +52,10 @@ def _init_scheduler():
         jobstores = {
             "default": SQLAlchemyJobStore(url=f"sqlite:///{DB_PATH}/{DB_NAME}")
         }
-        executors = {"default": ProcessPoolExecutor(max_workers=5)}
+        executors = {"default": ProcessPoolExecutor(max_workers=MAX_WORKERS)}
         job_defaults = {
             "coalesce": False,  # Run all missed executions
-            "max_instances": 3,  # Maximum instances of the job running concurrently
+            "max_instances": MAX_INSTANCES,  # Maximum instances of the job running concurrently
         }
         # Initialize APScheduler with persistence (Paris timezone)
         scheduler = BackgroundScheduler(
@@ -129,9 +134,9 @@ def get_trigger(job_data: JobCreate):
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("FastAPI Job Scheduler started")
-    logger.info(f"Job store: SQLite (jobs.sqlite)")
-    logger.info(f"Executor: ProcessPoolExecutor (max_workers=5)")
-    logger.info(f"Timezone: Europe/Paris")
+    logger.info("Job store: SQLite (jobs.sqlite)")
+    logger.info(f"Executor: ProcessPoolExecutor (max_workers={MAX_WORKERS})")
+    logger.info("Timezone: Europe/Paris")
 
     # Print existing jobs
     existing_jobs = scheduler.get_jobs()
