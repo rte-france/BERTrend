@@ -18,7 +18,7 @@ services:
       # Optional: Log level
       - LOG_LEVEL=DEBUG
       # Optional: Number of worker processes
-      - MAX_WORKERS=5
+      - MAX_WORKERS=50
     restart: always
     logging:
       driver: "json-file"
