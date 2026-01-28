@@ -173,7 +173,6 @@ def test_compute_cluster_metrics(mock_bertopic, sample_data):
         ) as mock_diversity,
         patch("bertrend.metrics.topic_metrics.logger") as mock_logger,
     ):
-
         compute_cluster_metrics(
             mock_bertopic, sample_data["topics"], sample_data["docs"]
         )
@@ -207,7 +206,6 @@ def test_compute_cluster_metrics_coherence_error(mock_bertopic, sample_data):
         ) as mock_diversity,
         patch("bertrend.metrics.topic_metrics.logger") as mock_logger,
     ):
-
         compute_cluster_metrics(
             mock_bertopic, sample_data["topics"], sample_data["docs"]
         )
@@ -228,7 +226,6 @@ def test_compute_cluster_metrics_diversity_error(mock_bertopic, sample_data):
         ) as mock_diversity,
         patch("bertrend.metrics.topic_metrics.logger") as mock_logger,
     ):
-
         compute_cluster_metrics(
             mock_bertopic, sample_data["topics"], sample_data["docs"]
         )

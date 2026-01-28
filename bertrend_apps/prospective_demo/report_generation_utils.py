@@ -18,7 +18,6 @@ def render_html_report(
     newsletter: DetailedNewsletter,
     language: str = "fr",
 ) -> str:
-
     template_dirs = [
         Path(__file__).parent,  # Current directory
         Path(

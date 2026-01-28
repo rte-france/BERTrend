@@ -8,6 +8,7 @@
 Test script to verify lazy initialization of SCHEDULER_UTILS.
 This tests that importing bertrend_apps doesn't immediately create scheduler instances.
 """
+
 import os
 import sys
 import multiprocessing

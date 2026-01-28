@@ -79,7 +79,9 @@ class EmbeddingService(BaseEmbedder):
         self.embedding_model_name = model_name
         self.embedding_dtype = embedding_dtype
 
-    def embed(self, texts: list[str] | pd.Series, verbose: bool = False) -> tuple[
+    def embed(
+        self, texts: list[str] | pd.Series, verbose: bool = False
+    ) -> tuple[
         np.ndarray,
         list[list[str]] | None,
         list[np.ndarray] | None,

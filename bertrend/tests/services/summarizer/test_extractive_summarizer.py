@@ -142,7 +142,6 @@ def test_summarize_text(mock_extractive_summarizer):
             return_value=[0, 2],
         ),
     ):
-
         summary = mock_extractive_summarizer.summarize_text("This is a test text.")
 
         # Check that the result is a list of the selected sentences
@@ -220,7 +219,6 @@ def test_summarize_chunks(mock_extractive_summarizer):
             return_value=np.array([0, 2]),
         ),
     ):
-
         chunks = ["Chunk 1", "Chunk 2", "Chunk 3", "Chunk 4", "Chunk 5"]
         # Explicitly set max_nb_chunks to 2 to avoid the early return condition
         summary = mock_extractive_summarizer.summarize_chunks(chunks, max_nb_chunks=2)

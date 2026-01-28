@@ -251,7 +251,7 @@ def plot_temporal_stability_metrics(
     fig.update_layout(
         title=title,
         xaxis_title="Timestamp",
-        yaxis_title=f'{metric.replace("_", " ").capitalize()} Score',
+        yaxis_title=f"{metric.replace('_', ' ').capitalize()} Score",
         legend_title="Topic",
         hovermode="closest",
     )

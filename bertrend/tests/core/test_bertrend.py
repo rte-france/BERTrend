@@ -67,10 +67,10 @@ def mock_grouped_data():
 
     df2 = pd.DataFrame(
         {
-            "document_id": [f"doc_{i+5}" for i in range(5)],
-            "text": [f"Document {i+5}" for i in range(5)],
+            "document_id": [f"doc_{i + 5}" for i in range(5)],
+            "text": [f"Document {i + 5}" for i in range(5)],
             "source": ["source2"] * 5,
-            "url": [f"http://example.com/{i+5}" for i in range(5)],
+            "url": [f"http://example.com/{i + 5}" for i in range(5)],
         }
     )
 
@@ -656,7 +656,9 @@ def test_restore_topic_models(bertrend_instance, tmp_path):
         side_effect=lambda period, models_path: (
             mock_model1
             if period == period1
-            else mock_model2 if period == period2 else None
+            else mock_model2
+            if period == period2
+            else None
         ),
     ):
         # Execute
@@ -754,7 +756,6 @@ def test_train_new_data_restore_failure():
                     with patch(
                         "bertrend.BERTrend.BERTopicModel"
                     ) as mock_bertopic_model:
-
                         # Execute
                         from bertrend.BERTrend import train_new_data
 

@@ -108,7 +108,6 @@ def _list_jobs() -> list[dict]:
 
 
 class APSchedulerUtils(SchedulerUtils):
-
     def __init__(self):
         super().__init__()
         # Health check removed from __init__ to avoid blocking worker startup

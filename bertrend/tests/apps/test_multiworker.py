@@ -8,6 +8,7 @@
 Test script to verify the multi-worker fix.
 This script simulates what happens when uvicorn forks worker processes.
 """
+
 import os
 import sys
 import multiprocessing

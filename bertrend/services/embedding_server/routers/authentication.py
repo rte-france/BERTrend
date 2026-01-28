@@ -31,7 +31,7 @@ async def login_for_access_token(
     "/list_registered_clients", summary="List registered clients (requires admin scope)"
 )
 async def list_clients(
-    current_client: TokenData = Security(get_current_client, scopes=[ADMIN])
+    current_client: TokenData = Security(get_current_client, scopes=[ADMIN]),
 ):
     return list_registered_clients()
 

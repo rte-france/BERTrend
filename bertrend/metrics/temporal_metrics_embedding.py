@@ -187,9 +187,7 @@ class TempTopic:
         timestamps = documents["Timestamps"].unique()
 
         topics_over_time = []  # Accumulates the final data for each timestamp
-        document_per_topic_list = (
-            []
-        )  # Tracks documents associated with each topic at each timestamp
+        document_per_topic_list = []  # Tracks documents associated with each topic at each timestamp
 
         previous_c_tf_idf = None
         previous_topics = None
@@ -437,7 +435,7 @@ class TempTopic:
         """
 
         with open(self.debug_file, "a", encoding="utf-8") as f:
-            f.write(f"{'#'*50}\n")
+            f.write(f"{'#' * 50}\n")
             f.write(f"Failed match for Topic {topic_id} at Timestamp {timestamp}\n")
             f.write(f"Phrase to match: '{phrase}'\n")
             f.write(f"Best match: '{best_match}' with score {best_score}\n\n")
@@ -445,7 +443,7 @@ class TempTopic:
             for idx, doc in enumerate(token_strings):
                 f.write(f"Document {idx}:\n")
                 f.write(" ".join(doc) + "\n\n")
-            f.write(f"{'#'*50}\n\n")
+            f.write(f"{'#' * 50}\n\n")
 
     def _calculate_representation_embeddings(
         self,

@@ -257,9 +257,9 @@ class BERTopicModel:
         if zeroshot_topic_list:
             self.config["bertopic_model"]["zeroshot_topic_list"] = zeroshot_topic_list
         if zeroshot_min_similarity is not None:
-            self.config["bertopic_model"][
-                "zeroshot_min_similarity"
-            ] = zeroshot_min_similarity
+            self.config["bertopic_model"]["zeroshot_min_similarity"] = (
+                zeroshot_min_similarity
+            )
         # Load and fit model
         try:
             logger.debug("\tInitializing BERTopic model")

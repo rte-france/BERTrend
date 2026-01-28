@@ -139,18 +139,18 @@ class TestBERTrendIntegration:
                 {
                     "text": f"Document {i} about natural language processing and neural networks.",
                     "timestamp": date,
-                    "document_id": f"doc_{i+100}",
+                    "document_id": f"doc_{i + 100}",
                     "source": f"source_{i % 3}",
-                    "url": f"http://example.com/{i+100}",
+                    "url": f"http://example.com/{i + 100}",
                 }
             )
             data.append(
                 {
                     "text": f"Document {i} about computer vision and deep learning.",
                     "timestamp": date,
-                    "document_id": f"doc_{i+200}",
+                    "document_id": f"doc_{i + 200}",
                     "source": f"source_{i % 3}",
-                    "url": f"http://example.com/{i+200}",
+                    "url": f"http://example.com/{i + 200}",
                 }
             )
 
@@ -287,7 +287,7 @@ class TestDataPipelineIntegration:
             data.append(
                 {
                     "text": f"Document {i} about artificial intelligence.",
-                    "timestamp": f"2023-01-{i+1:02d}",
+                    "timestamp": f"2023-01-{i + 1:02d}",
                     "document_id": f"doc_{i}",
                     "source": f"source_{i % 3}",
                     "url": f"http://example.com/{i}",

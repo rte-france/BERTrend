@@ -108,7 +108,6 @@ def generate_newsletter(
 
     # Iterate over topics
     for i in tqdm(range(top_n_topics), desc="Processing topics..."):
-
         topic_keywords = topics_info["Representation"].iloc[i]
 
         sub_df = get_most_representative_docs(
@@ -180,7 +179,9 @@ def generate_newsletter(
             article_summary = (
                 summaries[i]
                 if summary_mode == "document"
-                else doc.text if summary_mode == "none" else None
+                else doc.text
+                if summary_mode == "none"
+                else None
             )
             article_list.append(
                 Article(

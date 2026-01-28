@@ -67,14 +67,14 @@ class FileDescriptorMonitor:
         final_fds = self.get_fd_count()
         leaked_fds = final_fds - self.initial_fds
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"📊 File Descriptor Report")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"Initial FDs:  {self.initial_fds}")
         print(f"Peak FDs:     {self.peak_fds} (+{self.peak_fds - self.initial_fds})")
         print(f"Final FDs:    {final_fds}")
         print(f"Leaked FDs:   {leaked_fds}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
         return {
             "initial": self.initial_fds,
@@ -158,9 +158,9 @@ class TestSessionStress:
         time.sleep(0.5)  # Let cleanup happen
         results = fd_monitor.stop()
 
-        assert (
-            results["leaked"] < 50
-        ), f"Too many file descriptors leaked: {results['leaked']}"
+        assert results["leaked"] < 50, (
+            f"Too many file descriptors leaked: {results['leaked']}"
+        )
 
     @patch("bertrend_apps.common.apscheduler_utils._get_session")
     def test_concurrent_requests(self, mock_session_ctx, fd_monitor, mock_session):
@@ -190,9 +190,9 @@ class TestSessionStress:
         time.sleep(1)  # Let cleanup happen
         results = fd_monitor.stop()
 
-        assert (
-            results["leaked"] < 100
-        ), f"Too many file descriptors leaked: {results['leaked']}"
+        assert results["leaked"] < 100, (
+            f"Too many file descriptors leaked: {results['leaked']}"
+        )
 
     @patch("bertrend_apps.common.apscheduler_utils._get_session")
     def test_rapid_fire_requests(self, mock_session_ctx, fd_monitor, mock_session):
@@ -219,9 +219,9 @@ class TestSessionStress:
         results = fd_monitor.stop()
 
         print(f"Total errors: {errors}")
-        assert (
-            results["leaked"] < 100
-        ), f"Too many file descriptors leaked: {results['leaked']}"
+        assert results["leaked"] < 100, (
+            f"Too many file descriptors leaked: {results['leaked']}"
+        )
 
     @patch("bertrend_apps.common.apscheduler_utils._request")
     def test_apscheduler_utils_methods(self, mock_request_func, fd_monitor):
@@ -261,9 +261,9 @@ class TestSessionStress:
         time.sleep(1)
         results = fd_monitor.stop()
 
-        assert (
-            results["leaked"] < 100
-        ), f"Too many file descriptors leaked: {results['leaked']}"
+        assert results["leaked"] < 100, (
+            f"Too many file descriptors leaked: {results['leaked']}"
+        )
 
     @patch("bertrend_apps.common.apscheduler_utils._get_session")
     def test_error_handling_leak(self, mock_session_ctx, fd_monitor):
@@ -304,8 +304,8 @@ class TestSessionStress:
         results = fd_monitor.stop()
 
         print(f"Final: {errors} errors, {successes} successes")
-        assert (
-            results["leaked"] < 100
-        ), f"Too many file descriptors leaked despite errors: {results['leaked']}"
+        assert results["leaked"] < 100, (
+            f"Too many file descriptors leaked despite errors: {results['leaked']}"
+        )
         assert errors > 0, "Expected some errors but got none"
         assert successes > 0, "Expected some successes but got none"

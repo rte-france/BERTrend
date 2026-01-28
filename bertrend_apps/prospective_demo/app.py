@@ -63,7 +63,7 @@ def display_version_number():
     }}
     </style>
     <div class="footer">
-        Version: {version('bertrend')}
+        Version: {version("bertrend")}
     </div>
     """
     st.markdown(footer, unsafe_allow_html=True)

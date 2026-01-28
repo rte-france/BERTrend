@@ -226,7 +226,7 @@ def display_representative_documents(filtered_df: pd.DataFrame):
             date = doc.timestamp.strftime("%A %d %b %Y %H:%M:%S")
             snippet = doc.text[:200] + "..." if len(doc.text) > 150 else doc.text
 
-            content = f"""**{doc.title}**\n\n{date} | {translate('unknown_source') if website_name == translate('unknown_source') else website_name}\n\n{snippet}"""
+            content = f"""**{doc.title}**\n\n{date} | {translate("unknown_source") if website_name == translate("unknown_source") else website_name}\n\n{snippet}"""
 
             if website_name != translate("unknown_source"):
                 st.link_button(content, doc.url)

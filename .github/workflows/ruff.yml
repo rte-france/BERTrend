@@ -1,0 +1,20 @@
+name: ruff-format-action
+on: [push, pull_request]
+jobs:
+  linter_name:
+    name: runner / ruff format
+    if: github.actor != 'github-actions'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Format with Ruff (auto-fix)
+        uses: astral-sh/ruff-action@v3
+        with:
+          args: format .
+      - name: Commit Ruff formatting changes
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add .
+          git commit -m ":art: Format Python code with ruff format" || echo "No changes to commit"
+          git push || echo "No changes to push"

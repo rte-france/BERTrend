@@ -82,7 +82,6 @@ def _fetch_decoded_batch_execute(id):
         headers=headers,
         data={"f.req": s},
     ) as response:
-
         if response.status_code != 200:
             logger.error("Failed to fetch data from Google.")
             raise Exception("Failed to fetch data from Google.")
