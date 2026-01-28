@@ -72,6 +72,7 @@ dependencies = [
     "typer (>=0.16.0)",
     "umap-learn (>=0.5.7)",
     "ruff>=0.14.14",
+    "psutil>=7.2.1",
 ]
 
 [project.optional-dependencies]
