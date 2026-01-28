@@ -287,7 +287,7 @@ class BERTrend:
 
         for i, (period, group) in enumerate(non_empty_groups):
             try:
-                logger.info(f"Training topic model {i+1}/{len(non_empty_groups)}...")
+                logger.info(f"Training topic model {i + 1}/{len(non_empty_groups)}...")
                 (
                     new_topic_model,
                     self.doc_groups[period],

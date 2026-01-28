@@ -63,7 +63,6 @@ def test_initialization():
             "bertrend.services.summary.abstractive_summarizer.AutoModelForSeq2SeqLM.from_pretrained"
         ) as mock_model,
     ):
-
         # Mock the to() method to avoid device-related issues
         mock_model.return_value.to.return_value = mock_model.return_value
 
@@ -138,7 +137,6 @@ def test_custom_model():
             "bertrend.services.summary.abstractive_summarizer.AutoModelForSeq2SeqLM.from_pretrained"
         ) as mock_model,
     ):
-
         # Mock the to() method to avoid device-related issues
         mock_model.return_value.to.return_value = mock_model.return_value
 

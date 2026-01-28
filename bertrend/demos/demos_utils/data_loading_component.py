@@ -55,7 +55,7 @@ FORMAT_ICONS = {
 
 @st.dialog(translate("column_selection"))
 def _select_alternative_columns(df: pd.DataFrame, message: str = ""):
-    st.warning(message, icon=WARNING_ICON),
+    (st.warning(message, icon=WARNING_ICON),)
     if TEXT_COLUMN not in df.columns:
         text_column = st.selectbox(
             label=translate("text_column_selection"), options=df.columns

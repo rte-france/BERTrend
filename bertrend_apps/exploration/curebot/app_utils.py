@@ -326,7 +326,7 @@ def display_representative_documents(filtered_df: pd.DataFrame):
                 else doc[TEXT_COLUMN]
             )
 
-            content = f"""**{doc[TITLE_COLUMN]}**\n\n{date} | {'Unknown Source' if website_name == 'Unknown Source' else website_name}\n\n{snippet}"""
+            content = f"""**{doc[TITLE_COLUMN]}**\n\n{date} | {"Unknown Source" if website_name == "Unknown Source" else website_name}\n\n{snippet}"""
 
             if website_name != "Unknown Source":
                 st.link_button(content, doc[URL_COLUMN])

@@ -120,7 +120,7 @@ def explore_topic_sources(dfs_topics):
             label=translate("topic_selection"),
             label_visibility="hidden",
             options=options,
-            format_func=lambda x: f"{'📈 [' + translate('emerging_topic') if selected_signal_type== translate('emerging_topics') else '🌟 [' + translate('strong_topic')} {x}] "
+            format_func=lambda x: f"{'📈 [' + translate('emerging_topic') if selected_signal_type == translate('emerging_topics') else '🌟 [' + translate('strong_topic')} {x}] "
             + (
                 selected_df[selected_df["Topic"] == x][LLM_TOPIC_TITLE_COLUMN].values[0]
                 or translate("untitled_topic")

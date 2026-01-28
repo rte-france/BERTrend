@@ -37,7 +37,6 @@ async def score_articles(articles: list[str]):
 
 
 if __name__ == "__main__":
-
     path = Path("/DSIA/nlp/bertrend/data/feeds/feed_nlp/2025-01-07_feed_nlp.jsonl")
     df = load_data(path)
     print(len(df), df.columns)

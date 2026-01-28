@@ -655,9 +655,9 @@ class TestParallelProcessing:
                 results = list(reader)
 
             topic_order = [result["topic"] for result in results]
-            assert topic_order == sorted(
-                topic_order
-            ), f"Topics not sorted: {topic_order}"
+            assert topic_order == sorted(topic_order), (
+                f"Topics not sorted: {topic_order}"
+            )
 
             # Clean up for next iteration
             output_file.unlink()

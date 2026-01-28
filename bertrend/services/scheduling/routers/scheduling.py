@@ -36,9 +36,9 @@ DB_NAME = "bertrend_jobs.sqlite"
 DB_PATH.mkdir(parents=True, exist_ok=True)
 
 # Number of jobs executed simultaneously
-MAX_WORKERS=50 # some data gathering may be triggered at the same time
+MAX_WORKERS = 50  # some data gathering may be triggered at the same time
 # Number of instances of a same job that can run concurrently
-MAX_INSTANCES=3
+MAX_INSTANCES = 3
 
 # Scheduler will be initialized on first use or set by tests
 scheduler = None
@@ -634,7 +634,7 @@ def _describe_cron(
             "Dec",
         ]
         if month.isdigit():
-            parts.append(f"in {months[int(month)-1]}")
+            parts.append(f"in {months[int(month) - 1]}")
         else:
             parts.append(f"in month {month}")
 

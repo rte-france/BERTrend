@@ -20,7 +20,6 @@ from bertrend.demos.demos_utils.i18n import get_current_internationalization_lan
 
 
 class SchedulerUtils(ABC):
-
     @staticmethod
     def generate_crontab_expression(days_interval: int) -> str:
         # Random hour between 0 and 6 (inclusive)

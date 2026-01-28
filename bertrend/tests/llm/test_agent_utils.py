@@ -298,7 +298,8 @@ class TestAsyncAgentConcurrentProcessor:
 
             input_list = ["item1", "item2", "item3"]
             results = await processor.process_list_concurrent(
-                input_list, overall_timeout=0.05  # Very short overall timeout
+                input_list,
+                overall_timeout=0.05,  # Very short overall timeout
             )
 
             # Should get results with timeout errors
@@ -364,7 +365,9 @@ class TestAsyncAgentConcurrentProcessor:
 
             input_list = ["item0", "item1", "item2", "item3"]
             results = await processor._process_in_chunks(
-                input_list, chunk_size=2, overall_timeout=0.05  # Very short timeout
+                input_list,
+                chunk_size=2,
+                overall_timeout=0.05,  # Very short timeout
             )
 
             # Should get timeout results for remaining items

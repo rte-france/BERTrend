@@ -217,7 +217,6 @@ def test_fit(temp_topic_instance):
             temp_topic_instance, "calculate_topic_embedding_stability"
         ) as mock_calc_topic_emb,
     ):
-
         # Setup the mock to populate final_df when _topics_over_time is called
         def set_final_df():
             temp_topic_instance.final_df = mock_final_df
@@ -579,7 +578,6 @@ def test_find_similar_topic_pairs(temp_topic_instance):
     with patch.object(
         temp_topic_instance, "find_similar_topic_pairs", return_value=mock_result
     ):
-
         # Call the method
         result = temp_topic_instance.find_similar_topic_pairs(similarity_threshold=0.9)
 
