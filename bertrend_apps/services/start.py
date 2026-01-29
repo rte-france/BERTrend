@@ -2,13 +2,12 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
+import uvicorn
 
 # Load the configuration first - NB. This will also load/set the CUDA_AVAILABLE_DEVICES from the .env
 from bertrend_apps.services.config.settings import get_config
 
 CONFIG = get_config()
-
-import uvicorn
 
 # Start the FastAPI application
 if __name__ == "__main__":
