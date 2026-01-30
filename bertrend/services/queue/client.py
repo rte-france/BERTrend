@@ -61,7 +61,10 @@ class BertrendClient:
             request_data=request_data, priority=priority
         )
 
-        self.pending_requests[correlation_id] = {"status": "pending", "timestamp": time.time()}
+        self.pending_requests[correlation_id] = {
+            "status": "pending",
+            "timestamp": time.time(),
+        }
         logger.info(f"Sent request to {endpoint} with correlation_id: {correlation_id}")
 
         return correlation_id
@@ -217,7 +220,9 @@ class BertrendClient:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="BERTrend Queue Client - Test requests")
+    parser = argparse.ArgumentParser(
+        description="BERTrend Queue Client - Test requests"
+    )
     parser.add_argument(
         "--endpoint",
         type=str,
@@ -287,7 +292,9 @@ if __name__ == "__main__":
                 print(f"  Status: {response.get('status')}")
                 if response.get("status") == "success":
                     print(f"  Endpoint: {response.get('endpoint')}")
-                    print(f"  Response: {json.dumps(response.get('response'), indent=2, default=str)}")
+                    print(
+                        f"  Response: {json.dumps(response.get('response'), indent=2, default=str)}"
+                    )
                 else:
                     print(f"  Error: {response.get('error')}")
             else:

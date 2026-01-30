@@ -171,7 +171,9 @@ class BertrendWorker:
 
             # Acknowledge message
             ch.basic_ack(delivery_tag=method.delivery_tag)
-            logger.info(f"Completed request: {correlation_id} - Status: {response_data.get('status')}")
+            logger.info(
+                f"Completed request: {correlation_id} - Status: {response_data.get('status')}"
+            )
 
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON in message: {str(e)}")
