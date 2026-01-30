@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . /app/bertrend/services/scheduling
+COPY ../queue /app/bertrend/services/queue
 
 # Expose port
 EXPOSE 8000
