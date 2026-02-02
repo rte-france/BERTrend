@@ -11,11 +11,11 @@ service sends) and processes them by calling the appropriate FastAPI router func
 """
 
 import asyncio
-import json
 import traceback
 from typing import Any
 
 import aio_pika
+import msgpack
 from loguru import logger
 
 from bertrend.services.queue.queue_manager import QueueManager
@@ -142,7 +142,7 @@ class BertrendWorker:
             logger.info(f"Received request: {correlation_id}")
 
             # Parse request
-            request_data = json.loads(message.body.decode())
+            request_data = msgpack.unpackb(message.body)
             logger.info(f"Request endpoint: {request_data.get('endpoint')}")
 
             # Process request
@@ -163,8 +163,8 @@ class BertrendWorker:
                 f"Completed request: {correlation_id} - Status: {response_data.get('status')}"
             )
 
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in message: {str(e)}")
+        except (msgpack.UnpackException, msgpack.ExtraData) as e:
+            logger.error(f"Invalid msgpack in message: {str(e)}")
             # Reject and don't requeue invalid messages
             await message.reject(requeue=False)
 

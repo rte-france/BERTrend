@@ -1,5 +1,5 @@
 import pytest
-import json
+import msgpack
 import asyncio
 from unittest.mock import MagicMock, patch, AsyncMock
 from bertrend.services.queue.bertrend_worker import BertrendWorker, ENDPOINT_HANDLERS
@@ -74,7 +74,7 @@ async def test_callback(worker):
     mock_message = AsyncMock()
     mock_message.correlation_id = "test-corr-id"
     mock_message.reply_to = "response_queue"
-    mock_message.body = json.dumps({"endpoint": "/test", "json_data": {}}).encode()
+    mock_message.body = msgpack.packb({"endpoint": "/test", "json_data": {}})
 
     # Mock process_request
     worker.process_request = AsyncMock(return_value={"status": "ok"})

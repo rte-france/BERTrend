@@ -1,7 +1,7 @@
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import aio_pika
+import msgpack
 import pytest
 
 from bertrend.services.queue.queue_manager import QueueManager
@@ -66,7 +66,7 @@ async def test_publish_request(mock_config, mock_aio_pika):
     args, kwargs = qm.channel.default_exchange.publish.call_args
     message = args[0]
     assert kwargs["routing_key"] == mock_config.request_queue
-    assert message.body == json.dumps(request_data).encode()
+    assert message.body == msgpack.packb(request_data)
     assert message.priority == 8
     assert message.correlation_id == correlation_id
     assert message.reply_to == mock_config.response_queue
@@ -85,7 +85,7 @@ async def test_publish_response(mock_config, mock_aio_pika):
     args, kwargs = qm.channel.default_exchange.publish.call_args
     message = args[0]
     assert kwargs["routing_key"] == mock_config.response_queue
-    assert message.body == json.dumps(response_data).encode()
+    assert message.body == msgpack.packb(response_data)
     assert message.correlation_id == correlation_id
 
 
