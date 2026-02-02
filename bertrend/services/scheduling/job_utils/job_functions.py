@@ -11,6 +11,16 @@ from loguru import logger
 from bertrend.services.queue.queue_manager import QueueManager
 from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
 
+ENDPOINT_PRIORITIES = {
+    "/scrape": 2,
+    "/auto-scrape": 2,
+    "/scrape-feed": 6,
+    "/generate-query-file": 3,
+    "/train-new-model": 10,
+    "/regenerate": 2,
+    "/generate-report": 7,
+}
+
 
 # ====================================
 # Job Functions (must be module-level for ProcessPoolExecutor)
@@ -26,7 +36,6 @@ def http_request(
     url: str,
     method: str = "POST",
     json_data: dict = None,
-    timeout: int = 600,  # 10 min
 ):
     """Send request via RabbitMQ queue instead of direct HTTP"""
     # Extract endpoint from URL (e.g., "http://host:port/scrape-feed" → "/scrape-feed")
@@ -42,13 +51,15 @@ def http_request(
         "json_data": json_data or {},
     }
 
-    correlation_id = queue_manager.publish_request(request_data)
+    correlation_id = queue_manager.publish_request(
+        request_data, priority=ENDPOINT_PRIORITIES.get(endpoint, 5)
+    )
     queue_manager.close()
 
     return {"status": "queued", "correlation_id": correlation_id}
 
 
-def http_request_old(
+def basic_http_request(
     url: str,
     method: str = "GET",
     headers: dict = None,
