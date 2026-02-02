@@ -109,11 +109,13 @@ async def test_start(worker):
     worker.queue_manager.close = AsyncMock()
 
     # start() now waits on a future. We can use wait_for to timeout.
-    with patch("asyncio.Future", return_value=asyncio.get_event_loop().create_future()) as mock_future:
+    with patch(
+        "asyncio.Future", return_value=asyncio.get_event_loop().create_future()
+    ) as mock_future:
         # Resolve the future immediately or after a short time
         f = mock_future.return_value
         f.set_result(None)
-        
+
         await worker.start()
 
     worker.queue_manager.connect.assert_called_once()

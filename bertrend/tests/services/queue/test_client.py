@@ -18,16 +18,16 @@ async def client(mock_config):
     with patch("bertrend.services.queue.client.QueueManager") as mock_qm_class:
         mock_qm = AsyncMock()
         mock_qm_class.return_value = mock_qm
-        
+
         # Mock channel for _consume_responses
         mock_channel = AsyncMock()
         mock_qm.channel = mock_channel
-        
+
         c = BertrendClient(mock_config)
         # Avoid starting the actual consumer task in tests unless needed
         with patch.object(BertrendClient, "_consume_responses", return_value=None):
             await c.connect()
-        
+
         yield c
         await c.close()
 
@@ -79,16 +79,16 @@ async def test_wait_for_response(client):
     correlation_id = "test-corr-id"
     future = asyncio.get_event_loop().create_future()
     client.pending_requests[correlation_id] = future
-    
+
     # Simulate response being set in the future by the consumer task
     expected_response = {"status": "success", "result": "done"}
-    
+
     async def set_response():
         await asyncio.sleep(0.1)
         future.set_result(expected_response)
-    
+
     asyncio.create_task(set_response())
-    
+
     response = await client.wait_for_response(correlation_id, timeout=1)
 
     assert response == expected_response
