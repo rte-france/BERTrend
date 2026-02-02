@@ -10,9 +10,9 @@ This client simulates requests similar to what the scheduler service sends,
 allowing testing of the queue-based execution flow.
 """
 
+import asyncio
 import json
-import time
-from typing import Dict, Any, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -23,24 +23,47 @@ from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
 class BertrendClient:
     """Client for sending requests to BERTrend service via RabbitMQ"""
 
-    def __init__(self, config: Optional[RabbitMQConfig] = None):
+    def __init__(self, config: RabbitMQConfig | None = None):
         self.config = config or RabbitMQConfig()
         self.queue_manager = QueueManager(self.config)
-        self.queue_manager.connect()
-        self.pending_requests: Dict[str, Any] = {}
+        self.pending_requests: dict[str, asyncio.Future] = {}
+        self._response_consumer_task: asyncio.Task | None = None
 
-    def send_request(
+    async def connect(self):
+        """Establish connection and start response consumer"""
+        await self.queue_manager.connect()
+        self._response_consumer_task = asyncio.create_task(self._consume_responses())
+
+    async def _consume_responses(self):
+        """Background task to consume responses from the response queue"""
+        if not self.queue_manager.channel:
+            await self.queue_manager.connect()
+
+        queue = await self.queue_manager.channel.get_queue(self.config.response_queue)
+
+        async with queue.iterator() as queue_iter:
+            async for message in queue_iter:
+                async with message.process():
+                    correlation_id = message.correlation_id
+                    if correlation_id in self.pending_requests:
+                        future = self.pending_requests[correlation_id]
+                        if not future.done():
+                            try:
+                                response = json.loads(message.body.decode())
+                                future.set_result(response)
+                            except Exception as e:
+                                future.set_exception(e)
+                        del self.pending_requests[correlation_id]
+
+    async def send_request(
         self,
         endpoint: str,
-        json_data: Dict[str, Any],
+        json_data: dict[str, Any],
         method: str = "POST",
         priority: int = 5,
     ) -> str:
         """
         Send a request to the BERTrend service via the queue.
-
-        This method simulates the HTTP requests that the scheduler service sends,
-        but routes them through RabbitMQ instead.
 
         Args:
             endpoint: The API endpoint path (e.g., "/scrape-feed", "/train-new-model")
@@ -57,23 +80,20 @@ class BertrendClient:
             "json_data": json_data,
         }
 
-        correlation_id = self.queue_manager.publish_request(
+        correlation_id = await self.queue_manager.publish_request(
             request_data=request_data, priority=priority
         )
 
-        self.pending_requests[correlation_id] = {
-            "status": "pending",
-            "timestamp": time.time(),
-        }
+        self.pending_requests[correlation_id] = asyncio.get_event_loop().create_future()
         logger.info(f"Sent request to {endpoint} with correlation_id: {correlation_id}")
 
         return correlation_id
 
-    def scrape_feed(
+    async def scrape_feed(
         self,
         feed_cfg: str,
-        user: Optional[str] = None,
-        model_id: Optional[str] = None,
+        user: str | None = None,
+        model_id: str | None = None,
         priority: int = 5,
     ) -> str:
         """
@@ -94,9 +114,9 @@ class BertrendClient:
         if model_id:
             json_data["model_id"] = model_id
 
-        return self.send_request("/scrape-feed", json_data, priority=priority)
+        return await self.send_request("/scrape-feed", json_data, priority=priority)
 
-    def train_new_model(
+    async def train_new_model(
         self,
         user: str,
         model_id: str,
@@ -114,14 +134,14 @@ class BertrendClient:
             correlation_id for tracking the request
         """
         json_data = {"user": user, "model_id": model_id}
-        return self.send_request("/train-new-model", json_data, priority=priority)
+        return await self.send_request("/train-new-model", json_data, priority=priority)
 
-    def regenerate(
+    async def regenerate(
         self,
         user: str,
         model_id: str,
         with_analysis: bool = False,
-        since: Optional[str] = None,
+        since: str | None = None,
         priority: int = 5,
     ) -> str:
         """
@@ -145,13 +165,13 @@ class BertrendClient:
         if since:
             json_data["since"] = since
 
-        return self.send_request("/regenerate", json_data, priority=priority)
+        return await self.send_request("/regenerate", json_data, priority=priority)
 
-    def generate_report(
+    async def generate_report(
         self,
         user: str,
         model_id: str,
-        reference_date: Optional[str] = None,
+        reference_date: str | None = None,
         priority: int = 5,
     ) -> str:
         """
@@ -170,56 +190,56 @@ class BertrendClient:
         if reference_date:
             json_data["reference_date"] = reference_date
 
-        return self.send_request("/generate-report", json_data, priority=priority)
+        return await self.send_request("/generate-report", json_data, priority=priority)
 
-    def get_response(self, correlation_id: str, timeout: int = 120) -> Optional[Dict]:
+    async def wait_for_response(
+        self, correlation_id: str, timeout: int = 120
+    ) -> dict[str, Any] | None:
         """
-        Get response for a request (blocking).
+        Wait for a response with a given correlation_id.
 
         Args:
-            correlation_id: Request correlation ID
+            correlation_id: The correlation_id to wait for
             timeout: Timeout in seconds
 
         Returns:
-            Response dictionary or None if timeout
+            The response data or None if timeout
         """
-        start_time = time.time()
+        if correlation_id not in self.pending_requests:
+            logger.warning(
+                f"Correlation ID {correlation_id} not found in pending requests"
+            )
+            return None
 
-        def response_callback(ch, method, properties, body):
-            if properties.correlation_id == correlation_id:
-                response = json.loads(body.decode())
-                self.pending_requests[correlation_id] = response
-                ch.basic_ack(delivery_tag=method.delivery_tag)
-                ch.stop_consuming()
+        future = self.pending_requests[correlation_id]
 
-        # Start consuming responses
-        self.queue_manager.channel.basic_consume(
-            queue=self.config.response_queue,
-            on_message_callback=response_callback,
-            auto_ack=False,
-        )
-
-        # Wait for response with timeout
-        while time.time() - start_time < timeout:
-            self.queue_manager.connection.process_data_events(time_limit=1)
-
+        try:
+            result = await asyncio.wait_for(future, timeout=timeout)
             if correlation_id in self.pending_requests:
-                response = self.pending_requests[correlation_id]
-                if response.get("status") != "pending":
-                    return response
+                del self.pending_requests[correlation_id]
+            return result
+        except asyncio.TimeoutError:
+            logger.warning(f"Timeout waiting for response: {correlation_id}")
+            if correlation_id in self.pending_requests:
+                del self.pending_requests[correlation_id]
+            return None
+        except Exception as e:
+            logger.error(f"Error waiting for response {correlation_id}: {str(e)}")
+            return None
 
-        logger.warning(f"Timeout waiting for response: {correlation_id}")
-        return None
-
-    def close(self):
+    async def close(self):
         """Close connection"""
-        self.queue_manager.close()
+        if self._response_consumer_task:
+            self._response_consumer_task.cancel()
+            try:
+                await self._response_consumer_task
+            except asyncio.CancelledError:
+                pass
+        await self.queue_manager.close()
 
 
 # Example usage and test simulation
-if __name__ == "__main__":
-    import argparse
-
+async def main_test():
     parser = argparse.ArgumentParser(
         description="BERTrend Queue Client - Test requests"
     )
@@ -247,60 +267,69 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     client = BertrendClient()
+    await client.connect()
 
     try:
         # Send request based on endpoint
         if args.endpoint == "/scrape-feed":
             if not args.feed_cfg:
-                print("Error: --feed-cfg is required for /scrape-feed endpoint")
+                logger.error("Error: --feed-cfg is required for /scrape-feed endpoint")
                 exit(1)
-            correlation_id = client.scrape_feed(
+            correlation_id = await client.scrape_feed(
                 feed_cfg=args.feed_cfg,
                 user=args.user,
                 model_id=args.model_id,
             )
         elif args.endpoint == "/train-new-model":
-            correlation_id = client.train_new_model(
+            correlation_id = await client.train_new_model(
                 user=args.user,
                 model_id=args.model_id,
             )
         elif args.endpoint == "/regenerate":
-            correlation_id = client.regenerate(
+            correlation_id = await client.regenerate(
                 user=args.user,
                 model_id=args.model_id,
             )
         elif args.endpoint == "/generate-report":
-            correlation_id = client.generate_report(
+            correlation_id = await client.generate_report(
                 user=args.user,
                 model_id=args.model_id,
             )
         else:
             # Generic request
-            correlation_id = client.send_request(
+            correlation_id = await client.send_request(
                 endpoint=args.endpoint,
                 json_data={"user": args.user, "model_id": args.model_id},
             )
 
-        print(f"Request sent with correlation_id: {correlation_id}")
+        logger.info(f"Request sent with correlation_id: {correlation_id}")
 
         if not args.no_wait:
-            print(f"Waiting for response (timeout: {args.timeout}s)...")
-            response = client.get_response(correlation_id, timeout=args.timeout)
+            logger.info(f"Waiting for response (timeout: {args.timeout}s)...")
+            response = await client.wait_for_response(
+                correlation_id, timeout=args.timeout
+            )
 
             if response:
-                print(f"\nResponse received:")
-                print(f"  Status: {response.get('status')}")
+                logger.info("\nResponse received:")
+                logger.info(f"  Status: {response.get('status')}")
                 if response.get("status") == "success":
-                    print(f"  Endpoint: {response.get('endpoint')}")
-                    print(
+                    logger.info(f"  Endpoint: {response.get('endpoint')}")
+                    logger.info(
                         f"  Response: {json.dumps(response.get('response'), indent=2, default=str)}"
                     )
                 else:
-                    print(f"  Error: {response.get('error')}")
+                    logger.error(f"  Error: {response.get('error')}")
             else:
-                print("Request timed out")
+                logger.error("Request timed out")
         else:
-            print("Request sent (not waiting for response)")
+            logger.info("Request sent (not waiting for response)")
 
     finally:
-        client.close()
+        await client.close()
+
+
+if __name__ == "__main__":
+    import argparse
+
+    asyncio.run(main_test())

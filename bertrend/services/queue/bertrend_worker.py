@@ -10,42 +10,42 @@ This worker receives HTTP-like requests from the queue (similar to what the sche
 service sends) and processes them by calling the appropriate FastAPI router functions.
 """
 
+import asyncio
 import json
 import traceback
-from typing import Dict, Any
+from typing import Any
 
-import pika
+import aio_pika
 from loguru import logger
 
 from bertrend.services.queue.queue_manager import QueueManager
 from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
-
-# Import router functions
-from bertrend_apps.services.routers.data_provider import (
-    scrape_api,
-    auto_scrape_api,
-    scrape_from_feed_api,
-    generate_query_file_api,
-)
-from bertrend_apps.services.routers.bertrend_app import (
-    train_new,
-    regenerate,
-    generate_report,
+from bertrend_apps.services.models.bertrend_app_models import (
+    GenerateReportRequest,
+    RegenerateRequest,
+    TrainNewModelRequest,
 )
 
 # Import request models
 from bertrend_apps.services.models.data_provider_models import (
-    ScrapeFeedRequest,
-    ScrapeRequest,
     AutoScrapeRequest,
     GenerateQueryFileRequest,
+    ScrapeFeedRequest,
+    ScrapeRequest,
 )
-from bertrend_apps.services.models.bertrend_app_models import (
-    TrainNewModelRequest,
-    RegenerateRequest,
-    GenerateReportRequest,
+from bertrend_apps.services.routers.bertrend_app import (
+    generate_report,
+    regenerate,
+    train_new,
 )
 
+# Import router functions
+from bertrend_apps.services.routers.data_provider import (
+    auto_scrape_api,
+    generate_query_file_api,
+    scrape_api,
+    scrape_from_feed_api,
+)
 
 # Mapping of endpoints to their handler functions and request models
 ENDPOINT_HANDLERS = {
@@ -66,7 +66,7 @@ class BertrendWorker:
         self.config = config
         self.queue_manager = QueueManager(config)
 
-    async def process_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_request(self, request_data: dict[str, Any]) -> dict[str, Any]:
         """
         Process a request by calling the appropriate FastAPI endpoint.
 
@@ -131,46 +131,34 @@ class BertrendWorker:
                 "traceback": traceback.format_exc(),
             }
 
-    def callback(
+    async def callback(
         self,
-        ch: pika.channel.Channel,
-        method: pika.spec.Basic.Deliver,
-        properties: pika.spec.BasicProperties,
-        body: bytes,
+        message: aio_pika.abc.AbstractIncomingMessage,
     ):
         """Callback function for processing messages from the queue"""
-        import asyncio
-
-        correlation_id = properties.correlation_id
+        correlation_id = message.correlation_id
 
         try:
             logger.info(f"Received request: {correlation_id}")
 
             # Parse request
-            request_data = json.loads(body.decode())
+            request_data = json.loads(message.body.decode())
             logger.info(f"Request endpoint: {request_data.get('endpoint')}")
 
-            # Process request (run async function in event loop)
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                response_data = loop.run_until_complete(
-                    self.process_request(request_data)
-                )
-            finally:
-                loop.close()
+            # Process request
+            response_data = await self.process_request(request_data)
 
             # Add metadata
             response_data["correlation_id"] = correlation_id
 
             # Publish response if reply_to is specified
-            if properties.reply_to:
-                self.queue_manager.publish_response(
+            if message.reply_to:
+                await self.queue_manager.publish_response(
                     response_data=response_data, correlation_id=correlation_id
                 )
 
             # Acknowledge message
-            ch.basic_ack(delivery_tag=method.delivery_tag)
+            await message.ack()
             logger.info(
                 f"Completed request: {correlation_id} - Status: {response_data.get('status')}"
             )
@@ -178,39 +166,46 @@ class BertrendWorker:
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON in message: {str(e)}")
             # Reject and don't requeue invalid messages
-            ch.basic_reject(delivery_tag=method.delivery_tag, requeue=False)
+            await message.reject(requeue=False)
 
         except Exception as e:
             logger.error(f"Error processing message: {str(e)}")
             logger.error(traceback.format_exc())
 
             # Requeue for retry (will go to DLQ after max retries)
-            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+            await message.nack(requeue=True)
 
-    def start(self):
+    async def start(self):
         """Start the worker"""
         logger.info("Starting BERTrend worker...")
         logger.info(f"Available endpoints: {list(ENDPOINT_HANDLERS.keys())}")
 
         try:
-            self.queue_manager.connect()
-            self.queue_manager.consume_requests(
+            await self.queue_manager.connect()
+            await self.queue_manager.consume_requests(
                 callback=self.callback, prefetch_count=self.config.prefetch_count
             )
-        except KeyboardInterrupt:
-            logger.info("Worker interrupted by user")
+
+            # Wait until termination
+            await asyncio.Future()
+
+        except asyncio.CancelledError:
+            logger.info("Worker interrupted")
         except Exception as e:
             logger.error(f"Worker error: {str(e)}")
             logger.error(traceback.format_exc())
         finally:
-            self.queue_manager.close()
+            await self.queue_manager.close()
 
 
 def main():
     """Main entry point"""
     config = RabbitMQConfig()
     worker = BertrendWorker(config)
-    worker.start()
+    try:
+        asyncio.run(worker.start())
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":

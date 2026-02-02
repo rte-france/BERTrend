@@ -1,6 +1,9 @@
-import pytest
+import asyncio
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
 from bertrend.services.queue.client import BertrendClient
 from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
 
@@ -11,29 +14,43 @@ def mock_config():
 
 
 @pytest.fixture
-def client(mock_config):
-    with patch("bertrend.services.queue.client.QueueManager") as mock_qm:
-        client = BertrendClient(mock_config)
-        client.queue_manager = mock_qm.return_value
-        yield client
+async def client(mock_config):
+    with patch("bertrend.services.queue.client.QueueManager") as mock_qm_class:
+        mock_qm = AsyncMock()
+        mock_qm_class.return_value = mock_qm
+        
+        # Mock channel for _consume_responses
+        mock_channel = AsyncMock()
+        mock_qm.channel = mock_channel
+        
+        c = BertrendClient(mock_config)
+        # Avoid starting the actual consumer task in tests unless needed
+        with patch.object(BertrendClient, "_consume_responses", return_value=None):
+            await c.connect()
+        
+        yield c
+        await c.close()
 
 
-def test_send_request(client):
+@pytest.mark.asyncio
+async def test_send_request(client):
     client.queue_manager.publish_request.return_value = "test-corr-id"
 
-    corr_id = client.send_request("/test", {"data": 1}, priority=7)
+    corr_id = await client.send_request("/test", {"data": 1}, priority=7)
 
     assert corr_id == "test-corr-id"
     client.queue_manager.publish_request.assert_called_once_with(
         request_data={"endpoint": "/test", "method": "POST", "json_data": {"data": 1}},
         priority=7,
     )
+    assert corr_id in client.pending_requests
 
 
-def test_scrape_feed(client):
+@pytest.mark.asyncio
+async def test_scrape_feed(client):
     client.queue_manager.publish_request.return_value = "corr-id"
 
-    client.scrape_feed("feed.toml", user="test-user")
+    await client.scrape_feed("feed.toml", user="test-user")
 
     client.queue_manager.publish_request.assert_called_once()
     args, kwargs = client.queue_manager.publish_request.call_args
@@ -43,10 +60,11 @@ def test_scrape_feed(client):
     assert request_data["json_data"]["user"] == "test-user"
 
 
-def test_train_new_model(client):
+@pytest.mark.asyncio
+async def test_train_new_model(client):
     client.queue_manager.publish_request.return_value = "corr-id"
 
-    client.train_new_model(user="test-user", model_id="test-model")
+    await client.train_new_model(user="test-user", model_id="test-model")
 
     client.queue_manager.publish_request.assert_called_once()
     args, kwargs = client.queue_manager.publish_request.call_args
@@ -56,23 +74,22 @@ def test_train_new_model(client):
     assert request_data["json_data"]["model_id"] == "test-model"
 
 
-def test_get_response(client):
-    # Mocking the consumption of a response
-    mock_ch = MagicMock()
-    client.queue_manager.channel = mock_ch
+@pytest.mark.asyncio
+async def test_wait_for_response(client):
+    correlation_id = "test-corr-id"
+    future = asyncio.get_event_loop().create_future()
+    client.pending_requests[correlation_id] = future
+    
+    # Simulate response being set in the future by the consumer task
+    expected_response = {"status": "success", "result": "done"}
+    
+    async def set_response():
+        await asyncio.sleep(0.1)
+        future.set_result(expected_response)
+    
+    asyncio.create_task(set_response())
+    
+    response = await client.wait_for_response(correlation_id, timeout=1)
 
-    # Simulate a response being received
-    def mock_basic_consume(queue, on_message_callback, auto_ack):
-        # Create a mock message
-        method = MagicMock()
-        properties = MagicMock(correlation_id="test-corr-id")
-        body = json.dumps({"status": "success", "result": "done"}).encode()
-        on_message_callback(mock_ch, method, properties, body)
-
-    mock_ch.basic_consume.side_effect = mock_basic_consume
-
-    response = client.get_response("test-corr-id", timeout=1)
-
-    assert response["status"] == "success"
-    assert response["result"] == "done"
-    mock_ch.stop_consuming.assert_called_once()
+    assert response == expected_response
+    assert correlation_id not in client.pending_requests

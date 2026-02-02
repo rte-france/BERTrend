@@ -68,48 +68,53 @@ async def test_process_request_invalid_data(worker):
         assert "Invalid request data" in response["error"]
 
 
-def test_callback(worker):
-    # This is a bit tricky as callback is sync but calls async process_request
-    mock_ch = MagicMock()
-    mock_method = MagicMock(delivery_tag=123)
-    mock_props = MagicMock(correlation_id="test-corr-id", reply_to="response_queue")
-    body = json.dumps({"endpoint": "/test", "json_data": {}}).encode()
+@pytest.mark.asyncio
+async def test_callback(worker):
+    # Now callback is async
+    mock_message = AsyncMock()
+    mock_message.correlation_id = "test-corr-id"
+    mock_message.reply_to = "response_queue"
+    mock_message.body = json.dumps({"endpoint": "/test", "json_data": {}}).encode()
 
-    # Mock process_request to be used inside the callback's async runner
+    # Mock process_request
     worker.process_request = AsyncMock(return_value={"status": "ok"})
-    worker.queue_manager.publish_response = MagicMock()
+    worker.queue_manager.publish_response = AsyncMock()
 
     # Run the callback
-    worker.callback(mock_ch, mock_method, mock_props, body)
+    await worker.callback(mock_message)
 
     # Verify processing
     worker.process_request.assert_called_once()
     worker.queue_manager.publish_response.assert_called_once()
 
     # Verify acknowledgment
-    mock_ch.basic_ack.assert_called_once_with(delivery_tag=123)
+    mock_message.ack.assert_called_once()
 
 
-def test_callback_json_error(worker):
-    mock_ch = MagicMock()
-    mock_method = MagicMock(delivery_tag=123)
-    mock_props = MagicMock(correlation_id="test-corr-id")
-    body = b"invalid json"
+@pytest.mark.asyncio
+async def test_callback_json_error(worker):
+    mock_message = AsyncMock()
+    mock_message.correlation_id = "test-corr-id"
+    mock_message.body = b"invalid json"
 
-    worker.callback(mock_ch, mock_method, mock_props, body)
+    await worker.callback(mock_message)
 
-    mock_ch.basic_reject.assert_called_once_with(delivery_tag=123, requeue=False)
+    mock_message.reject.assert_called_once_with(requeue=False)
 
 
-def test_start(worker):
-    worker.queue_manager.connect = MagicMock()
-    worker.queue_manager.consume_requests = MagicMock()
-    worker.queue_manager.close = MagicMock()
+@pytest.mark.asyncio
+async def test_start(worker):
+    worker.queue_manager.connect = AsyncMock()
+    worker.queue_manager.consume_requests = AsyncMock()
+    worker.queue_manager.close = AsyncMock()
 
-    # start() calls consume_requests which is usually blocking.
-    # We can mock it to return immediately.
-
-    worker.start()
+    # start() now waits on a future. We can use wait_for to timeout.
+    with patch("asyncio.Future", return_value=asyncio.get_event_loop().create_future()) as mock_future:
+        # Resolve the future immediately or after a short time
+        f = mock_future.return_value
+        f.set_result(None)
+        
+        await worker.start()
 
     worker.queue_manager.connect.assert_called_once()
     worker.queue_manager.consume_requests.assert_called_once()
