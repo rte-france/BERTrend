@@ -7,15 +7,15 @@ readme = "README.md"
 requires-python = ">=3.12,<4.0"
 authors = [
     { name = "Jérôme Picault", email = "jerome.picault@rte-france.com" },
-    { name="Guillaume Grosjean", email="guillaume.grosjean@rte-france.com>" },
-    { name="Allaa Boutaleb", email="allaa.boutaleb@lip6.fr>"}
+    { name = "Guillaume Grosjean", email = "guillaume.grosjean@rte-france.com>" },
+    { name = "Allaa Boutaleb", email = "allaa.boutaleb@lip6.fr>" }
 ]
 maintainers = [
     { name = "Jérôme Picault", email = "jerome.picault@rte-france.com" },
-    { name="Guillaume Grosjean", email="guillaume.grosjean@rte-france.com>" },
+    { name = "Guillaume Grosjean", email = "guillaume.grosjean@rte-france.com>" },
 ]
 keywords = ["topics", "BERTopic", "transformers", "weak signals", "LLM", "trend analysis"]
-classifiers = [ "Topic :: Scientific/Engineering :: Artificial Intelligence"]
+classifiers = ["Topic :: Scientific/Engineering :: Artificial Intelligence"]
 
 dependencies = [
     "APScheduler (>=3.11.0)",
@@ -39,11 +39,10 @@ dependencies = [
     "lxml-html-clean (>=0.2.2)",
     "markdown (>=3.7)",
     "nltk (>=3.9.1)",
-    "numpy (<2)",
     "openai (>=1.77.0)",
     "openai-agents[litellm] (>=0.4.0)",
     "openpyxl (>=3.1.5)",
-    "opentelemetry-exporter-otlp-proto-grpc (==1.25.0)",  # to avoid error chroma with protobuf
+    "opentelemetry-exporter-otlp-proto-grpc (==1.25.0)", # to avoid error chroma with protobuf
     "pandas (>=2.2.2)",
     "plotly (>=5.24.1)",
     "plotly-resampler (>=0.10.0)",
@@ -100,7 +99,7 @@ packages = [
     { include = "bertrend" },
     { include = "bertrend_apps" },
 ]
-exclude = [ "data" ]
+exclude = ["data"]
 requires-poetry = ">=2.0"
 
 [build-system]

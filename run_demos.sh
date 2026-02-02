@@ -23,5 +23,7 @@ else:
 EOF
 )
 
+echo "Don't forget to start first the RabbitMQ server!"
+
 export BERTREND_HOME=$(python -c "import os; import bertrend; print(os.path.dirname(os.path.dirname(bertrend.__file__)))")
 supervisord -c supervisord.conf
