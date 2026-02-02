@@ -96,13 +96,9 @@ repository = "https://github.com/rte-france/BERTrend"
 documentation = "https://github.com/rte-france/BERTrend"
 "Bug Tracker" = "https://github.com/rte-france/BERTrend/issues"
 
-[tool.poetry]
-packages = [
-    { include = "bertrend" },
-    { include = "bertrend_apps" },
-]
-exclude = ["data"]
-requires-poetry = ">=2.0"
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
