@@ -14,15 +14,17 @@ from unittest.mock import patch
 import pytest
 
 from bertrend.services.scheduling.job_utils.job_functions import (
+    basic_http_request,
     http_request,
-    http_request_old,
 )
 
 
 def job_wrapper_old():
     """Module-level wrapper that calls http_request_old"""
     try:
-        http_request_old("http://invalid-host-that-does-not-exist-12345.com", timeout=1)
+        basic_http_request(
+            "http://invalid-host-that-does-not-exist-12345.com", timeout=1
+        )
     except RuntimeError as e:
         return f"RuntimeError: {str(e)[:50]}"
     except Exception as e:
@@ -33,7 +35,9 @@ def test_exception_is_picklable():
     """Test that the exception raised by http_request_old can be pickled"""
     with pytest.raises(RuntimeError) as exc_info:
         # Try to trigger an exception by connecting to an invalid URL
-        http_request_old("http://invalid-host-that-does-not-exist-12345.com", timeout=1)
+        basic_http_request(
+            "http://invalid-host-that-does-not-exist-12345.com", timeout=1
+        )
 
     # Verify the exception was caught
     exception = exc_info.value
@@ -76,7 +80,7 @@ def test_timeout_scenario():
     """Test with a timeout scenario using http_request_old"""
     with pytest.raises(RuntimeError) as exc_info:
         # Use a valid host but very short timeout to trigger timeout
-        http_request_old("https://www.google.com", timeout=0.001)
+        basic_http_request("https://www.google.com", timeout=0.001)
 
     error_msg = str(exc_info.value)
 
