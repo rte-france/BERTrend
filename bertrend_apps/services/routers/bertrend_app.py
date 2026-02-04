@@ -15,6 +15,8 @@ from bertrend_apps.prospective_demo.process_new_data import (
     regenerate_models,
     train_new_model,
 )
+from bertrend.services.queue.queue_manager import QueueManager
+from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
 from bertrend_apps.services.utils.logging_utils import get_file_logger
 from bertrend_apps.services.models.bertrend_app_models import (
     TrainNewModelRequest,
@@ -39,24 +41,26 @@ async def train_new(req: TrainNewModelRequest):
     filtering data according to the configured granularity and training
     a new model for the most recent period.
     """
-    # Create a unique log file for this call
-    logger_id = get_file_logger(
-        id="train_new_model", user_name=req.user, model_id=req.model_id
-    )
-
     try:
-        result = await asyncio.to_thread(
-            train_new_model,
-            model_id=req.model_id,
-            user_name=req.user,
+        config = RabbitMQConfig()
+        queue_manager = QueueManager(config)
+
+        request_data = {
+            "endpoint": "/train-new-model",
+            "method": "POST",
+            "json_data": req.model_dump(),
+        }
+
+        correlation_id = await queue_manager.publish_request(request_data, priority=10)
+        await queue_manager.close()
+
+        return StatusResponse(
+            status="queued",
+            message=f"Train new model request for user '{req.user}' and model '{req.model_id}' queued successfully (correlation_id: {correlation_id})",
         )
-        return StatusResponse(**result)
     except Exception as e:
-        logger.error(f"Error training new model: {e}")
+        logger.error(f"Error queuing train-new-model: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        # Remove the logger to prevent writing to this file for other calls
-        logger.remove(logger_id)
 
 
 @router.post(
@@ -71,32 +75,26 @@ async def regenerate(req: RegenerateRequest):
     This endpoint regenerates all models for a specific user and model ID,
     optionally with LLM-based analysis and filtering by a start date.
     """
-    # Create a unique log file for this call
-    logger_id = get_file_logger(
-        id="regenerate", user_name=req.user, model_id=req.model_id
-    )
-
     try:
-        # Regenerate models
-        await asyncio.to_thread(
-            regenerate_models,
-            model_id=req.model_id,
-            user=req.user,
-            with_analysis=req.with_analysis,
-            since=pd.Timestamp(req.since) if req.since else None,
-        )
+        config = RabbitMQConfig()
+        queue_manager = QueueManager(config)
+
+        request_data = {
+            "endpoint": "/regenerate",
+            "method": "POST",
+            "json_data": req.model_dump(),
+        }
+
+        correlation_id = await queue_manager.publish_request(request_data, priority=2)
+        await queue_manager.close()
 
         return StatusResponse(
-            status="success",
-            message=f"Successfully regenerated models for user '{req.user}' and model '{req.model_id}'",
+            status="queued",
+            message=f"Regenerate request for user '{req.user}' and model '{req.model_id}' queued successfully (correlation_id: {correlation_id})",
         )
-
     except Exception as e:
-        logger.error(f"Error regenerating models: {e}")
+        logger.error(f"Error queuing regenerate: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        # Remove the logger to prevent writing to this file for other calls
-        logger.remove(logger_id)
 
 
 @router.post(
@@ -112,29 +110,23 @@ async def generate_report(req: GenerateReportRequest):
     optionally using a reference date. If no reference date is provided,
     it uses the most recent data available.
     """
-    # Create a unique log file for this call
-    logger_id = get_file_logger(
-        id="generate_report", user_name=req.user, model_id=req.model_id
-    )
-
     try:
-        # Generate report
-        await asyncio.to_thread(
-            generate_automated_report,
-            user=req.user,
-            model_id=req.model_id,
-            reference_date=req.reference_date,
-        )
+        config = RabbitMQConfig()
+        queue_manager = QueueManager(config)
+
+        request_data = {
+            "endpoint": "/generate-report",
+            "method": "POST",
+            "json_data": req.model_dump(),
+        }
+
+        correlation_id = await queue_manager.publish_request(request_data, priority=7)
+        await queue_manager.close()
 
         return StatusResponse(
-            status="success",
-            message=f"Successfully generated report for user '{req.user}' and model '{req.model_id}'",
+            status="queued",
+            message=f"Generate report request for user '{req.user}' and model '{req.model_id}' queued successfully (correlation_id: {correlation_id})",
         )
-
     except Exception as e:
-        logger.error(f"Error generating report: {e}")
+        logger.error(f"Error queuing generate-report: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-    finally:
-        # Remove the logger to prevent writing to this file for other calls
-        logger.remove(logger_id)

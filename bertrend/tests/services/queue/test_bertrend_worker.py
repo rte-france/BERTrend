@@ -103,21 +103,24 @@ async def test_callback_json_error(worker):
 
 
 @pytest.mark.asyncio
-async def test_start(worker):
-    worker.queue_manager.connect = AsyncMock()
-    worker.queue_manager.consume_requests = AsyncMock()
-    worker.queue_manager.close = AsyncMock()
+async def test_handle_scrape_direct_call():
+    from bertrend.services.queue.bertrend_worker import handle_scrape
+    from bertrend_apps.services.models.data_provider_models import ScrapeRequest
 
-    # start() now waits on a future. We can use wait_for to timeout.
+    req = ScrapeRequest(
+        keywords="ai",
+        provider="google",
+        after="2025-01-01",
+        before="2025-01-02",
+        max_results=10,
+    )
+
     with patch(
-        "asyncio.Future", return_value=asyncio.get_event_loop().create_future()
-    ) as mock_future:
-        # Resolve the future immediately or after a short time
-        f = mock_future.return_value
-        f.set_result(None)
+        "bertrend.services.queue.bertrend_worker.asyncio.to_thread",
+        new_callable=AsyncMock,
+    ) as mock_to_thread:
+        mock_to_thread.return_value = [{"title": "test"}]
+        result = await handle_scrape(req)
 
-        await worker.start()
-
-    worker.queue_manager.connect.assert_called_once()
-    worker.queue_manager.consume_requests.assert_called_once()
-    worker.queue_manager.close.assert_called_once()
+        assert result == [{"title": "test"}]
+        mock_to_thread.assert_called_once()

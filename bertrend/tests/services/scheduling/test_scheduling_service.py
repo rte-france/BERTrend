@@ -122,7 +122,8 @@ def test_list_functions(client):
     assert r.status_code == 200
     data = r.json()
     assert "available_functions" in data
-    assert "sample_job" in data["available_functions"]
+    # http_request in scheduling/routers/scheduling.py is mapped to basic_http_request
+    assert "http_request" in data["available_functions"]
 
 
 def test_create_job_success_interval(client):

@@ -10,6 +10,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from unittest.mock import AsyncMock
 import bertrend_apps.data_provider.data_provider_utils as dp_main
 from bertrend_apps.data_provider.data_provider_utils import PROVIDERS
 from bertrend_apps.services.routers import data_provider as svc
@@ -97,6 +98,19 @@ def test_scrape_success(client, tmp_path, monkeypatch):
     # Arrange
     save_path = tmp_path / "out.jsonl"
 
+    # Mock QueueManager
+    mock_publish = AsyncMock(return_value="test_correlation_id")
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.publish_request",
+        mock_publish,
+    )
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.connect", AsyncMock()
+    )
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.close", AsyncMock()
+    )
+
     # Act
     resp = client.post(
         "/scrape",
@@ -114,11 +128,24 @@ def test_scrape_success(client, tmp_path, monkeypatch):
     # Assert
     assert resp.status_code == 200
     data = resp.json()
-    assert data["article_count"] == 3
+    assert data["status"] == "queued"
+    assert data["correlation_id"] == "test_correlation_id"
     assert Path(data["stored_path"]) == save_path
 
 
-def test_scrape_unknown_provider(client):
+def test_scrape_unknown_provider(client, monkeypatch):
+    # Mock QueueManager
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.publish_request",
+        AsyncMock(return_value="id"),
+    )
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.connect", AsyncMock()
+    )
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.close", AsyncMock()
+    )
+
     resp = client.post(
         "/scrape",
         json={
@@ -126,13 +153,27 @@ def test_scrape_unknown_provider(client):
             "provider": "unknown",
         },
     )
-    assert resp.status_code == 500
+    # It now returns 200 (queued) because provider validation happens in worker
+    assert resp.status_code == 200
 
 
-def test_auto_scrape_success(client, tmp_path):
+def test_auto_scrape_success(client, tmp_path, monkeypatch):
     # Prepare a valid request file with two lines
     qf = tmp_path / "queries.txt"
     qf.write_text("kw;2025-01-01;2025-01-02\nkw2;2025-01-03;2025-01-04\n")
+
+    # Mock QueueManager
+    mock_publish = AsyncMock(return_value="test_correlation_id")
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.publish_request",
+        mock_publish,
+    )
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.connect", AsyncMock()
+    )
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.close", AsyncMock()
+    )
 
     resp = client.post(
         "/auto-scrape",
@@ -149,14 +190,26 @@ def test_auto_scrape_success(client, tmp_path):
 
     assert resp.status_code == 200
     data = resp.json()
-    # our dummy returns 2 results
-    assert data["article_count"] == 2
+    assert data["status"] == "queued"
+    assert data["correlation_id"] == "test_correlation_id"
 
 
-def test_auto_scrape_bad_file_format(client, tmp_path):
-    # Use a directory path to trigger open() failure
+def test_auto_scrape_bad_file_format(client, tmp_path, monkeypatch):
+    # Use a directory path
     bad_path = tmp_path / "dir_as_file"
     bad_path.mkdir()
+
+    # Mock QueueManager
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.publish_request",
+        AsyncMock(return_value="id"),
+    )
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.connect", AsyncMock()
+    )
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.close", AsyncMock()
+    )
 
     resp = client.post(
         "/auto-scrape",
@@ -166,7 +219,8 @@ def test_auto_scrape_bad_file_format(client, tmp_path):
         },
     )
 
-    assert resp.status_code == 500
+    # It now returns 200 (queued) because file validation happens in worker
+    assert resp.status_code == 200
 
 
 def test_generate_query_file(tmp_path, client):
@@ -213,6 +267,19 @@ def test_scrape_feed_with_arxiv_provider(tmp_path, client, monkeypatch):
     monkeypatch.setattr(dp_main, "load_toml_config", lambda p: cfg)
     monkeypatch.setattr(dp_main, "FEED_BASE_PATH", tmp_path)
 
+    # Mock QueueManager
+    mock_publish = AsyncMock(return_value="test_correlation_id")
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.publish_request",
+        mock_publish,
+    )
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.connect", AsyncMock()
+    )
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.close", AsyncMock()
+    )
+
     resp = client.post(
         "/scrape-feed",
         json={
@@ -222,10 +289,8 @@ def test_scrape_feed_with_arxiv_provider(tmp_path, client, monkeypatch):
 
     assert resp.status_code == 200
     data = resp.json()
-    # DummyProvider.get_articles returns 3 results via /scrape flow
-    assert data["article_count"] == 3
-    expected_save = tmp_path / "feed_dir" / f"{current_date_str}_FEEDX.jsonl"
-    assert Path(data["stored_path"]) == expected_save
+    assert data["status"] == "queued"
+    assert data["correlation_id"] == "test_correlation_id"
 
 
 def test_scrape_feed_with_google_provider(tmp_path, client, monkeypatch):
@@ -246,6 +311,19 @@ def test_scrape_feed_with_google_provider(tmp_path, client, monkeypatch):
     monkeypatch.setattr(dp_main, "load_toml_config", lambda p: cfg)
     monkeypatch.setattr(dp_main, "FEED_BASE_PATH", tmp_path)
 
+    # Mock QueueManager
+    mock_publish = AsyncMock(return_value="test_correlation_id")
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.publish_request",
+        mock_publish,
+    )
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.connect", AsyncMock()
+    )
+    monkeypatch.setattr(
+        "bertrend.services.queue.queue_manager.QueueManager.close", AsyncMock()
+    )
+
     resp = client.post(
         "/scrape-feed",
         json={
@@ -255,10 +333,8 @@ def test_scrape_feed_with_google_provider(tmp_path, client, monkeypatch):
 
     assert resp.status_code == 200
     data = resp.json()
-    # auto_scrape path uses DummyProvider.get_articles_batch -> 2 results
-    assert data["article_count"] == 2
-    # stored_path should be inside the base path
-    assert str(data["stored_path"]).startswith(str(tmp_path))
+    assert data["status"] == "queued"
+    assert data["correlation_id"] == "test_correlation_id"
 
 
 def test_schedule_scrapping_success(client, tmp_path, monkeypatch):

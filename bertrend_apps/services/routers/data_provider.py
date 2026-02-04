@@ -2,34 +2,32 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
+import asyncio
 from pathlib import Path
 
-from fastapi import APIRouter
-
-import asyncio
-
-from fastapi import HTTPException
+from fastapi import APIRouter, HTTPException
 from loguru import logger
 
-
+from bertrend.services.queue.queue_manager import QueueManager
+from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
 from bertrend_apps import SCHEDULER_UTILS
 from bertrend_apps.data_provider.data_provider_utils import (
-    scrape_feed_from_config,
-    scrape,
     auto_scrape,
-    generate_query_file,
     count_articles,
+    generate_query_file,
+    scrape,
+    scrape_feed_from_config,
 )
 from bertrend_apps.services.config.settings import get_config
-from bertrend_apps.services.utils.logging_utils import get_file_logger
 from bertrend_apps.services.models.data_provider_models import (
-    ScrapeFeedRequest,
-    ScrapeRequest,
-    ScrapeResponse,
     AutoScrapeRequest,
     GenerateQueryFileRequest,
     GenerateQueryFileResponse,
+    ScrapeFeedRequest,
+    ScrapeRequest,
+    ScrapeResponse,
 )
+from bertrend_apps.services.utils.logging_utils import get_file_logger
 
 # Load the configuration
 CONFIG = get_config()
@@ -46,21 +44,29 @@ router = APIRouter()
 )
 async def scrape_api(req: ScrapeRequest):
     try:
-        results = await asyncio.to_thread(
-            scrape,
-            req.keywords,
-            req.provider,
-            req.after,
-            req.before,
-            req.max_results,
-            req.save_path,
-            req.language,
+        config = RabbitMQConfig()
+        queue_manager = QueueManager(config)
+
+        request_data = {
+            "endpoint": "/scrape",
+            "method": "POST",
+            "json_data": req.model_dump(),
+        }
+
+        correlation_id = await queue_manager.publish_request(
+            request_data,
+            priority=2,  # Priority from ENDPOINT_PRIORITIES
         )
+        await queue_manager.close()
+
         return ScrapeResponse(
-            stored_path=req.save_path.resolve(), article_count=len(results)
+            stored_path=req.save_path.resolve() if req.save_path else None,
+            article_count=0,  # Not known yet
+            status="queued",
+            correlation_id=correlation_id,
         )
     except Exception as e:
-        logger.error(f"Error scrapping data: {e}")
+        logger.error(f"Error queuing scrape: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -71,21 +77,29 @@ async def scrape_api(req: ScrapeRequest):
 )
 async def auto_scrape_api(req: AutoScrapeRequest):
     try:
-        results = await asyncio.to_thread(
-            auto_scrape,
-            req.requests_file,
-            req.max_results,
-            req.provider,
-            req.save_path,
-            req.language,
-            req.evaluate_articles_quality,
-            req.minimum_quality_level,
+        config = RabbitMQConfig()
+        queue_manager = QueueManager(config)
+
+        request_data = {
+            "endpoint": "/auto-scrape",
+            "method": "POST",
+            "json_data": req.model_dump(),
+        }
+
+        correlation_id = await queue_manager.publish_request(
+            request_data,
+            priority=2,  # Priority from ENDPOINT_PRIORITIES
         )
+        await queue_manager.close()
+
         return ScrapeResponse(
-            stored_path=req.save_path.resolve(), article_count=len(results)
+            stored_path=req.save_path.resolve() if req.save_path else None,
+            article_count=0,  # Not known yet
+            status="queued",
+            correlation_id=correlation_id,
         )
     except Exception as e:
-        logger.error(f"Error scrapping data: {e}")
+        logger.error(f"Error queuing auto-scrape: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -125,23 +139,33 @@ async def scrape_from_feed_api(req: ScrapeFeedRequest):
 
     This is the async equivalent of the CLI scrape-feed command.
     """
-    # Create a unique log file for this call
-    user = "" if not req.user else req.user
-    model_id = "" if not req.model_id else req.model_id
-
-    logger_id = get_file_logger(id="scrape_feed", user_name=user, model_id=model_id)
     try:
-        result_path = await asyncio.to_thread(scrape_feed_from_config, req.feed_cfg)
-        # Count the articles in the result file
-        article_count = count_articles(result_path)
+        config = RabbitMQConfig()
+        queue_manager = QueueManager(config)
+
+        request_data = {
+            "endpoint": "/scrape-feed",
+            "method": "POST",
+            "json_data": req.model_dump(),
+        }
+
+        correlation_id = await queue_manager.publish_request(
+            request_data,
+            priority=6,  # Priority from ENDPOINT_PRIORITIES
+        )
+        await queue_manager.close()
+
         return ScrapeResponse(
-            stored_path=result_path.resolve(), article_count=article_count
+            stored_path=None,  # Not known yet
+            article_count=0,  # Not known yet
+            status="queued",
+            correlation_id=correlation_id,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error scraping feed: {str(e)}")
-    finally:
-        # Remove the logger to prevent writing to this file for other calls
-        logger.remove(logger_id)
+        logger.error(f"Error queuing scrape-feed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error queuing scrape-feed: {str(e)}"
+        )
 
 
 @router.post(

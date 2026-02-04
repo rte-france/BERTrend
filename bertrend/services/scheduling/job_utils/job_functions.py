@@ -89,6 +89,6 @@ def basic_http_request(
 
 # Job function registry
 JOB_FUNCTIONS = {
-    "http_request": http_request,
+    "http_request": basic_http_request,
     "sample_job": sample_job,
 }

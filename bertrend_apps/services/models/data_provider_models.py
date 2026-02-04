@@ -28,8 +28,10 @@ class ScrapeRequest(BaseModel):
 
 
 class ScrapeResponse(BaseModel):
-    stored_path: Optional[Path]
-    article_count: int
+    stored_path: Optional[Path] = None
+    article_count: int = 0
+    status: Optional[str] = None
+    correlation_id: Optional[str] = None
 
 
 class AutoScrapeRequest(BaseModel):

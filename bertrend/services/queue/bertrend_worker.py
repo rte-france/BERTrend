@@ -4,10 +4,10 @@
 #  This file is part of BERTrend.
 
 """
-BERTrend Worker - Processes requests from RabbitMQ queue and calls FastAPI endpoints.
+BERTrend Worker - Processes requests from RabbitMQ queue.
 
-This worker receives HTTP-like requests from the queue (similar to what the scheduler
-service sends) and processes them by calling the appropriate FastAPI router functions.
+This worker receives HTTP-like requests from the queue and processes them
+by calling the appropriate core logic functions.
 """
 
 import asyncio
@@ -16,51 +16,129 @@ from typing import Any
 
 import aio_pika
 import msgpack
+import pandas as pd
 from loguru import logger
 
 from bertrend.services.queue.queue_manager import QueueManager
 from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
+from bertrend_apps.newsletters.newsletter_generation import process_newsletter
+from bertrend_apps.prospective_demo.automated_report_generation import (
+    generate_automated_report,
+)
+from bertrend_apps.prospective_demo.process_new_data import (
+    regenerate_models,
+    train_new_model,
+)
+from bertrend_apps.data_provider.data_provider_utils import (
+    auto_scrape,
+    generate_query_file,
+    scrape,
+    scrape_feed_from_config,
+)
+
+# Import request models
 from bertrend_apps.services.models.bertrend_app_models import (
     GenerateReportRequest,
     RegenerateRequest,
     TrainNewModelRequest,
 )
-
-# Import request models
 from bertrend_apps.services.models.data_provider_models import (
     AutoScrapeRequest,
     GenerateQueryFileRequest,
     ScrapeFeedRequest,
     ScrapeRequest,
 )
-from bertrend_apps.services.routers.bertrend_app import (
-    generate_report,
-    regenerate,
-    train_new,
-)
+from bertrend_apps.services.models.newsletters_models import NewsletterRequest
 
-# Import router functions
-from bertrend_apps.services.routers.data_provider import (
-    auto_scrape_api,
-    generate_query_file_api,
-    scrape_api,
-    scrape_from_feed_api,
-)
+
+# Wrapper functions to match the core logic with the request models
+async def handle_scrape(req: ScrapeRequest):
+    return await asyncio.to_thread(
+        scrape,
+        keywords=req.keywords,
+        provider=req.provider,
+        after=req.after,
+        before=req.before,
+        max_results=req.max_results,
+        save_path=req.save_path,
+        language=req.language,
+    )
+
+
+async def handle_auto_scrape(req: AutoScrapeRequest):
+    return await asyncio.to_thread(
+        auto_scrape,
+        requests_file=req.requests_file,
+        max_results=req.max_results,
+        provider=req.provider,
+        save_path=req.save_path,
+        language=req.language,
+        evaluate_articles_quality=req.evaluate_articles_quality,
+        minimum_quality_level=req.minimum_quality_level,
+    )
+
+
+async def handle_scrape_feed(req: ScrapeFeedRequest):
+    return await asyncio.to_thread(scrape_feed_from_config, req.feed_cfg)
+
+
+async def handle_generate_query_file(req: GenerateQueryFileRequest):
+    return await asyncio.to_thread(
+        generate_query_file,
+        keywords=req.keywords,
+        after=req.after,
+        before=req.before,
+        interval=req.interval,
+        save_path=req.save_path,
+    )
+
+
+async def handle_train_new(req: TrainNewModelRequest):
+    return await asyncio.to_thread(
+        train_new_model, model_id=req.model_id, user_name=req.user
+    )
+
+
+async def handle_regenerate(req: RegenerateRequest):
+    return await asyncio.to_thread(
+        regenerate_models,
+        model_id=req.model_id,
+        user=req.user,
+        with_analysis=req.with_analysis,
+        since=pd.Timestamp(req.since) if req.since else None,
+    )
+
+
+async def handle_generate_report(req: GenerateReportRequest):
+    return await asyncio.to_thread(
+        generate_automated_report,
+        user=req.user,
+        model_id=req.model_id,
+        reference_date=req.reference_date,
+    )
+
+
+async def handle_generate_newsletters(req: NewsletterRequest):
+    return await asyncio.to_thread(
+        process_newsletter, req.newsletter_toml_path, req.data_feed_toml_path
+    )
+
 
 # Mapping of endpoints to their handler functions and request models
 ENDPOINT_HANDLERS = {
-    "/scrape": (scrape_api, ScrapeRequest),
-    "/auto-scrape": (auto_scrape_api, AutoScrapeRequest),
-    "/scrape-feed": (scrape_from_feed_api, ScrapeFeedRequest),
-    "/generate-query-file": (generate_query_file_api, GenerateQueryFileRequest),
-    "/train-new-model": (train_new, TrainNewModelRequest),
-    "/regenerate": (regenerate, RegenerateRequest),
-    "/generate-report": (generate_report, GenerateReportRequest),
+    "/scrape": (handle_scrape, ScrapeRequest),
+    "/auto-scrape": (handle_auto_scrape, AutoScrapeRequest),
+    "/scrape-feed": (handle_scrape_feed, ScrapeFeedRequest),
+    "/generate-query-file": (handle_generate_query_file, GenerateQueryFileRequest),
+    "/train-new-model": (handle_train_new, TrainNewModelRequest),
+    "/regenerate": (handle_regenerate, RegenerateRequest),
+    "/generate-report": (handle_generate_report, GenerateReportRequest),
+    "/generate-newsletters": (handle_generate_newsletters, NewsletterRequest),
 }
 
 
 class BertrendWorker:
-    """Worker that processes requests from RabbitMQ and calls FastAPI endpoints"""
+    """Worker that processes requests from RabbitMQ"""
 
     def __init__(self, config: RabbitMQConfig):
         self.config = config
@@ -68,7 +146,7 @@ class BertrendWorker:
 
     async def process_request(self, request_data: dict[str, Any]) -> dict[str, Any]:
         """
-        Process a request by calling the appropriate FastAPI endpoint.
+        Process a request by calling the appropriate core logic function.
 
         Args:
             request_data: Dictionary containing:
