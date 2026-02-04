@@ -2,6 +2,7 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
+import random
 import re
 import time
 from pathlib import Path
@@ -34,11 +35,24 @@ from bertrend_apps.prospective_demo.i18n import translate
 
 # Default feed configs
 DEFAULT_CRONTAB_EXPRESSION = "1 0 * * 1"
-DEFAULT_ATOM_CRONTAB_EXPRESSION = "42 0,6,12,18 * * *"  # 4 times a day
 DEFAULT_MAX_RESULTS = 25
 DEFAULT_MAX_RESULTS_ARXIV = 1000
 DEFAULT_NUMBER_OF_DAYS = 7
 FEED_SOURCES = ["google", "atom", "rss", "arxiv"]
+
+
+def generate_atom_crontab_expression(hours="0,6,12,18"):
+    """
+    Generate a cron expression that runs at a random minute for the specified hours.
+
+    Args:
+        hours (str): Comma-separated hours field for cron (default "0,6,12,18").
+
+    Returns:
+        str: A cron expression like "42 0,6,12,18 * * *"
+    """
+    minute = random.randint(0, 59)
+    return f"{minute} {hours} * * *"
 
 
 @st.dialog(translate("feed_config_dialog_title"))
@@ -180,10 +194,10 @@ def edit_feed_monitoring(config: dict | None = None):
             )
         elif provider == "atom":
             config["language"] = "fr"
-            config["update_frequency"] = DEFAULT_ATOM_CRONTAB_EXPRESSION
+            config["update_frequency"] = generate_atom_crontab_expression()
         elif provider == "rss":
             config["language"] = "fr"
-            config["update_frequency"] = DEFAULT_ATOM_CRONTAB_EXPRESSION
+            config["update_frequency"] = generate_atom_crontab_expression()
 
         config["evaluate_articles_quality"] = evaluate_articles_quality
 
