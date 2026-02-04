@@ -15,6 +15,7 @@ class RabbitMQConfig:
     # Queue configuration
     request_queue: str = "bertrend_requests"
     response_queue: str = "bertrend_responses"
+    error_queue: str = "bertrend_failed"
 
     # Performance tuning
     prefetch_count: int = int(os.getenv("RABBITMQ_PREFETCH_COUNT", 1))

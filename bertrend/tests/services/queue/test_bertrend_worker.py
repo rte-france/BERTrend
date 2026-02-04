@@ -90,6 +90,42 @@ async def test_callback(worker):
     worker.process_request.assert_called_once()
     worker.queue_manager.publish_response.assert_called_once()
 
+    # Check that request_data is included in the published response
+    published_data = worker.queue_manager.publish_response.call_args[1]["response_data"]
+    assert "request_data" in published_data
+    assert published_data["request_data"]["endpoint"] == "/test"
+
+    # Verify acknowledgment
+    mock_message.ack.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_callback_error_status(worker):
+    mock_message = AsyncMock()
+    mock_message.correlation_id = "test-corr-id"
+    mock_message.reply_to = "response_queue"
+    mock_message.body = json.dumps({"endpoint": "/test", "json_data": {}}).encode(
+        "utf-8"
+    )
+
+    # Mock process_request with error status
+    worker.process_request = AsyncMock(
+        return_value={"status": "error", "error": "test error"}
+    )
+    worker.queue_manager.publish_error = AsyncMock()
+
+    # Run the callback
+    await worker.callback(mock_message)
+
+    # Verify processing
+    worker.process_request.assert_called_once()
+    worker.queue_manager.publish_error.assert_called_once()
+
+    # Check that request_data is included in the published error
+    published_data = worker.queue_manager.publish_error.call_args[1]["error_data"]
+    assert "request_data" in published_data
+    assert published_data["request_data"]["endpoint"] == "/test"
+
     # Verify acknowledgment
     mock_message.ack.assert_called_once()
 

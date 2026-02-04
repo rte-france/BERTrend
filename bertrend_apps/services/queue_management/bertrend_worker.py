@@ -229,12 +229,18 @@ class BertrendWorker:
 
             # Add metadata
             response_data["correlation_id"] = correlation_id
+            response_data["request_data"] = request_data
 
-            # Publish response if reply_to is specified
+            # Publish response/error if reply_to is specified
             if message.reply_to:
-                await self.queue_manager.publish_response(
-                    response_data=response_data, correlation_id=correlation_id
-                )
+                if response_data.get("status") == "error":
+                    await self.queue_manager.publish_error(
+                        error_data=response_data, correlation_id=correlation_id
+                    )
+                else:
+                    await self.queue_manager.publish_response(
+                        response_data=response_data, correlation_id=correlation_id
+                    )
 
             # Acknowledge message
             await message.ack()

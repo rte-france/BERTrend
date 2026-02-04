@@ -89,6 +89,23 @@ async def test_publish_response(mock_config, mock_aio_pika):
 
 
 @pytest.mark.asyncio
+async def test_publish_error(mock_config, mock_aio_pika):
+    qm = QueueManager(mock_config)
+    await qm.connect()
+
+    error_data = {"error": "test error"}
+    correlation_id = "test-corr-id"
+    await qm.publish_error(error_data, correlation_id)
+
+    qm.channel.default_exchange.publish.assert_called_once()
+    args, kwargs = qm.channel.default_exchange.publish.call_args
+    message = args[0]
+    assert kwargs["routing_key"] == mock_config.error_queue
+    assert message.body == json.dumps(error_data).encode("utf-8")
+    assert message.correlation_id == correlation_id
+
+
+@pytest.mark.asyncio
 async def test_consume_requests(mock_config, mock_aio_pika):
     qm = QueueManager(mock_config)
     await qm.connect()

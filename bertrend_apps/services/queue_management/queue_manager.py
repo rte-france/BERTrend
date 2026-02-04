@@ -141,6 +141,26 @@ class QueueManager:
 
         logger.info(f"Published response for correlation_id: {correlation_id}")
 
+    async def publish_error(self, error_data: dict, correlation_id: str | None = None):
+        """Publish error to error queue_management"""
+        if not self.channel or self.channel.is_closed:
+            await self.connect()
+
+        message_body = json.dumps(error_data).encode("utf-8")
+
+        message = aio_pika.Message(
+            body=message_body,
+            correlation_id=correlation_id,
+            content_type="application/json",
+        )
+
+        await self.channel.default_exchange.publish(
+            message,
+            routing_key=self.config.error_queue,
+        )
+
+        logger.info(f"Published error for correlation_id: {correlation_id}")
+
     async def close(self):
         """Close connection"""
         if self.connection and not self.connection.is_closed:
