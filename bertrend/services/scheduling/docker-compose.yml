@@ -19,7 +19,7 @@ services:
       # Optional: Log level
       - LOG_LEVEL=DEBUG
       # Optional: Number of worker processes
-      - MAX_WORKERS=50
+      - MAX_WORKERS=100
       - HOME=$HOME
     restart: always
     logging:

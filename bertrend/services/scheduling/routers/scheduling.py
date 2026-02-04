@@ -4,29 +4,29 @@
 #  This file is part of BERTrend.
 import re
 from contextlib import asynccontextmanager
-from pathlib import Path
-
-from fastapi import HTTPException, APIRouter, FastAPI
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
-from apscheduler.executors.pool import ProcessPoolExecutor
-from apscheduler.triggers.cron import CronTrigger
-from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.triggers.date import DateTrigger
 from datetime import datetime
-from typing import List, Union, Any
+from pathlib import Path
+from typing import Any, List, Union
 
+from apscheduler.executors.pool import ProcessPoolExecutor
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.date import DateTrigger
+from apscheduler.triggers.interval import IntervalTrigger
+from fastapi import APIRouter, FastAPI, HTTPException
 from loguru import logger
+
 from bertrend.services.scheduling.job_utils.job_functions import JOB_FUNCTIONS
 from bertrend.services.scheduling.models.scheduling_models import (
-    JobCreate,
-    JobUpdate,
-    JobResponse,
-    JobExecutionResponse,
     CronExpressionRequest,
     CronExpressionResponse,
-    JobFindResponse,
+    JobCreate,
+    JobExecutionResponse,
     JobFindRequest,
+    JobFindResponse,
+    JobResponse,
+    JobUpdate,
 )
 
 router = APIRouter()
@@ -36,7 +36,7 @@ DB_NAME = "bertrend_jobs.sqlite"
 DB_PATH.mkdir(parents=True, exist_ok=True)
 
 # Number of jobs executed simultaneously
-MAX_WORKERS = 50  # some data gathering may be triggered at the same time
+MAX_WORKERS = 100  # some data gathering may be triggered at the same time
 # Number of instances of a same job that can run concurrently
 MAX_INSTANCES = 3
 
