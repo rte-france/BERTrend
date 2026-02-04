@@ -325,14 +325,30 @@ else:
                     model_id = ""
 
                     if isinstance(obj, dict):
-                        endpoint = str(obj.get("endpoint", ""))
-                        # Check json_data if present
-                        json_data = obj.get("json_data", {})
-                        if isinstance(json_data, dict):
-                            user = str(json_data.get("user", ""))
-                            model_id = str(json_data.get("model_id", ""))
+                        # 1) If we have a request_data envelope, use it as the source of truth
+                        rd = obj.get("request_data")
+                        if isinstance(rd, dict):
+                            endpoint = str(rd.get("endpoint", ""))
 
-                        # Fallback to top level if not in json_data
+                            rd_json = rd.get("json_data") or {}
+                            if isinstance(rd_json, dict):
+                                user = str(rd_json.get("user", ""))
+                                model_id = str(rd_json.get("model_id", ""))
+
+                        # 2) Backwards compatibility: also support the previous flat structure
+                        #    { "endpoint": "...", "json_data": {"user": "...", "model_id": "..."} }
+                        if not endpoint:
+                            endpoint = str(obj.get("endpoint", ""))
+
+                        if not user or not model_id:
+                            json_data = obj.get("json_data") or {}
+                            if isinstance(json_data, dict):
+                                user = user or str(json_data.get("user", ""))
+                                model_id = model_id or str(
+                                    json_data.get("model_id", "")
+                                )
+
+                        # 3) Last-resort fallback to top-level fields
                         user = user or str(obj.get("user", ""))
                         model_id = model_id or str(obj.get("model_id", ""))
 
@@ -426,49 +442,53 @@ else:
 
                         # Payload column
                         with mc1:
-                            st.caption(f"Payload Content ({fmt})")
-                            if isinstance(obj, (dict, list)):
-                                st.json(
-                                    obj, expanded=(idx == 0)
-                                )  # Expand only the first one by default
-                            else:
-                                st.code(str(obj), language="text")
+                            st.caption("Raw Payload")
 
-                            with st.expander("Raw Payload", expanded=False):
-                                st.code(str(m.get("payload")), language="text")
+                            raw_payload = m.get("payload")
 
-                        # Metadata column
-                        with mc2:
-                            st.caption("Properties")
-                            meta_df = pd.DataFrame(
-                                [
-                                    {
-                                        "Key": "Exchange",
-                                        "Val": str(m.get("exchange") or ""),
-                                    },
-                                    {
-                                        "Key": "Routing Key",
-                                        "Val": str(m.get("routing_key") or ""),
-                                    },
-                                    {
-                                        "Key": "Redelivered",
-                                        "Val": str(m.get("redelivered")),
-                                    },
-                                    {
-                                        "Key": "Priority",
-                                        "Val": str(props.get("priority") or ""),
-                                    },
-                                    {
-                                        "Key": "Timestamp",
-                                        "Val": str(props.get("timestamp") or ""),
-                                    },
-                                    {
-                                        "Key": "App ID",
-                                        "Val": str(props.get("app_id") or ""),
-                                    },
-                                ]
-                            ).dropna()
-                            st.dataframe(meta_df, hide_index=True, width="stretch")
+                            # Try to parse the raw payload as JSON for nice formatting;
+                            # if that fails, fall back to plain text.
+                            try:
+                                if isinstance(raw_payload, (dict, list)):
+                                    st.json(raw_payload, expanded=(idx == 0))
+                                else:
+                                    parsed = json.loads(str(raw_payload))
+                                    st.json(parsed, expanded=(idx == 0))
+                            except Exception:
+                                st.code(str(raw_payload), language="text")
+
+                            # Metadata column
+                            with mc2:
+                                st.caption("Properties")
+                                meta_df = pd.DataFrame(
+                                    [
+                                        {
+                                            "Key": "Exchange",
+                                            "Val": str(m.get("exchange") or ""),
+                                        },
+                                        {
+                                            "Key": "Routing Key",
+                                            "Val": str(m.get("routing_key") or ""),
+                                        },
+                                        {
+                                            "Key": "Redelivered",
+                                            "Val": str(m.get("redelivered")),
+                                        },
+                                        {
+                                            "Key": "Priority",
+                                            "Val": str(props.get("priority") or ""),
+                                        },
+                                        {
+                                            "Key": "Timestamp",
+                                            "Val": str(props.get("timestamp") or ""),
+                                        },
+                                        {
+                                            "Key": "App ID",
+                                            "Val": str(props.get("app_id") or ""),
+                                        },
+                                    ]
+                                ).dropna()
+                                st.dataframe(meta_df, hide_index=True, width="stretch")
 
 # Auto-refresh handler at the very end
 if auto_refresh:
