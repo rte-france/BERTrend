@@ -172,7 +172,7 @@ def generate_newsletter(
         for _, doc in sub_df.iterrows():
             try:
                 domain = tldextract.extract(doc.url).domain
-            except:
+            except Exception:
                 logger.warning(f"Cannot extract URL for {doc}")
                 domain = None
             # Add the full text when no summarization is performed

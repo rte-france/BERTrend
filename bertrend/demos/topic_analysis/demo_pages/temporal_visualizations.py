@@ -433,7 +433,7 @@ def display_overall_topic_stability(topics_to_show):
     """Display Overall Topic Stability."""
     st.header(translate("overall_topic_stability"))
     normalize_overall_stability = st.checkbox(translate("normalize"), value=False)
-    overall_stability_df = st.session_state.temptopic.calculate_overall_topic_stability(
+    st.session_state.temptopic.calculate_overall_topic_stability(
         window_size=st.session_state.window_size,
         k=st.session_state.k,
         alpha=st.session_state.alpha,

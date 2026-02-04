@@ -56,7 +56,7 @@ def process_newsletter(
     newsletter_params = config[NEWSLETTER_SECTION]
 
     # read data
-    logger.info(f"Loading dataset...")
+    logger.info("Loading dataset...")
     learning_type = learning_strategy.get("learning_strategy", INFERENCE_ONLY)
     model_path = learning_strategy.get("bertopic_model_path", None)
     split_data_by_paragraphs = learning_strategy.get("split_data_by_paragraphs", "no")
@@ -128,7 +128,7 @@ def process_newsletter(
     openai_model_name = newsletter_params.get("openai_model_name", None)
 
     # generate newsletters
-    logger.info(f"Generating newsletter...")
+    logger.info("Generating newsletter...")
     title = newsletter_params.get("title")
     newsletter = generate_newsletter(
         topic_model=topic_model,

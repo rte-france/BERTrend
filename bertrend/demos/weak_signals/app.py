@@ -21,7 +21,11 @@ from loguru import logger
 from bertrend import CACHE_PATH, ZEROSHOT_TOPICS_DATA_DIR
 from bertrend.BERTopicModel import BERTopicModel
 from bertrend.BERTrend import BERTrend
-from bertrend.config.parameters import *
+from bertrend.config.parameters import (
+    EMBEDDINGS_FILE,
+    STATE_FILE,
+    ZEROSHOT_TOPICS_DATA_FILE,
+)
 from bertrend.demos.demos_utils import is_admin_mode
 from bertrend.demos.demos_utils.data_loading_component import (
     display_data_loading_component,

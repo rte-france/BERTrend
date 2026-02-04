@@ -118,7 +118,7 @@ class APSchedulerUtils(SchedulerUtils):
         payload = {"match_all": match_all, "kwargs_patterns": patterns}
         try:
             r = _request("POST", "/jobs/find", json=payload)
-            if not r.status_code in (200, 201):
+            if r.status_code not in (200, 201):
                 logger.error(f"Failed to find jobs: {r.status_code} {r.text}")
                 raise Exception(f"Failed to find jobs: {r.status_code} {r.text}")
             # Process results
@@ -137,7 +137,7 @@ class APSchedulerUtils(SchedulerUtils):
         payload = {"match_all": match_all, "kwargs_patterns": patterns}
         try:
             r = _request("POST", "/jobs/find", json=payload)
-            if not r.status_code in (200, 201):
+            if r.status_code not in (200, 201):
                 logger.error(f"Failed to find jobs: {r.status_code} {r.text}")
                 raise Exception(f"Failed to find jobs: {r.status_code} {r.text}")
             # Process results

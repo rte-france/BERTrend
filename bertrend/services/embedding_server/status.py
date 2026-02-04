@@ -27,5 +27,5 @@ try:
             sys.exit(1)
 
 # If an error occurs, exit with status code 1
-except (requests.exceptions.RequestException, requests.exceptions.ConnectionError) as e:
+except (requests.exceptions.RequestException, requests.exceptions.ConnectionError):
     sys.exit(1)

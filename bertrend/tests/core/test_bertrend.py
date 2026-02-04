@@ -3,8 +3,6 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import os
-from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 

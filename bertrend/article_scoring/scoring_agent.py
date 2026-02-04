@@ -40,8 +40,7 @@ if __name__ == "__main__":
     path = Path("/DSIA/nlp/bertrend/data/feeds/feed_nlp/2025-01-07_feed_nlp.jsonl")
     df = load_data(path)
     print(len(df), df.columns)
-    l = list(df.text)
-    results = asyncio.run(score_articles(l))
+    results = asyncio.run(score_articles(list(df.text)))
 
     assert len(results) == len(df)
     df["quality_metrics"] = [r.output if not r.error else None for r in results]

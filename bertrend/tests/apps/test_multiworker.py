@@ -11,7 +11,6 @@ This script simulates what happens when uvicorn forks worker processes.
 
 import multiprocessing
 import os
-import sys
 
 
 def helper_test_import_in_worker():

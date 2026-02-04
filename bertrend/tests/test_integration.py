@@ -5,7 +5,6 @@
 
 import os
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest

@@ -15,7 +15,6 @@ from cron_descriptor import (
     Options,
 )
 
-from bertrend import BEST_CUDA_DEVICE
 from bertrend.demos.demos_utils.i18n import get_current_internationalization_language
 
 

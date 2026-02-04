@@ -151,7 +151,7 @@ def display_representation_model_options():
     """UI settings for representation model options"""
     with st.expander("Representation model selection", expanded=False):
         register_widget("representation_models")
-        selected_models = st.multiselect(
+        st.multiselect(
             label="Select representation models",
             options=REPRESENTATION_MODELS,
             default=MMR_REPRESENTATION_MODEL,

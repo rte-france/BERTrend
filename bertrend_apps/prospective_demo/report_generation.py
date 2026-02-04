@@ -87,7 +87,7 @@ def choose_from_df(df: pd.DataFrame):
     df["Description"] = df[LLM_TOPIC_DESCRIPTION_COLUMN]
     columns = ["Topic", "A retenir", "Sujet", "Description"]
     edited_df = st.data_editor(df[columns], num_rows="dynamic", column_order=columns)
-    selection = edited_df[edited_df["A retenir"] == True]["Topic"].tolist()
+    selection = edited_df[edited_df["A retenir"]]["Topic"].tolist()
     return selection
 
 
@@ -261,9 +261,8 @@ def email(temp_path: Path, mail_title: str, recipients: list[str]) -> None:
             try:
                 if recipients:
                     credentials = get_credentials()
-                    with open(temp_path, "r") as file:
+                    with open(temp_path, "r"):
                         # Read the entire contents of the file into a string
-                        # content = file.read()
                         st.info(translate("email_being_sent"))
                         send_email(
                             credentials=credentials,

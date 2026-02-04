@@ -72,7 +72,7 @@ def display_sidebar():
     """Display the sidebar with search functionality and topic list."""
     with st.sidebar:
         # Search bar
-        search_terms = st.text_input(
+        st.text_input(
             translate("search_topic"), on_change=find_similar_topic, key="search_terms"
         )
 
@@ -213,7 +213,7 @@ def get_website_name(url):
         return urlparse(str(url)).netloc.replace("www.", "").split(".")[0] or translate(
             "unknown_source"
         )
-    except:
+    except Exception:
         return translate("unknown_source")
 
 

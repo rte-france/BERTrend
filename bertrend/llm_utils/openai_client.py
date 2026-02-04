@@ -82,7 +82,7 @@ class OpenAI_Client:
             logger.error(
                 "WARNING: OPENAI_API_KEY environment variable not found. Please set it before using OpenAI services."
             )
-            raise EnvironmentError(f"OPENAI_API_KEY environment variable not found.")
+            raise EnvironmentError("OPENAI_API_KEY environment variable not found.")
 
         base_url = base_url or os.getenv("OPENAI_BASE_URL", None)
         if base_url == "":  # check empty env var

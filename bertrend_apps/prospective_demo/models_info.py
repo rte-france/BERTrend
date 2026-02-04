@@ -488,7 +488,7 @@ def delete_cached_models(model_id: str):
 def safe_timestamp(x: str) -> pd.Timestamp | None:
     try:
         return pd.Timestamp(x)
-    except Exception as e:
+    except Exception:
         return None
 
 

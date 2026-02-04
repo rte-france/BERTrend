@@ -184,7 +184,7 @@ class DataProvider(ABC):
         try:
             article = self.parse_article(url)
             return article.cleaned_text, article.title
-        except:
+        except Exception:
             # goose3 not working, trying with alternate parser
             logger.warning("Parsing of text failed with Goose3, trying newspaper4k")
             return self._get_text_alternate(url)
@@ -197,7 +197,7 @@ class DataProvider(ABC):
             article.download()
             article.parse()
             return article.text, article.title
-        except:
+        except Exception:
             logger.warning("Parsing of text failed with newspaper4k, IGNORED")
             return "", ""
 

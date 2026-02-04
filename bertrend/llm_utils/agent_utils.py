@@ -51,7 +51,7 @@ class BaseAgentFactory:
             logger.error(
                 "WARNING: OPENAI_API_KEY environment variable not found. Please set it before using OpenAI services."
             )
-            raise EnvironmentError(f"OPENAI_API_KEY environment variable not found.")
+            raise EnvironmentError("OPENAI_API_KEY environment variable not found.")
         self.base_url = (
             base_url if base_url is not None else os.getenv("OPENAI_BASE_URL")
         )

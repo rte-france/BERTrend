@@ -145,7 +145,7 @@ def edit_feed_monitoring(config: dict | None = None):
             st.session_state.update_frequency
         )
         valid_cron = True
-    except:
+    except Exception:
         valid_cron = False
 
     if st.button(

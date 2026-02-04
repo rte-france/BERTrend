@@ -7,7 +7,6 @@ import pandas as pd
 import streamlit as st
 from bertopic import BERTopic
 from pandas import Timestamp
-from plotly import graph_objects as go
 
 from bertrend import SIGNAL_EVOLUTION_DATA_DIR
 from bertrend.config.parameters import (

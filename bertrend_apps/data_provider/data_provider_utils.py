@@ -63,7 +63,7 @@ def auto_scrape(
     with open(requests_file) as file:
         try:
             requests = [line.rstrip().split(";") for line in file]
-        except:
+        except Exception:
             logger.error("Bad file format")
             return -1
         results = provider_instance.get_articles_batch(

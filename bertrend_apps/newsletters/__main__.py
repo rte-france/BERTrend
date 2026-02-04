@@ -7,7 +7,6 @@ from pathlib import Path
 
 import typer
 
-from bertrend import BEST_CUDA_DEVICE
 from bertrend_apps import SCHEDULER_UTILS
 from bertrend_apps.newsletters.newsletter_generation import process_newsletter
 

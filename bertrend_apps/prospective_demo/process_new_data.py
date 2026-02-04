@@ -23,7 +23,6 @@ from bertrend.utils.data_loading import (
     split_data,
 )
 from bertrend_apps.prospective_demo import (
-    DEFAULT_ANALYSIS_CFG,
     LLM_TOPIC_DESCRIPTION_COLUMN,
     LLM_TOPIC_TITLE_COLUMN,
     NOISE,

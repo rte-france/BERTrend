@@ -89,7 +89,7 @@ def input_with_pills(
                     pills_widget_key
                 ][:]
 
-            selected = st.pills(
+            st.pills(
                 "Items",
                 st.session_state[all_items_key],
                 selection_mode="multi",

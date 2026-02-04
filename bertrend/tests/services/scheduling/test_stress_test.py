@@ -68,7 +68,7 @@ class FileDescriptorMonitor:
         leaked_fds = final_fds - self.initial_fds
 
         print(f"\n{'=' * 60}")
-        print(f"📊 File Descriptor Report")
+        print("📊 File Descriptor Report")
         print(f"{'=' * 60}")
         print(f"Initial FDs:  {self.initial_fds}")
         print(f"Peak FDs:     {self.peak_fds} (+{self.peak_fds - self.initial_fds})")

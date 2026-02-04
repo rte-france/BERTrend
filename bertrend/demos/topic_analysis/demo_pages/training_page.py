@@ -104,7 +104,7 @@ def save_model_interface():
                     icon=SUCCESS_ICON,
                 )
                 st.session_state["model_saved"] = True
-                logger.success(f"Model saved successfully!", icon=SUCCESS_ICON)
+                logger.success("Model saved successfully!", icon=SUCCESS_ICON)
             except Exception as e:
                 st.error(f"Failed to save the model: {e}", icon=ERROR_ICON)
                 logger.error(f"Failed to save the model: {e}")

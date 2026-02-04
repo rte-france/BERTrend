@@ -11,10 +11,7 @@ from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 from bertrend import DATA_PATH
 from bertrend.config.parameters import MIN_CHARS_DEFAULT, SAMPLE_SIZE_DEFAULT
-from bertrend.demos.demos_utils.i18n import (
-    get_current_internationalization_language,
-    translate,
-)
+from bertrend.demos.demos_utils.i18n import translate
 from bertrend.demos.demos_utils.icons import (
     CLIENT_STORAGE_ICON,
     CSV_ICON,
@@ -272,20 +269,6 @@ def display_data_loading_component():
             help=translate("split_help"),
             on_change=save_widget_state,
             format_func=lambda x: translate("split_option_" + x),
-        )
-
-    if get_current_internationalization_language() == "en":
-        split_by_paragraph_param = SessionStateManager.get("split_by_paragraph")
-    else:
-        # option has been translated
-        split_by_paragraph_param = (
-            "no"
-            if SessionStateManager.get("split_by_paragraph") == "non"
-            else (
-                "enhanced"
-                if SessionStateManager.get("split_by_paragraph") == "amélioré"
-                else "yes"
-            )
         )
 
     df = split_data(

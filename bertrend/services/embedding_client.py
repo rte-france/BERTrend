@@ -72,10 +72,10 @@ class EmbeddingAPIClient(SecureAPIClient, Embeddings):
     def embed_query(
         self, text: str | list[str], show_progress_bar: bool = False
     ) -> list[float]:
-        if type(text) == str:
+        if isinstance(text, str):
             text = [text]
         logger.debug(f"Calling EmbeddingAPI using model: {self.model_name}")
-        logger.debug(f"Computing embeddings...")
+        logger.debug("Computing embeddings...")
         with requests.post(
             self.url + "/encode",
             data=json.dumps({"text": text, "show_progress_bar": show_progress_bar}),
@@ -84,7 +84,7 @@ class EmbeddingAPIClient(SecureAPIClient, Embeddings):
         ) as response:
             if response.status_code == 200:
                 embeddings = np.array(response.json()["embeddings"])
-                logger.debug(f"Computing embeddings done")
+                logger.debug("Computing embeddings done")
                 return embeddings.tolist()[0]
             else:
                 logger.error(f"Error: {response.status_code}")
@@ -92,7 +92,7 @@ class EmbeddingAPIClient(SecureAPIClient, Embeddings):
     def embed_batch(
         self, texts: list[str], show_progress_bar: bool = True
     ) -> list[list[float]]:
-        logger.debug(f"Computing embeddings...")
+        logger.debug("Computing embeddings...")
         with requests.post(
             self.url + "/encode",
             data=json.dumps({"text": texts, "show_progress_bar": show_progress_bar}),
@@ -101,7 +101,7 @@ class EmbeddingAPIClient(SecureAPIClient, Embeddings):
         ) as response:
             if response.status_code == 200:
                 embeddings = np.array(response.json()["embeddings"])
-                logger.debug(f"Computing embeddings done for batch")
+                logger.debug("Computing embeddings done for batch")
                 return embeddings.tolist()
             else:
                 logger.error(f"Error: {response.status_code}")
