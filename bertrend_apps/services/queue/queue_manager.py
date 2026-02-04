@@ -1,9 +1,9 @@
 # bertrend_apps/services/queue_manager.py
 
+import json
 from typing import Callable
 
 import aio_pika
-import msgpack
 from loguru import logger
 
 from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
@@ -82,7 +82,7 @@ class QueueManager:
             correlation_id = str(uuid.uuid4())
 
         # Prepare message
-        message_body = msgpack.packb(request_data)
+        message_body = json.dumps(request_data).encode("utf-8")
 
         # Publish with properties
         message = aio_pika.Message(
@@ -90,7 +90,7 @@ class QueueManager:
             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
             priority=priority,
             correlation_id=correlation_id,
-            content_type="application/x-msgpack",
+            content_type="application/json",
             reply_to=self.config.response_queue,
         )
 
@@ -126,12 +126,12 @@ class QueueManager:
         if not self.channel or self.channel.is_closed:
             await self.connect()
 
-        message_body = msgpack.packb(response_data)
+        message_body = json.dumps(response_data).encode("utf-8")
 
         message = aio_pika.Message(
             body=message_body,
             correlation_id=correlation_id,
-            content_type="application/x-msgpack",
+            content_type="application/json",
         )
 
         await self.channel.default_exchange.publish(

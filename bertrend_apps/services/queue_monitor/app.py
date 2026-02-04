@@ -10,7 +10,6 @@ import time
 from typing import Any, Dict, List, Tuple
 from urllib.parse import quote
 
-import msgpack
 import pandas as pd
 import requests
 import streamlit as st
@@ -100,14 +99,7 @@ def _decode_message_payload(msg: Dict[str, Any]) -> Tuple[str, Any]:
     if payload_bytes is None:
         return ("Text", body_text)
 
-    # Try msgpack
-    try:
-        obj = msgpack.unpackb(payload_bytes, raw=False)
-        return ("MsgPack", obj)
-    except Exception:
-        pass
-
-    # Try JSON
+    # Try JSON (Preferred)
     try:
         obj = json.loads(payload_bytes.decode("utf-8"))
         return ("JSON", obj)

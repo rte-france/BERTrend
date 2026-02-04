@@ -14,7 +14,6 @@ import asyncio
 import json
 from typing import Any
 
-import msgpack
 from loguru import logger
 
 from bertrend_apps.services.queue.queue_manager import QueueManager
@@ -50,7 +49,7 @@ class BertrendClient:
                         future = self.pending_requests[correlation_id]
                         if not future.done():
                             try:
-                                response = msgpack.unpackb(message.body)
+                                response = json.loads(message.body.decode("utf-8"))
                                 future.set_result(response)
                             except Exception as e:
                                 future.set_exception(e)

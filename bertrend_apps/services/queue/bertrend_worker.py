@@ -11,11 +11,11 @@ by calling the appropriate core logic functions.
 """
 
 import asyncio
+import json
 import traceback
 from typing import Any
 
 import aio_pika
-import msgpack
 import pandas as pd
 from loguru import logger
 
@@ -220,7 +220,8 @@ class BertrendWorker:
             logger.info(f"Received request: {correlation_id}")
 
             # Parse request
-            request_data = msgpack.unpackb(message.body)
+            request_data = json.loads(message.body.decode("utf-8"))
+
             logger.info(f"Request endpoint: {request_data.get('endpoint')}")
 
             # Process request
@@ -241,8 +242,8 @@ class BertrendWorker:
                 f"Completed request: {correlation_id} - Status: {response_data.get('status')}"
             )
 
-        except (msgpack.UnpackException, msgpack.ExtraData) as e:
-            logger.error(f"Invalid msgpack in message: {str(e)}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid message format: {str(e)}")
             # Reject and don't requeue invalid messages
             await message.reject(requeue=False)
 
