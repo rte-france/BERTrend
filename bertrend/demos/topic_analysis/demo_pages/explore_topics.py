@@ -35,6 +35,7 @@ from bertrend.utils.data_loading import TEXT_COLUMN, TIMESTAMP_COLUMN, URL_COLUM
 EXPORT_BASE_FOLDER = OUTPUT_PATH / "exported_topics"
 EXPORT_BASE_FOLDER.mkdir(parents=True, exist_ok=True)
 
+
 def check_model_and_prepare_topics():
     """
     Check if a model is trained and prepare topics over time if necessary.

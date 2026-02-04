@@ -18,6 +18,7 @@ load_dotenv(override=True)
 # Disable tracing
 run_config_no_tracing = RunConfig(tracing_disabled=True)
 
+
 def run_runner_sync(*args, **kwargs):
     """Create a new event loop in a script thread (useful for Jupyter notebooks, ipython, streamlit)"""
     loop = asyncio.new_event_loop()

@@ -40,6 +40,7 @@ DEFAULT_MAX_RESULTS_ARXIV = 1000
 DEFAULT_NUMBER_OF_DAYS = 7
 FEED_SOURCES = ["google", "atom", "rss", "arxiv"]
 
+
 @st.dialog(translate("feed_config_dialog_title"))
 def edit_feed_monitoring(config: dict | None = None):
     """Create or update a feed monitoring configuration."""

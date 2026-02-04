@@ -17,6 +17,7 @@ BEFORE = "+before:today"
 AFTER = "+after:2000-01-01"
 MAX_ARTICLES = 100
 
+
 class GoogleNewsProvider(DataProvider):
     """News provider for Google News.
     Limitations:

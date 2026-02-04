@@ -21,6 +21,7 @@ MAX_DOCS_PER_REQUEST_PER_WORKER = 20000
 
 load_dotenv(override=True)
 
+
 class EmbeddingAPIClient(SecureAPIClient, Embeddings):
     """
     Custom Embedding API client, can integrate seamlessly with langchain

@@ -39,6 +39,7 @@ from bertrend_apps.prospective_demo.llm_utils import generate_bertrend_topic_des
 
 DEFAULT_TOP_K = 5
 
+
 class ConfigFileNotFoundError(Exception):
     """Raised when the user feed configuration file cannot be found."""
 

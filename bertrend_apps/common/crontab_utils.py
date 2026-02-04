@@ -16,6 +16,7 @@ from bertrend_apps.common.scheduler_utils import SchedulerUtils
 
 # Note: .env is already loaded in bertrend/__init__.py
 
+
 class CrontabSchedulerUtils(SchedulerUtils):
     def add_job_to_crontab(
         self,

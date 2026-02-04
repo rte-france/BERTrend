@@ -17,6 +17,7 @@ from bertrend.trend_analysis.prompts import get_prompt
 
 MAXIMUM_ANALYZED_PERIODS = 3
 
+
 def detect_weak_signals_zeroshot(
     topic_models: dict[Timestamp, BERTopic],
     zeroshot_topic_list: list[str],

@@ -12,6 +12,7 @@ from nltk.corpus import stopwords
 # Ensures files are written with +rw permissions for both user and groups
 os.umask(0o002)
 
+
 def ensure_stopwords():
     """Check if NLTK stopwords are available locally before downloading."""
     try:

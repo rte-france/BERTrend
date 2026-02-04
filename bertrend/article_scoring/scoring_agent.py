@@ -15,6 +15,7 @@ from bertrend.utils.data_loading import load_data
 DEFAULT_CHUNK_SIZE = 25
 DEFAULT_MAX_CONCURRENT_TASKS = 25
 
+
 async def score_articles(articles: list[str]):
     agent = BaseAgentFactory().create_agent(
         name="scoring_agent",
