@@ -4,6 +4,7 @@
 #  This file is part of BERTrend.
 
 import sys
+
 import requests
 
 from bertrend.services.embedding_server.config.settings import get_config

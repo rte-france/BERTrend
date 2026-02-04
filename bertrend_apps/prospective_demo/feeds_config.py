@@ -13,24 +13,24 @@ from loguru import logger
 
 from bertrend.article_scoring.article_scoring import QualityLevel
 from bertrend.config.parameters import LANGUAGES
-from bertrend_apps.prospective_demo.i18n import translate
 from bertrend.demos.demos_utils.icons import (
-    INFO_ICON,
-    ERROR_ICON,
     ADD_ICON,
-    EDIT_ICON,
     DELETE_ICON,
-    WARNING_ICON,
-    TOGGLE_ON_ICON,
+    EDIT_ICON,
+    ERROR_ICON,
+    INFO_ICON,
     TOGGLE_OFF_ICON,
+    TOGGLE_ON_ICON,
+    WARNING_ICON,
 )
 from bertrend.demos.streamlit_components.clickable_df_component import clickable_df
 from bertrend_apps import SCHEDULER_UTILS
 from bertrend_apps.data_provider import URL_PATTERN
+from bertrend_apps.prospective_demo import CONFIG_FEEDS_BASE_PATH
 from bertrend_apps.prospective_demo.feeds_common import (
     read_user_feeds,
 )
-from bertrend_apps.prospective_demo import CONFIG_FEEDS_BASE_PATH
+from bertrend_apps.prospective_demo.i18n import translate
 
 # Default feed configs
 DEFAULT_CRONTAB_EXPRESSION = "1 0 * * 1"
@@ -39,7 +39,6 @@ DEFAULT_MAX_RESULTS = 25
 DEFAULT_MAX_RESULTS_ARXIV = 1000
 DEFAULT_NUMBER_OF_DAYS = 7
 FEED_SOURCES = ["google", "atom", "rss", "arxiv"]
-
 
 @st.dialog(translate("feed_config_dialog_title"))
 def edit_feed_monitoring(config: dict | None = None):

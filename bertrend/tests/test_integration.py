@@ -4,19 +4,20 @@
 #  This file is part of BERTrend.
 
 import os
-import pytest
-import pandas as pd
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
-from bertrend.BERTrend import BERTrend
+import pandas as pd
+import pytest
+
 from bertrend.BERTopicModel import BERTopicModel
-from bertrend.services.embedding_service import EmbeddingService
-from bertrend.utils.data_loading import load_data, split_data, group_by_days
+from bertrend.BERTrend import BERTrend
 from bertrend.llm_utils.newsletter_features import (
     generate_newsletter,
     render_newsletter,
 )
+from bertrend.services.embedding_service import EmbeddingService
+from bertrend.utils.data_loading import group_by_days, load_data, split_data
 
 
 class TestEmbeddingServiceIntegration:

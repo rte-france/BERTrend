@@ -8,8 +8,8 @@ import re
 from enum import Enum
 from typing import Type
 
-from openai import OpenAI, AzureOpenAI, Timeout, Stream
 from loguru import logger
+from openai import AzureOpenAI, OpenAI, Stream, Timeout
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from pydantic import BaseModel
 

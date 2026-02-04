@@ -4,9 +4,9 @@
 #  This file is part of BERTrend.
 
 import base64
+import mimetypes
 import os
 from email.message import EmailMessage
-import mimetypes
 from pathlib import Path
 
 # Gmail API utils
@@ -20,7 +20,6 @@ from loguru import logger
 from bertrend import BASE_PATH
 
 COMMASPACE = ", "
-
 
 SCOPES = ["https://mail.google.com/"]  # full access to mail API
 FROM = "wattelse.ai@gmail.com"

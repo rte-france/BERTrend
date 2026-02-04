@@ -48,6 +48,7 @@ def test_ssl_workaround():
         try:
             # Re-import to trigger the code
             import importlib
+
             import bertrend.utils
 
             importlib.reload(bertrend.utils)
@@ -64,6 +65,7 @@ def test_ssl_workaround():
     ):
         # This should not raise an exception
         import importlib
+
         import bertrend.utils
 
         importlib.reload(bertrend.utils)

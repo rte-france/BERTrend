@@ -9,9 +9,9 @@ Test script to verify the multi-worker fix.
 This script simulates what happens when uvicorn forks worker processes.
 """
 
+import multiprocessing
 import os
 import sys
-import multiprocessing
 
 
 def helper_test_import_in_worker():

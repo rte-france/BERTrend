@@ -13,34 +13,33 @@ This module provides functionality to:
 - Visualize source diversity changes
 - Display comparative metrics with interactive charts
 """
-
-from datetime import datetime
 import uuid
+from datetime import datetime
 
 import pandas as pd
-import streamlit as st
 import plotly.graph_objects as go
+import streamlit as st
 
 from bertrend.demos.demos_utils.icons import (
-    WARNING_ICON,
     ANALYSIS_ICON,
     ERROR_ICON,
-    TIMELINE_ICON,
     POPULARITY_ICON,
     SIGNAL_EVOLUTION_ICON,
+    TIMELINE_ICON,
+    WARNING_ICON,
 )
-from bertrend_apps.prospective_demo.i18n import translate
 from bertrend_apps.prospective_demo import (
-    NOISE,
-    WEAK_SIGNALS,
-    STRONG_SIGNALS,
     LLM_TOPIC_TITLE_COLUMN,
+    NOISE,
+    STRONG_SIGNALS,
+    WEAK_SIGNALS,
     get_model_interpretation_path,
 )
 from bertrend_apps.prospective_demo.dashboard_common import (
     get_df_topics,
     update_key,
 )
+from bertrend_apps.prospective_demo.i18n import translate
 from bertrend_apps.prospective_demo.models_info import get_models_info
 
 # Constants

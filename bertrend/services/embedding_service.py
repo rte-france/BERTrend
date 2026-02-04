@@ -18,8 +18,8 @@ from tqdm import tqdm
 
 from bertrend import EMBEDDING_CONFIG
 from bertrend.config.parameters import (
-    EMBEDDING_DEVICE,
     EMBEDDING_BATCH_SIZE,
+    EMBEDDING_DEVICE,
     EMBEDDING_MAX_SEQ_LENGTH,
 )
 from bertrend.services.embedding_client import EmbeddingAPIClient

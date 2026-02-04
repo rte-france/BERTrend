@@ -6,19 +6,19 @@ import pandas as pd
 import streamlit as st
 
 from bertrend.demos.demos_utils.icons import (
+    NOISE_ICON,
+    STRONG_SIGNAL_ICON,
     WARNING_ICON,
     WEAK_SIGNAL_ICON,
-    STRONG_SIGNAL_ICON,
-    NOISE_ICON,
 )
 from bertrend_apps.prospective_demo import (
     LLM_TOPIC_DESCRIPTION_COLUMN,
-    NOISE,
-    WEAK_SIGNALS,
-    STRONG_SIGNALS,
-    get_model_interpretation_path,
     LLM_TOPIC_TITLE_COLUMN,
+    NOISE,
+    STRONG_SIGNALS,
     URLS_COLUMN,
+    WEAK_SIGNALS,
+    get_model_interpretation_path,
 )
 from bertrend_apps.prospective_demo.dashboard_common import (
     choose_id_and_ts,

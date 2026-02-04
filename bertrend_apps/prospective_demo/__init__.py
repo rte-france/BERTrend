@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from bertrend import MODELS_DIR, CONFIG_PATH
+from bertrend import CONFIG_PATH, MODELS_DIR
 
 # Config path for users
 CONFIG_FEEDS_BASE_PATH = CONFIG_PATH / "users"

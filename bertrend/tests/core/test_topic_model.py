@@ -2,12 +2,11 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-import pytest
-import numpy as np
 import tomllib
-
 from unittest.mock import MagicMock
 
+import numpy as np
+import pytest
 from bertopic import BERTopic
 
 from bertrend import BERTOPIC_CONFIG

@@ -3,9 +3,10 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
-import pandas as pd
 from unittest.mock import MagicMock
+
+import pandas as pd
+import pytest
 from bertopic import BERTopic
 
 from bertrend.topic_analysis.representative_docs import get_most_representative_docs

@@ -4,11 +4,11 @@
 #  This file is part of BERTrend.
 from fastapi import APIRouter
 from fastapi.responses import RedirectResponse
+
 from bertrend_apps.services.config.settings import get_config
 
 # Load the configuration
 CONFIG = get_config()
-
 
 router = APIRouter()
 

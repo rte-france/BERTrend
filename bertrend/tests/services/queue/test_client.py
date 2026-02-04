@@ -1,11 +1,10 @@
 import asyncio
-import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from bertrend.services.queue.client import BertrendClient
-from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
+from bertrend_apps.services.queue.client import BertrendClient
+from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
 
 
 @pytest.fixture
@@ -15,7 +14,7 @@ def mock_config():
 
 @pytest.fixture
 async def client(mock_config):
-    with patch("bertrend.services.queue.client.QueueManager") as mock_qm_class:
+    with patch("bertrend_apps.services.queue.client.QueueManager") as mock_qm_class:
         mock_qm = AsyncMock()
         mock_qm_class.return_value = mock_qm
 

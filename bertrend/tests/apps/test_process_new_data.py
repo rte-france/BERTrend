@@ -3,20 +3,21 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
-import pandas as pd
+import shutil
+import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
+
 import jsonlines
-import tempfile
-import shutil
+import pandas as pd
+import pytest
 
 from bertrend_apps.prospective_demo.process_new_data import (
-    load_all_data,
-    get_model_config,
     generate_llm_interpretation,
-    train_new_model_for_period,
+    get_model_config,
+    load_all_data,
     regenerate_models,
+    train_new_model_for_period,
 )
 
 

@@ -3,10 +3,11 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
 import subprocess
 from pathlib import Path
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import MagicMock, call, patch
+
+import pytest
 
 from bertrend_apps.common.crontab_utils import CrontabSchedulerUtils
 

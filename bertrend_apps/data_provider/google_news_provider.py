@@ -10,13 +10,12 @@ from loguru import logger
 from pygooglenews import GoogleNews
 
 from bertrend_apps.data_provider.data_provider import DataProvider
-from bertrend_apps.data_provider.utils import wait, decode_google_news_url
+from bertrend_apps.data_provider.utils import decode_google_news_url, wait
 
 PATTERN = "{QUERY}"
 BEFORE = "+before:today"
 AFTER = "+after:2000-01-01"
 MAX_ARTICLES = 100
-
 
 class GoogleNewsProvider(DataProvider):
     """News provider for Google News.

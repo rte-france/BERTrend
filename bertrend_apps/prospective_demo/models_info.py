@@ -14,28 +14,27 @@ from loguru import logger
 
 from bertrend import load_toml_config
 from bertrend.config.parameters import LANGUAGES
-from bertrend_apps.prospective_demo.i18n import translate
 from bertrend.demos.demos_utils.icons import (
-    EDIT_ICON,
     DELETE_ICON,
-    WARNING_ICON,
-    INFO_ICON,
-    TOGGLE_ON_ICON,
-    TOGGLE_OFF_ICON,
+    EDIT_ICON,
     ERROR_ICON,
+    INFO_ICON,
     RESTART_ICON,
+    TOGGLE_OFF_ICON,
+    TOGGLE_ON_ICON,
+    WARNING_ICON,
 )
 from bertrend.demos.streamlit_components.clickable_df_component import clickable_df
 from bertrend.demos.streamlit_components.input_with_pills_component import (
     input_with_pills,
 )
 from bertrend_apps import SCHEDULER_UTILS
-
 from bertrend_apps.prospective_demo import (
-    get_user_models_path,
-    get_model_cfg_path,
     DEFAULT_ANALYSIS_CFG,
+    get_model_cfg_path,
+    get_user_models_path,
 )
+from bertrend_apps.prospective_demo.i18n import translate
 from bertrend_apps.prospective_demo.perf_utils import get_least_used_gpu
 from bertrend_apps.prospective_demo.process_new_data import regenerate_models
 from bertrend_apps.prospective_demo.utils import is_valid_email

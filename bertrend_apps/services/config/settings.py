@@ -4,8 +4,9 @@
 #  This file is part of BERTrend.
 
 import os
-from pathlib import Path
 import tomllib
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
 
 DEFAULT_CONFIG_FILE = Path(__file__).parent / "default_config.toml"

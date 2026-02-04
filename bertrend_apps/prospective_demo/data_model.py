@@ -2,7 +2,7 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-from bertrend.llm_utils.newsletter_model import Topic, Newsletter
+from bertrend.llm_utils.newsletter_model import Newsletter, Topic
 from bertrend.trend_analysis.data_structure import SignalAnalysis, TopicSummaryList
 
 

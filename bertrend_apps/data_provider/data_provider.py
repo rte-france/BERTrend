@@ -12,14 +12,14 @@ import langdetect
 import pandas as pd
 from dateutil import parser
 from goose3 import Goose
-from joblib import delayed, Parallel
+from joblib import Parallel, delayed
 from loguru import logger
 from newspaper import Article
 
 from bertrend.article_scoring.article_scoring import QualityLevel
 from bertrend.article_scoring.scoring_agent import score_articles
 from bertrend.utils.data_loading import TEXT_COLUMN
-from bertrend_apps.data_provider.utils import wait_if_seen_url, decode_google_news_url
+from bertrend_apps.data_provider.utils import decode_google_news_url, wait_if_seen_url
 
 # Ensures to write with +rw for both user and groups
 os.umask(0o002)

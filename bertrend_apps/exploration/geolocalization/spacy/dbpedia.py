@@ -5,12 +5,11 @@
 
 # NB. Largely inspired from https://github.com/MartinoMensio/spacy-dbpedia-spotlight (MIT license)
 
-import spacy
 import requests
+import spacy
 from loguru import logger
 from requests import HTTPError
-
-from spacy.tokens import Span, Doc
+from spacy.tokens import Doc, Span
 
 DBPEDIA_SPOTLIGHT_DEFAULT_ENDPOINT = "https://api.dbpedia-spotlight.org"
 DBPEDIA_ENT = "DBPedia"

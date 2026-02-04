@@ -2,39 +2,37 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-import numpy as np
-
 from pathlib import Path
-from loguru import logger
 
+import numpy as np
 from bertopic import BERTopic
 from bertopic.representation import (
+    BaseRepresentation,
+    KeyBERTInspired,
     MaximalMarginalRelevance,
     OpenAI,
-    KeyBERTInspired,
-    BaseRepresentation,
 )
 from bertopic.vectorizers import ClassTfidfTransformer
-
 from hdbscan import HDBSCAN
+from loguru import logger
+from sentence_transformers import SentenceTransformer
 from sklearn.feature_extraction.text import CountVectorizer
 from umap import UMAP
-from sentence_transformers import SentenceTransformer
 
-from bertrend import load_toml_config, BERTOPIC_DEFAULT_CONFIG_PATH, LLM_CONFIG
+from bertrend import BERTOPIC_DEFAULT_CONFIG_PATH, LLM_CONFIG, load_toml_config
+from bertrend.config.parameters import (
+    ENGLISH_STOPWORDS,
+    KEYBERT_NR_CANDIDATE_WORDS,
+    KEYBERT_NR_REPR_DOCS,
+    KEYBERT_TOP_N_WORDS,
+    KEYBERTINSPIRED_REPRESENTATION_MODEL,
+    MMR_REPRESENTATION_MODEL,
+    OPENAI_NR_DOCS,
+    OPENAI_REPRESENTATION_MODEL,
+    STOPWORDS,
+)
 from bertrend.llm_utils.openai_client import OpenAI_Client
 from bertrend.llm_utils.prompts import BERTOPIC_FRENCH_TOPIC_REPRESENTATION_PROMPT
-from bertrend.config.parameters import (
-    STOPWORDS,
-    ENGLISH_STOPWORDS,
-    KEYBERT_TOP_N_WORDS,
-    KEYBERT_NR_REPR_DOCS,
-    KEYBERT_NR_CANDIDATE_WORDS,
-    OPENAI_NR_DOCS,
-    MMR_REPRESENTATION_MODEL,
-    OPENAI_REPRESENTATION_MODEL,
-    KEYBERTINSPIRED_REPRESENTATION_MODEL,
-)
 
 
 class BERTopicModelOutput:

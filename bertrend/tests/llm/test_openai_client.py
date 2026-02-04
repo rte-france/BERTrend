@@ -3,13 +3,14 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
 import os
-from unittest.mock import patch, MagicMock
-from openai import OpenAI, AzureOpenAI, Stream
+from unittest.mock import MagicMock, patch
+
+import pytest
+from openai import AzureOpenAI, OpenAI, Stream
 from pydantic import BaseModel
 
-from bertrend.llm_utils.openai_client import OpenAI_Client, APIType
+from bertrend.llm_utils.openai_client import APIType, OpenAI_Client
 
 
 @pytest.fixture

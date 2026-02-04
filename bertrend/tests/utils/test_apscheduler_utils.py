@@ -3,15 +3,16 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 from bertrend_apps.common.apscheduler_utils import (
     APSchedulerUtils,
-    _request,
     _job_id_from_string,
     _list_jobs,
+    _request,
 )
 
 

@@ -4,12 +4,11 @@
 #  This file is part of BERTrend.
 import os
 import pickle
-
-import dill  # improvement to pickle
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+import dill  # improvement to pickle
 import numpy as np
 import pandas as pd
 from bertopic import BERTopic
@@ -20,30 +19,29 @@ from sklearn.metrics.pairwise import cosine_similarity
 from tqdm import tqdm
 
 from bertrend import (
-    MODELS_DIR,
     BERTREND_DEFAULT_CONFIG_PATH,
-    load_toml_config,
+    MODELS_DIR,
     SIGNAL_EVOLUTION_DATA_DIR,
+    load_toml_config,
 )
-
 from bertrend.BERTopicModel import BERTopicModel
 from bertrend.config.parameters import (
-    DOC_INFO_DF_FILE,
-    TOPIC_INFO_DF_FILE,
     BERTOPIC_SERIALIZATION,
+    BERTREND_FILE,
+    DOC_INFO_DF_FILE,
+    LANGUAGES,
     SIGNAL_CLASSIF_LOWER_BOUND,
     SIGNAL_CLASSIF_UPPER_BOUND,
-    BERTREND_FILE,
-    LANGUAGES,
+    TOPIC_INFO_DF_FILE,
 )
 from bertrend.services.embedding_service import EmbeddingService
 from bertrend.trend_analysis.weak_signals import (
-    _initialize_new_topic,
-    update_existing_topic,
     _apply_decay_to_inactive_topics,
-    _filter_data,
-    _is_rising_popularity,
     _create_dataframes,
+    _filter_data,
+    _initialize_new_topic,
+    _is_rising_popularity,
+    update_existing_topic,
 )
 from bertrend.utils.data_loading import TEXT_COLUMN
 

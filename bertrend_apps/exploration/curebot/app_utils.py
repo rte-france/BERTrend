@@ -1,15 +1,15 @@
-import tomllib
 import json
-from bertopic import BERTopic
+import tomllib
+from pathlib import Path
+from urllib.parse import urlparse
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-
+import plotly.graph_objects as go
 import streamlit as st
+from bertopic import BERTopic
 from pydantic import BaseModel
 from streamlit.runtime.uploaded_file_manager import UploadedFile
-import plotly.graph_objects as go
-from urllib.parse import urlparse
 
 from bertrend import LLM_CONFIG
 from bertrend.BERTopicModel import BERTopicModel

@@ -3,26 +3,27 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
-from unittest.mock import patch, mock_open
 import json
+from unittest.mock import mock_open, patch
 
-from bertrend.trend_analysis.prompts import (
-    get_prompt,
-    save_html_output,
-    fill_html_template,
-    SIGNAL_INTRO,
-    SIGNAL_INSTRUCTIONS,
-    TOPIC_SUMMARY_PROMPT,
-)
+import pytest
+
 from bertrend.trend_analysis.data_structure import (
+    Drivers,
+    EvolutionScenario,
+    PotentialImplications,
+    SignalAnalysis,
+    TopicInterconnexions,
     TopicSummary,
     TopicSummaryList,
-    PotentialImplications,
-    EvolutionScenario,
-    TopicInterconnexions,
-    Drivers,
-    SignalAnalysis,
+)
+from bertrend.trend_analysis.prompts import (
+    SIGNAL_INSTRUCTIONS,
+    SIGNAL_INTRO,
+    TOPIC_SUMMARY_PROMPT,
+    fill_html_template,
+    get_prompt,
+    save_html_output,
 )
 
 

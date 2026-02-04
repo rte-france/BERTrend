@@ -4,7 +4,7 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
-from agents import RunConfig, Agent, Runner, OpenAIChatCompletionsModel
+from agents import Agent, OpenAIChatCompletionsModel, RunConfig, Runner
 from agents.extensions.models.litellm_model import LitellmModel
 from dotenv import load_dotenv
 from loguru import logger
@@ -17,7 +17,6 @@ load_dotenv(override=True)
 
 # Disable tracing
 run_config_no_tracing = RunConfig(tracing_disabled=True)
-
 
 def run_runner_sync(*args, **kwargs):
     """Create a new event loop in a script thread (useful for Jupyter notebooks, ipython, streamlit)"""

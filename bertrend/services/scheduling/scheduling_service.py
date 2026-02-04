@@ -5,7 +5,7 @@
 import uvicorn
 from fastapi import FastAPI
 
-from bertrend.services.scheduling.routers import scheduling, info
+from bertrend.services.scheduling.routers import info, scheduling
 from bertrend.services.scheduling.routers.scheduling import lifespan
 
 app = FastAPI(lifespan=lifespan)

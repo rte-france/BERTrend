@@ -6,7 +6,7 @@ import aio_pika
 import msgpack
 from loguru import logger
 
-from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
+from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
 
 
 class QueueManager:

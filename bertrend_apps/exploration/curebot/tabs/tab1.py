@@ -1,6 +1,6 @@
 import pandas as pd
-from loguru import logger
 import streamlit as st
+from loguru import logger
 
 from bertrend_apps.exploration.curebot.app_utils import (
     TAGS_COLUMN,

@@ -4,21 +4,20 @@
 #  This file is part of BERTrend.
 
 import os
+from pathlib import Path
 
 import typer
-from pathlib import Path
 
 from bertrend_apps import SCHEDULER_UTILS
 from bertrend_apps.data_provider.data_provider_utils import (
-    scrape,
     auto_scrape,
     generate_query_file,
+    scrape,
     scrape_feed_from_config,
 )
 
 # Ensures to write with +rw for both user and groups
 os.umask(0o002)
-
 if __name__ == "__main__":
     app = typer.Typer()
 

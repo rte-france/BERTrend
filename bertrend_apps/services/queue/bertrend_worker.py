@@ -19,8 +19,12 @@ import msgpack
 import pandas as pd
 from loguru import logger
 
-from bertrend.services.queue.queue_manager import QueueManager
-from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
+from bertrend_apps.data_provider.data_provider_utils import (
+    auto_scrape,
+    generate_query_file,
+    scrape,
+    scrape_feed_from_config,
+)
 from bertrend_apps.newsletters.newsletter_generation import process_newsletter
 from bertrend_apps.prospective_demo.automated_report_generation import (
     generate_automated_report,
@@ -28,12 +32,6 @@ from bertrend_apps.prospective_demo.automated_report_generation import (
 from bertrend_apps.prospective_demo.process_new_data import (
     regenerate_models,
     train_new_model,
-)
-from bertrend_apps.data_provider.data_provider_utils import (
-    auto_scrape,
-    generate_query_file,
-    scrape,
-    scrape_feed_from_config,
 )
 
 # Import request models
@@ -49,6 +47,8 @@ from bertrend_apps.services.models.data_provider_models import (
     ScrapeRequest,
 )
 from bertrend_apps.services.models.newsletters_models import NewsletterRequest
+from bertrend_apps.services.queue.queue_manager import QueueManager
+from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
 
 
 # Wrapper functions to match the core logic with the request models

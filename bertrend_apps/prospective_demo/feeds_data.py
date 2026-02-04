@@ -10,16 +10,16 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from bertrend_apps.prospective_demo.i18n import translate
 from bertrend.demos.demos_utils.icons import CYCLE_ICON
 from bertrend.utils.data_loading import (
-    load_data,
+    TEXT_COLUMN,
     TIMESTAMP_COLUMN,
     TITLE_COLUMN,
     URL_COLUMN,
-    TEXT_COLUMN,
+    load_data,
 )
 from bertrend_apps.prospective_demo.feeds_common import get_all_files_for_feed
+from bertrend_apps.prospective_demo.i18n import translate
 
 
 def display_data_status():

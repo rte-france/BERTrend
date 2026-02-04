@@ -3,23 +3,9 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import time
-from urllib.parse import urlparse
 
 import requests
 from loguru import logger
-
-from bertrend.services.queue.queue_manager import QueueManager
-from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
-
-ENDPOINT_PRIORITIES = {
-    "/scrape": 2,
-    "/auto-scrape": 2,
-    "/scrape-feed": 6,
-    "/generate-query-file": 3,
-    "/train-new-model": 10,
-    "/regenerate": 2,
-    "/generate-report": 7,
-}
 
 
 # ====================================
@@ -33,33 +19,6 @@ def sample_job(message: str = "Default message"):
 
 
 def http_request(
-    url: str,
-    method: str = "POST",
-    json_data: dict = None,
-):
-    """Send request via RabbitMQ queue instead of direct HTTP"""
-    # Extract endpoint from URL (e.g., "http://host:port/scrape-feed" → "/scrape-feed")
-    endpoint = urlparse(url).path
-
-    config = RabbitMQConfig()
-    queue_manager = QueueManager(config)
-    queue_manager.connect()
-
-    request_data = {
-        "endpoint": endpoint,
-        "method": method,
-        "json_data": json_data or {},
-    }
-
-    correlation_id = queue_manager.publish_request(
-        request_data, priority=ENDPOINT_PRIORITIES.get(endpoint, 5)
-    )
-    queue_manager.close()
-
-    return {"status": "queued", "correlation_id": correlation_id}
-
-
-def basic_http_request(
     url: str,
     method: str = "GET",
     headers: dict = None,
@@ -89,6 +48,6 @@ def basic_http_request(
 
 # Job function registry
 JOB_FUNCTIONS = {
-    "http_request": basic_http_request,
+    "http_request": http_request,
     "sample_job": sample_job,
 }

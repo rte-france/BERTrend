@@ -10,7 +10,6 @@ from loguru import logger
 from bertrend_apps.common.apscheduler_utils import APSchedulerUtils
 from bertrend_apps.common.crontab_utils import CrontabSchedulerUtils
 
-
 # Lazy initialization to avoid fork issues with multiple workers
 _scheduler_utils = None
 

@@ -1,5 +1,6 @@
-import streamlit as st
 from typing import Callable
+
+import streamlit as st
 
 from bertrend.demos.demos_utils.icons import PERSON_ADD_ICON
 

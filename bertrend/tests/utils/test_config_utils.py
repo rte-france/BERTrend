@@ -4,9 +4,10 @@
 #  This file is part of BERTrend.
 
 import os
-import pytest
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 from bertrend.utils.config_utils import (
     _resolve_env_variables,

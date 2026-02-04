@@ -9,19 +9,19 @@ Tests the APSchedulerUtils HTTP session management under load.
 
 import sys
 import time
-import psutil
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from unittest.mock import Mock, patch
+
+import psutil
 import pytest
 
 # Add parent directory to path to import the module
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from bertrend_apps.common.apscheduler_utils import (
-    _request,
-    _get_session,
     APSchedulerUtils,
+    _request,
 )
 
 

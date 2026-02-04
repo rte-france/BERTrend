@@ -7,13 +7,13 @@ import pytest
 from pydantic import ValidationError
 
 from bertrend.trend_analysis.data_structure import (
+    Drivers,
+    EvolutionScenario,
+    PotentialImplications,
+    SignalAnalysis,
+    TopicInterconnexions,
     TopicSummary,
     TopicSummaryList,
-    PotentialImplications,
-    EvolutionScenario,
-    TopicInterconnexions,
-    Drivers,
-    SignalAnalysis,
 )
 
 

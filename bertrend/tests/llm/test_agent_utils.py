@@ -3,15 +3,16 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
 import asyncio
 import os
 from unittest.mock import Mock, patch
 
+import pytest
+
 from bertrend.llm_utils.agent_utils import (
+    AsyncAgentConcurrentProcessor,
     BaseAgentFactory,
     ProcessingResult,
-    AsyncAgentConcurrentProcessor,
     progress_reporter,
 )
 

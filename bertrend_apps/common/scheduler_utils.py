@@ -4,15 +4,15 @@
 #  This file is part of BERTrend.
 import locale
 import random
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 
 from cron_descriptor import (
-    Options,
     CasingTypeEnum,
-    ExpressionDescriptor,
     DescriptionTypeEnum,
+    ExpressionDescriptor,
+    Options,
 )
 
 from bertrend import BEST_CUDA_DEVICE

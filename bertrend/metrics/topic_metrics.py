@@ -5,10 +5,10 @@
 
 from itertools import combinations
 
-import pandas as pd
 import gensim.corpora as corpora
-from gensim.models.coherencemodel import CoherenceModel
+import pandas as pd
 from bertopic import BERTopic
+from gensim.models.coherencemodel import CoherenceModel
 from loguru import logger
 
 

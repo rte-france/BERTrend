@@ -2,10 +2,10 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
+from datetime import date
 from typing import Optional
 
 from pydantic import BaseModel
-from datetime import date
 
 STRONG_TOPIC_TYPE = "strong"
 WEAK_TOPIC_TYPE = "weak"

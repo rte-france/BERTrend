@@ -9,9 +9,9 @@ Test script to verify lazy initialization of SCHEDULER_UTILS.
 This tests that importing bertrend_apps doesn't immediately create scheduler instances.
 """
 
+import multiprocessing
 import os
 import sys
-import multiprocessing
 
 
 def helper_test_lazy_init_in_worker():

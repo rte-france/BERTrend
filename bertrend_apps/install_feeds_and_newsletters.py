@@ -3,6 +3,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 from pathlib import Path
+
 from loguru import logger
 
 from bertrend_apps import SCHEDULER_UTILS

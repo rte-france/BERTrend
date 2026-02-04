@@ -8,36 +8,34 @@ import torch
 
 # workaround with streamlit to avoid errors Examining the path of torch.classes raised: Tried to instantiate class 'path.path’, but it does not exist! Ensure that it is registered via torch::class
 torch.classes.__path__ = []
-
 from typing import Literal
 
 import streamlit as st
 
 from bertrend.demos.demos_utils import is_admin_mode
+from bertrend.demos.demos_utils.i18n import (
+    create_internationalization_language_selector,
+    set_internationalization_language,
+)
 from bertrend.demos.demos_utils.icons import (
-    SETTINGS_ICON,
     ANALYSIS_ICON,
+    MODELS_ICON,
     NEWSLETTER_ICON,
     SERVER_STORAGE_ICON,
-    TREND_ICON,
-    MODELS_ICON,
+    SETTINGS_ICON,
     TIMELINE_ICON,
+    TREND_ICON,
 )
 from bertrend.demos.demos_utils.state_utils import SessionStateManager
 from bertrend_apps.prospective_demo.authentication import check_password, logout
 from bertrend_apps.prospective_demo.dashboard_analysis import dashboard_analysis
 from bertrend_apps.prospective_demo.dashboard_comparative import dashboard_comparative
+from bertrend_apps.prospective_demo.dashboard_signals import signal_analysis
 from bertrend_apps.prospective_demo.feeds_config import configure_information_sources
 from bertrend_apps.prospective_demo.feeds_data import display_data_status
-from bertrend.demos.demos_utils.i18n import (
-    set_internationalization_language,
-    create_internationalization_language_selector,
-)
 from bertrend_apps.prospective_demo.i18n import translate
 from bertrend_apps.prospective_demo.models_info import models_monitoring
 from bertrend_apps.prospective_demo.report_generation import reporting
-from bertrend_apps.prospective_demo.dashboard_signals import signal_analysis
-
 
 # UI Settings
 LAYOUT: Literal["centered", "wide"] = "wide"

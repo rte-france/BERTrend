@@ -4,13 +4,14 @@
 #  This file is part of BERTrend.
 
 from datetime import datetime, timedelta
+
 import pytest
 from fastapi.testclient import TestClient
 
 # Import the module under test
 from bertrend.services.scheduling import scheduling_service as svc
-from bertrend.services.scheduling.routers import scheduling
 from bertrend.services.scheduling.models.scheduling_models import JobCreate
+from bertrend.services.scheduling.routers import scheduling
 
 
 class FakeJob:

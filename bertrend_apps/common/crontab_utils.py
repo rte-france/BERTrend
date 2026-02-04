@@ -11,11 +11,10 @@ from pathlib import Path
 
 from loguru import logger
 
-from bertrend import BEST_CUDA_DEVICE, BERTREND_LOG_PATH, load_toml_config
+from bertrend import BERTREND_LOG_PATH, BEST_CUDA_DEVICE, load_toml_config
 from bertrend_apps.common.scheduler_utils import SchedulerUtils
 
 # Note: .env is already loaded in bertrend/__init__.py
-
 
 class CrontabSchedulerUtils(SchedulerUtils):
     def add_job_to_crontab(

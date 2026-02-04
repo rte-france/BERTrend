@@ -3,10 +3,11 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import numpy as np
 import pandas as pd
+import pytest
 from bertopic import BERTopic
 
 from bertrend.metrics.temporal_metrics_embedding import TempTopic

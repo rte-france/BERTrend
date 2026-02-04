@@ -1,7 +1,9 @@
 import locale
 from pathlib import Path
+
 import jinja2
 import streamlit as st
+
 from bertrend.llm_utils.newsletter_features import render_newsletter_html
 from bertrend_apps.exploration.curebot.app_utils import (
     NEWSLETTER_TEMPLATE,

@@ -2,28 +2,18 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-import asyncio
 
-import pandas as pd
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
-from bertrend_apps.prospective_demo.automated_report_generation import (
-    generate_automated_report,
-)
-from bertrend_apps.prospective_demo.process_new_data import (
-    regenerate_models,
-    train_new_model,
-)
-from bertrend.services.queue.queue_manager import QueueManager
-from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
-from bertrend_apps.services.utils.logging_utils import get_file_logger
 from bertrend_apps.services.models.bertrend_app_models import (
-    TrainNewModelRequest,
+    GenerateReportRequest,
     RegenerateRequest,
     StatusResponse,
-    GenerateReportRequest,
+    TrainNewModelRequest,
 )
+from bertrend_apps.services.queue.queue_manager import QueueManager
+from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
 
 router = APIRouter()
 

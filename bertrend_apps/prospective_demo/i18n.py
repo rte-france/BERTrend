@@ -11,13 +11,12 @@ Provides functionality for translating text between French and English.
 from typing import Optional
 
 from bertrend.demos.demos_utils.i18n import translate_helper
-from bertrend_apps.prospective_demo.i18n_translations import (
-    TRANSLATIONS as PROSPECTIVE_TRANSLATIONS,
-)
 from bertrend.demos.demos_utils.i18n_translations import (
     TRANSLATIONS as DEMOS_UTILS_TRANSLATIONS,
 )
-
+from bertrend_apps.prospective_demo.i18n_translations import (
+    TRANSLATIONS as PROSPECTIVE_TRANSLATIONS,
+)
 
 # Merge all translations
 DEMO_TRANSLATIONS = {

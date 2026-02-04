@@ -3,19 +3,20 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
-import pandas as pd
+from unittest.mock import MagicMock, patch
+
 import numpy as np
-from unittest.mock import patch, MagicMock
+import pandas as pd
+import pytest
 from plotly import graph_objects as go
 
 from bertrend.topic_analysis.visualizations import (
-    plot_topics_over_time,
     plot_docs_repartition_over_time,
-    plot_remaining_docs_repartition_over_time,
-    plot_topic_evolution,
-    plot_temporal_stability_metrics,
     plot_overall_topic_stability,
+    plot_remaining_docs_repartition_over_time,
+    plot_temporal_stability_metrics,
+    plot_topic_evolution,
+    plot_topics_over_time,
 )
 
 

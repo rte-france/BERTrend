@@ -5,11 +5,12 @@
 
 import pytest
 from pydantic import ValidationError
+
 from bertrend.article_scoring.article_scoring import (
-    QualityLevel,
-    CriteriaScores,
-    WeightConfig,
     ArticleScore,
+    CriteriaScores,
+    QualityLevel,
+    WeightConfig,
 )
 
 

@@ -5,10 +5,10 @@
 from fastapi import FastAPI
 
 from bertrend_apps.services.routers import (
-    info,
-    data_provider,
-    newsletters,
     bertrend_app,
+    data_provider,
+    info,
+    newsletters,
 )
 
 app = FastAPI()

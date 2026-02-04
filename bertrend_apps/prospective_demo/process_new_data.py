@@ -2,43 +2,42 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import timedelta
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 import typer
 from jsonlines import jsonlines
 from loguru import logger
 
-from bertrend import load_toml_config, FEED_BASE_PATH
+from bertrend import FEED_BASE_PATH, load_toml_config
 from bertrend.BERTopicModel import BERTopicModel
-from bertrend.BERTrend import train_new_data, BERTrend
+from bertrend.BERTrend import BERTrend, train_new_data
 from bertrend.services.embedding_service import EmbeddingService
 from bertrend.trend_analysis.weak_signals import analyze_signal
 from bertrend.utils.data_loading import (
+    TEXT_COLUMN,
+    group_by_days,
     load_data,
     split_data,
-    group_by_days,
-    TEXT_COLUMN,
 )
 from bertrend_apps.prospective_demo import (
-    get_user_feed_path,
-    get_user_models_path,
-    NOISE,
-    WEAK_SIGNALS,
-    STRONG_SIGNALS,
+    DEFAULT_ANALYSIS_CFG,
     LLM_TOPIC_DESCRIPTION_COLUMN,
     LLM_TOPIC_TITLE_COLUMN,
-    DEFAULT_ANALYSIS_CFG,
-    get_model_cfg_path,
+    NOISE,
+    STRONG_SIGNALS,
     URLS_COLUMN,
+    WEAK_SIGNALS,
+    get_model_cfg_path,
     get_model_interpretation_path,
+    get_user_feed_path,
+    get_user_models_path,
 )
 from bertrend_apps.prospective_demo.llm_utils import generate_bertrend_topic_description
 
 DEFAULT_TOP_K = 5
-
 
 class ConfigFileNotFoundError(Exception):
     """Raised when the user feed configuration file cannot be found."""

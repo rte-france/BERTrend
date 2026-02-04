@@ -11,10 +11,10 @@ from bertrend.demos.demos_utils.icons import ERROR_ICON
 from bertrend.trend_analysis.data_structure import SignalAnalysis, TopicSummaryList
 from bertrend.trend_analysis.prompts import fill_html_template
 from bertrend_apps.prospective_demo import (
-    WEAK_SIGNALS,
-    STRONG_SIGNALS,
     LLM_TOPIC_DESCRIPTION_COLUMN,
     LLM_TOPIC_TITLE_COLUMN,
+    STRONG_SIGNALS,
+    WEAK_SIGNALS,
     get_model_interpretation_path,
 )
 from bertrend_apps.prospective_demo.dashboard_common import (

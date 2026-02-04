@@ -5,7 +5,8 @@
 import numpy as np
 import pandas as pd
 import umap
-from plotly import express as px, graph_objects as go
+from plotly import express as px
+from plotly import graph_objects as go
 
 
 def plot_topics_over_time(

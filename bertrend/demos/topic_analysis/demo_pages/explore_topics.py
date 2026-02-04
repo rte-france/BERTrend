@@ -6,36 +6,34 @@
 import io
 import re
 import zipfile
-
-import pandas as pd
-import streamlit as st
-import plotly.graph_objects as go
 from datetime import timedelta
 from urllib.parse import urlparse
 
+import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
 from bertopic import BERTopic
 
 from bertrend import OUTPUT_PATH
 from bertrend.demos.demos_utils.i18n import translate
 from bertrend.demos.demos_utils.icons import ERROR_ICON, WARNING_ICON
 from bertrend.demos.demos_utils.state_utils import (
-    restore_widget_state,
     SessionStateManager,
+    restore_widget_state,
 )
-from bertrend.demos.weak_signals.visualizations_utils import PLOTLY_BUTTON_SAVE_CONFIG
-from bertrend.topic_analysis.topic_description import generate_topic_description
-from bertrend.utils.data_loading import TIMESTAMP_COLUMN, TEXT_COLUMN, URL_COLUMN
-from bertrend.topic_analysis.representative_docs import get_most_representative_docs
 from bertrend.demos.topic_analysis.app_utils import (
     compute_topics_over_time,
     print_docs_for_specific_topic,
 )
+from bertrend.demos.weak_signals.visualizations_utils import PLOTLY_BUTTON_SAVE_CONFIG
+from bertrend.topic_analysis.representative_docs import get_most_representative_docs
+from bertrend.topic_analysis.topic_description import generate_topic_description
 from bertrend.topic_analysis.visualizations import plot_topics_over_time
+from bertrend.utils.data_loading import TEXT_COLUMN, TIMESTAMP_COLUMN, URL_COLUMN
 
 # Constants
 EXPORT_BASE_FOLDER = OUTPUT_PATH / "exported_topics"
 EXPORT_BASE_FOLDER.mkdir(parents=True, exist_ok=True)
-
 
 def check_model_and_prepare_topics():
     """

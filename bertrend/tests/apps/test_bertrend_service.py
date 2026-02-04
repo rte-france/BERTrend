@@ -5,12 +5,12 @@
 
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from unittest.mock import AsyncMock
 import bertrend_apps.data_provider.data_provider_utils as dp_main
 from bertrend_apps.data_provider.data_provider_utils import PROVIDERS
 from bertrend_apps.services.routers import data_provider as svc
@@ -101,14 +101,14 @@ def test_scrape_success(client, tmp_path, monkeypatch):
     # Mock QueueManager
     mock_publish = AsyncMock(return_value="test_correlation_id")
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.publish_request",
+        "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
         mock_publish,
     )
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.connect", AsyncMock()
+        "bertrend_apps.services.queue.queue_manager.QueueManager.connect", AsyncMock()
     )
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.close", AsyncMock()
+        "bertrend_apps.services.queue.queue_manager.QueueManager.close", AsyncMock()
     )
 
     # Act
@@ -136,14 +136,14 @@ def test_scrape_success(client, tmp_path, monkeypatch):
 def test_scrape_unknown_provider(client, monkeypatch):
     # Mock QueueManager
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.publish_request",
+        "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
         AsyncMock(return_value="id"),
     )
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.connect", AsyncMock()
+        "bertrend_apps.services.queue.queue_manager.QueueManager.connect", AsyncMock()
     )
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.close", AsyncMock()
+        "bertrend_apps.services.queue.queue_manager.QueueManager.close", AsyncMock()
     )
 
     resp = client.post(
@@ -165,14 +165,14 @@ def test_auto_scrape_success(client, tmp_path, monkeypatch):
     # Mock QueueManager
     mock_publish = AsyncMock(return_value="test_correlation_id")
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.publish_request",
+        "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
         mock_publish,
     )
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.connect", AsyncMock()
+        "bertrend_apps.services.queue.queue_manager.QueueManager.connect", AsyncMock()
     )
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.close", AsyncMock()
+        "bertrend_apps.services.queue.queue_manager.QueueManager.close", AsyncMock()
     )
 
     resp = client.post(
@@ -201,14 +201,14 @@ def test_auto_scrape_bad_file_format(client, tmp_path, monkeypatch):
 
     # Mock QueueManager
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.publish_request",
+        "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
         AsyncMock(return_value="id"),
     )
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.connect", AsyncMock()
+        "bertrend_apps.services.queue.queue_manager.QueueManager.connect", AsyncMock()
     )
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.close", AsyncMock()
+        "bertrend_apps.services.queue.queue_manager.QueueManager.close", AsyncMock()
     )
 
     resp = client.post(
@@ -270,14 +270,14 @@ def test_scrape_feed_with_arxiv_provider(tmp_path, client, monkeypatch):
     # Mock QueueManager
     mock_publish = AsyncMock(return_value="test_correlation_id")
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.publish_request",
+        "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
         mock_publish,
     )
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.connect", AsyncMock()
+        "bertrend_apps.services.queue.queue_manager.QueueManager.connect", AsyncMock()
     )
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.close", AsyncMock()
+        "bertrend_apps.services.queue.queue_manager.QueueManager.close", AsyncMock()
     )
 
     resp = client.post(
@@ -314,14 +314,14 @@ def test_scrape_feed_with_google_provider(tmp_path, client, monkeypatch):
     # Mock QueueManager
     mock_publish = AsyncMock(return_value="test_correlation_id")
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.publish_request",
+        "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
         mock_publish,
     )
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.connect", AsyncMock()
+        "bertrend_apps.services.queue.queue_manager.QueueManager.connect", AsyncMock()
     )
     monkeypatch.setattr(
-        "bertrend.services.queue.queue_manager.QueueManager.close", AsyncMock()
+        "bertrend_apps.services.queue.queue_manager.QueueManager.close", AsyncMock()
     )
 
     resp = client.post(

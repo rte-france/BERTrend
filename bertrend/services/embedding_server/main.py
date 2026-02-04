@@ -5,10 +5,9 @@
 
 from fastapi import FastAPI
 
-from bertrend.services.embedding_server.routers import embeddings, info, authentication
+from bertrend.services.embedding_server.routers import authentication, embeddings, info
 
 app = FastAPI()
-
 app.include_router(info.router, tags=["Info"])
 app.include_router(embeddings.router, tags=["Embedding"])
 app.include_router(authentication.router, tags=["Authentication"])

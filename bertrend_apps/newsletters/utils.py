@@ -11,7 +11,7 @@ from bertopic import BERTopic
 from loguru import logger
 from numpy import ndarray
 
-from bertrend import load_toml_config, FEED_BASE_PATH, OUTPUT_PATH
+from bertrend import FEED_BASE_PATH, OUTPUT_PATH, load_toml_config
 from bertrend.BERTopicModel import BERTopicModel
 from bertrend.config.parameters import BERTOPIC_SERIALIZATION
 from bertrend.utils.data_loading import TEXT_COLUMN, load_data

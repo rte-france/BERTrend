@@ -11,29 +11,28 @@ from loguru import logger
 
 from bertrend import load_toml_config
 from bertrend.llm_utils.newsletter_model import (
-    WEAK_TOPIC_TYPE,
     STRONG_TOPIC_TYPE,
+    WEAK_TOPIC_TYPE,
     Article,
 )
-from bertrend.trend_analysis.data_structure import TopicSummaryList, SignalAnalysis
-
+from bertrend.trend_analysis.data_structure import SignalAnalysis, TopicSummaryList
 from bertrend_apps.common.mail_utils import get_credentials, send_email
 from bertrend_apps.prospective_demo import (
-    get_model_interpretation_path,
-    WEAK_SIGNALS,
+    DEFAULT_ANALYSIS_CFG,
+    LLM_TOPIC_DESCRIPTION_COLUMN,
+    LLM_TOPIC_TITLE_COLUMN,
     STRONG_SIGNALS,
     URLS_COLUMN,
-    LLM_TOPIC_TITLE_COLUMN,
-    LLM_TOPIC_DESCRIPTION_COLUMN,
-    DEFAULT_ANALYSIS_CFG,
+    WEAK_SIGNALS,
     get_model_cfg_path,
+    get_model_interpretation_path,
     get_user_models_path,
 )
 from bertrend_apps.prospective_demo.data_model import DetailedNewsletter, TopicOverTime
 from bertrend_apps.prospective_demo.report_generation_utils import (
-    render_html_report,
-    create_temp_report,
     MAXIMUM_NUMBER_OF_ARTICLES,
+    create_temp_report,
+    render_html_report,
 )
 from bertrend_apps.prospective_demo.utils import is_valid_email
 

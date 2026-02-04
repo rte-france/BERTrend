@@ -12,14 +12,16 @@ import pickle
 import shutil
 from typing import Literal
 
-import streamlit as st
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import streamlit as st
 from loguru import logger
 
-from bertrend import ZEROSHOT_TOPICS_DATA_DIR, CACHE_PATH
+from bertrend import CACHE_PATH, ZEROSHOT_TOPICS_DATA_DIR
+from bertrend.BERTopicModel import BERTopicModel
 from bertrend.BERTrend import BERTrend
+from bertrend.config.parameters import *
 from bertrend.demos.demos_utils import is_admin_mode
 from bertrend.demos.demos_utils.data_loading_component import (
     display_data_loading_component,
@@ -27,50 +29,47 @@ from bertrend.demos.demos_utils.data_loading_component import (
 from bertrend.demos.demos_utils.embed_documents_component import (
     display_embed_documents_component,
 )
+from bertrend.demos.demos_utils.i18n import (
+    create_internationalization_language_selector,
+    translate,
+)
 from bertrend.demos.demos_utils.icons import (
-    WARNING_ICON,
-    SUCCESS_ICON,
-    SETTINGS_ICON,
-    TOPIC_ICON,
-    TREND_ICON,
-    ERROR_ICON,
     ANALYSIS_ICON,
-    MODEL_TRAINING_ICON,
     DATA_LOADING_ICON,
     EMBEDDING_ICON,
+    ERROR_ICON,
+    MODEL_TRAINING_ICON,
+    SETTINGS_ICON,
+    SUCCESS_ICON,
+    TOPIC_ICON,
+    TREND_ICON,
+    WARNING_ICON,
 )
 from bertrend.demos.demos_utils.parameters_component import (
     display_bertopic_hyperparameters,
     display_bertrend_hyperparameters,
     display_embedding_hyperparameters,
 )
-from bertrend.demos.demos_utils.i18n import (
-    translate,
-    create_internationalization_language_selector,
-)
-from bertrend.BERTopicModel import BERTopicModel
-from bertrend.trend_analysis.weak_signals import detect_weak_signals_zeroshot
-
-from bertrend.utils.data_loading import (
-    group_by_days,
-    TEXT_COLUMN,
-)
-from bertrend.config.parameters import *
 from bertrend.demos.demos_utils.state_utils import SessionStateManager
-from bertrend.trend_analysis.visualizations import (
-    plot_size_outliers,
-    plot_num_topics,
-)
 from bertrend.demos.weak_signals.visualizations_utils import (
     PLOTLY_BUTTON_SAVE_CONFIG,
-    display_sankey_diagram,
-    display_topics_per_timestamp,
     display_newly_emerged_topics,
     display_popularity_evolution,
-    save_signal_evolution,
+    display_sankey_diagram,
     display_signal_analysis,
-    retrieve_topic_counts,
     display_signal_types,
+    display_topics_per_timestamp,
+    retrieve_topic_counts,
+    save_signal_evolution,
+)
+from bertrend.trend_analysis.visualizations import (
+    plot_num_topics,
+    plot_size_outliers,
+)
+from bertrend.trend_analysis.weak_signals import detect_weak_signals_zeroshot
+from bertrend.utils.data_loading import (
+    TEXT_COLUMN,
+    group_by_days,
 )
 
 

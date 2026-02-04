@@ -5,12 +5,12 @@
 import re
 from pathlib import Path
 
+import feedparser
 import pandas as pd
 from loguru import logger
 
 from bertrend_apps.data_provider import URL_PATTERN
 from bertrend_apps.data_provider.data_provider import DataProvider
-import feedparser
 
 
 class ATOMFeedProvider(DataProvider):

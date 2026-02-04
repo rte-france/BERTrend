@@ -3,7 +3,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 from datetime import datetime
-from typing import Optional, List, Any, Dict, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 

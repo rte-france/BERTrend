@@ -1,11 +1,10 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import aio_pika
 import msgpack
 import pytest
 
-from bertrend.services.queue.queue_manager import QueueManager
-from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
+from bertrend_apps.services.queue.queue_manager import QueueManager
+from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
 
 
 @pytest.fixture

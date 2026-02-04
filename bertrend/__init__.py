@@ -8,7 +8,6 @@ from pathlib import Path
 
 from loguru import logger
 
-
 # Global flag to track initialization
 _initialized = False
 

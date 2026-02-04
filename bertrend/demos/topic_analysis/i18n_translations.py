@@ -2,7 +2,6 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-
 # Translation dictionaries for topic_analysis demo
 TRANSLATIONS = {
     "app_title": {

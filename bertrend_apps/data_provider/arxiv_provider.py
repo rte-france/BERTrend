@@ -5,14 +5,13 @@
 
 import itertools
 import os
-from datetime import datetime
 from collections import defaultdict
+from datetime import datetime
 
 import arxiv
-from dotenv import load_dotenv
-
-from loguru import logger
 import requests
+from dotenv import load_dotenv
+from loguru import logger
 
 from bertrend.utils.data_loading import TEXT_COLUMN
 from bertrend_apps.data_provider.data_provider import DataProvider

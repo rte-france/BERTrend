@@ -3,12 +3,12 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of Wattelse, a NLP application suite.
 
-import pandas as pd
-
-from SPARQLWrapper import SPARQLWrapper, JSON
 import json
 import os
+
+import pandas as pd
 from loguru import logger
+from SPARQLWrapper import JSON, SPARQLWrapper
 from tqdm import tqdm
 
 TEXT_COLUMN = "text"

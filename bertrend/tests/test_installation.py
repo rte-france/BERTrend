@@ -14,9 +14,9 @@ def test_core_dependencies():
         import hdbscan
         import numpy
         import pandas
-        import sklearn
         import scipy
         import sentence_transformers
+        import sklearn
         import torch
         import umap
 

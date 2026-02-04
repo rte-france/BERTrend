@@ -6,11 +6,11 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from jinja2 import Template, Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, Template
 from loguru import logger
 
 from bertrend import OUTPUT_PATH
-from bertrend.trend_analysis.data_structure import TopicSummaryList, SignalAnalysis
+from bertrend.trend_analysis.data_structure import SignalAnalysis, TopicSummaryList
 
 # Global variables for prompts
 SIGNAL_INTRO = {

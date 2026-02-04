@@ -5,12 +5,12 @@
 
 
 from pathlib import Path
-from unittest.mock import patch, mock_open
+from unittest.mock import mock_open, patch
 
 from bertrend.utils.cache_utils import (
+    get_hash,
     load_embeddings,
     save_embeddings,
-    get_hash,
 )
 
 

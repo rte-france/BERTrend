@@ -10,28 +10,28 @@ from pandas import Timestamp
 from plotly import graph_objects as go
 
 from bertrend import SIGNAL_EVOLUTION_DATA_DIR
-from bertrend.demos.demos_utils.i18n import translate
-from bertrend.demos.demos_utils.icons import (
-    SUCCESS_ICON,
-    INFO_ICON,
-    STRONG_SIGNAL_ICON,
-    WEAK_SIGNAL_ICON,
-    NOISE_ICON,
-)
-from bertrend.demos.demos_utils.state_utils import SessionStateManager
 from bertrend.config.parameters import (
-    MAX_WINDOW_SIZE,
+    CUMULATIVE_MERGED_TOPIC_COUNTS_FILE,
     DEFAULT_WINDOW_SIZE,
     INDIVIDUAL_MODEL_TOPIC_COUNTS_FILE,
-    CUMULATIVE_MERGED_TOPIC_COUNTS_FILE,
+    MAX_WINDOW_SIZE,
 )
+from bertrend.demos.demos_utils.i18n import translate
+from bertrend.demos.demos_utils.icons import (
+    INFO_ICON,
+    NOISE_ICON,
+    STRONG_SIGNAL_ICON,
+    SUCCESS_ICON,
+    WEAK_SIGNAL_ICON,
+)
+from bertrend.demos.demos_utils.state_utils import SessionStateManager
 from bertrend.trend_analysis.prompts import fill_html_template
 from bertrend.trend_analysis.visualizations import (
     create_sankey_diagram_plotly,
-    plot_newly_emerged_topics,
-    plot_topics_for_model,
     create_topic_size_evolution_figure,
+    plot_newly_emerged_topics,
     plot_topic_size_evolution,
+    plot_topics_for_model,
 )
 from bertrend.trend_analysis.weak_signals import (
     analyze_signal,

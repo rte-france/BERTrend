@@ -3,17 +3,15 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
+import json
 import os
 
+import numpy as np
 import requests
-import json
-
 from dotenv import load_dotenv
 from joblib import Parallel, delayed
 from langchain_core.embeddings import Embeddings
 from loguru import logger
-
-import numpy as np
 
 from bertrend.services.authentication import SecureAPIClient
 
@@ -22,7 +20,6 @@ BATCH_DOCUMENT_SIZE = 1000
 MAX_DOCS_PER_REQUEST_PER_WORKER = 20000
 
 load_dotenv(override=True)
-
 
 class EmbeddingAPIClient(SecureAPIClient, Embeddings):
     """

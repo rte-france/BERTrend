@@ -5,8 +5,8 @@
 import math
 
 import pandas as pd
-import streamlit as st
 import pydeck as pdk
+import streamlit as st
 
 from bertrend.utils.data_loading import TIMESTAMP_COLUMN
 from bertrend_apps.exploration.geolocalization.entity_utils import (

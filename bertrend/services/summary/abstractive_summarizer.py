@@ -5,11 +5,10 @@
 
 import re
 
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from bertrend.config.parameters import EMBEDDING_DEVICE
 from bertrend.services.summarizer import Summarizer
-
 
 # DEFAULT_ABSTRACTIVE_MODEL = "mrm8488/camembert2camembert_shared-finetuned-french-summarization"
 # DEFAULT_ABSTRACTIVE_MODEL = "csebuetnlp/mT5_multilingual_XLSum"

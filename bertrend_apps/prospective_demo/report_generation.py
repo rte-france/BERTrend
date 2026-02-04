@@ -9,13 +9,12 @@ import streamlit as st
 from google.auth.exceptions import RefreshError
 from loguru import logger
 
-from bertrend_apps.prospective_demo.i18n import translate
 from bertrend.demos.demos_utils.icons import (
-    NEWSLETTER_ICON,
-    TOPIC_ICON,
-    ERROR_ICON,
     DOWNLOAD_ICON,
     EMAIL_ICON,
+    ERROR_ICON,
+    NEWSLETTER_ICON,
+    TOPIC_ICON,
 )
 from bertrend.demos.streamlit_components.input_with_pills_component import (
     input_with_pills,
@@ -25,21 +24,22 @@ from bertrend.llm_utils.newsletter_model import (
     WEAK_TOPIC_TYPE,
     Article,
 )
-from bertrend.trend_analysis.data_structure import TopicSummaryList, SignalAnalysis
+from bertrend.trend_analysis.data_structure import SignalAnalysis, TopicSummaryList
 from bertrend_apps.common.mail_utils import get_credentials, send_email
 from bertrend_apps.prospective_demo import (
-    WEAK_SIGNALS,
-    STRONG_SIGNALS,
     LLM_TOPIC_DESCRIPTION_COLUMN,
     LLM_TOPIC_TITLE_COLUMN,
+    STRONG_SIGNALS,
     URLS_COLUMN,
+    WEAK_SIGNALS,
 )
 from bertrend_apps.prospective_demo.dashboard_common import choose_id_and_ts
 from bertrend_apps.prospective_demo.data_model import DetailedNewsletter, TopicOverTime
+from bertrend_apps.prospective_demo.i18n import translate
 from bertrend_apps.prospective_demo.report_generation_utils import (
-    render_html_report,
-    create_temp_report,
     MAXIMUM_NUMBER_OF_ARTICLES,
+    create_temp_report,
+    render_html_report,
 )
 from bertrend_apps.prospective_demo.utils import is_valid_email
 

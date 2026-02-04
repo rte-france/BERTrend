@@ -3,26 +3,25 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import ast
-from pydoc import locate
-
 from datetime import datetime
+from pathlib import Path
+from pydoc import locate
 
 from google.auth.exceptions import RefreshError
 from loguru import logger
-from pathlib import Path
 
 from bertrend import OUTPUT_PATH
-from bertrend.services.embedding_service import EmbeddingService
-from bertrend.utils.config_utils import load_toml_config
-from bertrend.utils.data_loading import (
-    TIMESTAMP_COLUMN,
-    TEXT_COLUMN,
-    split_data,
-    TITLE_COLUMN,
-)
 from bertrend.llm_utils.newsletter_features import (
     generate_newsletter,
     render_newsletter,
+)
+from bertrend.services.embedding_service import EmbeddingService
+from bertrend.utils.config_utils import load_toml_config
+from bertrend.utils.data_loading import (
+    TEXT_COLUMN,
+    TIMESTAMP_COLUMN,
+    TITLE_COLUMN,
+    split_data,
 )
 from bertrend_apps.common.mail_utils import get_credentials, send_email
 from bertrend_apps.newsletters.utils import (
@@ -30,8 +29,8 @@ from bertrend_apps.newsletters.utils import (
     LEARN_FROM_SCRATCH,
     _load_feed_data,
     _load_topic_model,
-    _train_topic_model,
     _save_topic_model,
+    _train_topic_model,
 )
 
 # Config sections

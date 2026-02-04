@@ -8,7 +8,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from bertrend import load_toml_config, FEED_BASE_PATH
+from bertrend import FEED_BASE_PATH, load_toml_config
 from bertrend.article_scoring.article_scoring import QualityLevel
 from bertrend_apps.common.date_utils import daterange
 from bertrend_apps.data_provider.arxiv_provider import ArxivProvider

@@ -3,13 +3,13 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import os
-import typer
 from pathlib import Path
+
+import typer
 
 from bertrend import BEST_CUDA_DEVICE
 from bertrend_apps import SCHEDULER_UTILS
 from bertrend_apps.newsletters.newsletter_generation import process_newsletter
-
 
 # Ensures to write with +rw for both user and groups
 os.umask(0o002)

@@ -8,15 +8,9 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
-from bertrend.services.queue.queue_manager import QueueManager
-from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
 from bertrend_apps import SCHEDULER_UTILS
 from bertrend_apps.data_provider.data_provider_utils import (
-    auto_scrape,
-    count_articles,
     generate_query_file,
-    scrape,
-    scrape_feed_from_config,
 )
 from bertrend_apps.services.config.settings import get_config
 from bertrend_apps.services.models.data_provider_models import (
@@ -27,7 +21,8 @@ from bertrend_apps.services.models.data_provider_models import (
     ScrapeRequest,
     ScrapeResponse,
 )
-from bertrend_apps.services.utils.logging_utils import get_file_logger
+from bertrend_apps.services.queue.queue_manager import QueueManager
+from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
 
 # Load the configuration
 CONFIG = get_config()
@@ -55,7 +50,7 @@ async def scrape_api(req: ScrapeRequest):
 
         correlation_id = await queue_manager.publish_request(
             request_data,
-            priority=2,  # Priority from ENDPOINT_PRIORITIES
+            priority=2,
         )
         await queue_manager.close()
 
@@ -88,7 +83,7 @@ async def auto_scrape_api(req: AutoScrapeRequest):
 
         correlation_id = await queue_manager.publish_request(
             request_data,
-            priority=2,  # Priority from ENDPOINT_PRIORITIES
+            priority=2,
         )
         await queue_manager.close()
 
@@ -151,7 +146,7 @@ async def scrape_from_feed_api(req: ScrapeFeedRequest):
 
         correlation_id = await queue_manager.publish_request(
             request_data,
-            priority=6,  # Priority from ENDPOINT_PRIORITIES
+            priority=6,
         )
         await queue_manager.close()
 

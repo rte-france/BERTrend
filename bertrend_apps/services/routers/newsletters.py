@@ -7,17 +7,11 @@ import asyncio
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
-from bertrend import load_toml_config
-from bertrend.services.queue.queue_manager import QueueManager
-from bertrend.services.queue.rabbitmq_config import RabbitMQConfig
 from bertrend_apps import SCHEDULER_UTILS
-from bertrend_apps.newsletters.newsletter_generation import (
-    NEWSLETTER_SECTION,
-    process_newsletter,
-)
 from bertrend_apps.services.config.settings import get_config
 from bertrend_apps.services.models.newsletters_models import NewsletterRequest
-from bertrend_apps.services.utils.logging_utils import get_file_logger
+from bertrend_apps.services.queue.queue_manager import QueueManager
+from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
 
 # Load the configuration
 CONFIG = get_config()

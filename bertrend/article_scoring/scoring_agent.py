@@ -6,15 +6,14 @@ from agents import ModelSettings
 from bertrend.article_scoring.article_scoring import ArticleScore
 from bertrend.article_scoring.prompts import ARTICLE_SCORING_PROMPT
 from bertrend.llm_utils.agent_utils import (
-    BaseAgentFactory,
     AsyncAgentConcurrentProcessor,
+    BaseAgentFactory,
     progress_reporter,
 )
 from bertrend.utils.data_loading import load_data
 
 DEFAULT_CHUNK_SIZE = 25
 DEFAULT_MAX_CONCURRENT_TASKS = 25
-
 
 async def score_articles(articles: list[str]):
     agent = BaseAgentFactory().create_agent(
