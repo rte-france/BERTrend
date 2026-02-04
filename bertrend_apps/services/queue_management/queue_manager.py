@@ -1,6 +1,7 @@
 # bertrend_apps/services/queue_manager.py
 
 import json
+from datetime import datetime
 from typing import Callable
 
 import aio_pika
@@ -92,6 +93,7 @@ class QueueManager:
             correlation_id=correlation_id,
             content_type="application/json",
             reply_to=self.config.response_queue,
+            timestamp=datetime.now(),
         )
 
         await self.channel.default_exchange.publish(
@@ -132,6 +134,7 @@ class QueueManager:
             body=message_body,
             correlation_id=correlation_id,
             content_type="application/json",
+            timestamp=datetime.now(),
         )
 
         await self.channel.default_exchange.publish(
@@ -152,6 +155,7 @@ class QueueManager:
             body=message_body,
             correlation_id=correlation_id,
             content_type="application/json",
+            timestamp=datetime.now(),
         )
 
         await self.channel.default_exchange.publish(

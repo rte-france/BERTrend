@@ -76,9 +76,15 @@ def _decode_message_payload(msg: Dict[str, Any]) -> Tuple[str, Any]:
             )
     else:
         if isinstance(body_text, str):
-            # Try base64 anyway as a fallback if not specified but looks like it
+            # Prefer parsing plain JSON text directly before attempting base64.
             try:
-                payload_bytes = base64.b64decode(body_text)
+                obj = json.loads(body_text)
+                return ("JSON", obj)
+            except Exception:
+                pass
+
+            try:
+                payload_bytes = base64.b64decode(body_text, validate=True)
             except Exception:
                 payload_bytes = body_text.encode("utf-8", errors="replace")
         elif isinstance(body_text, (bytes, bytearray)):
@@ -326,14 +332,55 @@ else:
 
                     if isinstance(obj, dict):
                         # 1) If we have a request_data envelope, use it as the source of truth
+                        # This happens in responses (success or error)
                         rd = obj.get("request_data")
                         if isinstance(rd, dict):
                             endpoint = str(rd.get("endpoint", ""))
 
+                            # Try to get from json_data or top-level of rd
                             rd_json = rd.get("json_data") or {}
                             if isinstance(rd_json, dict):
                                 user = str(rd_json.get("user", ""))
                                 model_id = str(rd_json.get("model_id", ""))
+
+                                # Newsletter fallback: extract from paths if user/model_id not directly present
+                                if not user or not model_id:
+                                    # newsletter_toml_path or data_feed_toml_path
+                                    for path_key in [
+                                        "newsletter_toml_path",
+                                        "data_feed_toml_path",
+                                        "feed_cfg",
+                                    ]:
+                                        path_val = rd_json.get(path_key)
+                                        if path_val:
+                                            # Paths like: .../users/{user}/feed_{model_id}.toml
+                                            # or .../users/{user}/newsletter_{model_id}.toml
+                                            parts = str(path_val).split("/")
+                                            try:
+                                                u_idx = parts.index("users")
+                                                if u_idx + 1 < len(parts):
+                                                    user = user or parts[u_idx + 1]
+
+                                                filename = parts[-1]
+                                                if filename.endswith(".toml"):
+                                                    filename = filename[:-5]
+                                                if filename.startswith("feed_"):
+                                                    model_id = model_id or filename[5:]
+                                                elif filename.startswith("newsletter_"):
+                                                    model_id = model_id or filename[11:]
+                                                elif "_" in filename:
+                                                    # general fallback for {prefix}_{id}
+                                                    model_id = (
+                                                        model_id
+                                                        or filename.split("_", 1)[1]
+                                                    )
+                                            except (ValueError, IndexError):
+                                                pass
+
+                            if not user:
+                                user = str(rd.get("user", ""))
+                            if not model_id:
+                                model_id = str(rd.get("model_id", ""))
 
                         # 2) Backwards compatibility: also support the previous flat structure
                         #    { "endpoint": "...", "json_data": {"user": "...", "model_id": "..."} }
@@ -347,6 +394,35 @@ else:
                                 model_id = model_id or str(
                                     json_data.get("model_id", "")
                                 )
+
+                                # Newsletter fallback for direct requests
+                                if not user or not model_id:
+                                    for path_key in [
+                                        "newsletter_toml_path",
+                                        "data_feed_toml_path",
+                                        "feed_cfg",
+                                    ]:
+                                        path_val = json_data.get(path_key)
+                                        if path_val:
+                                            parts = str(path_val).split("/")
+                                            try:
+                                                u_idx = parts.index("users")
+                                                if u_idx + 1 < len(parts):
+                                                    user = user or parts[u_idx + 1]
+                                                filename = parts[-1]
+                                                if filename.endswith(".toml"):
+                                                    filename = filename[:-5]
+                                                if filename.startswith("feed_"):
+                                                    model_id = model_id or filename[5:]
+                                                elif filename.startswith("newsletter_"):
+                                                    model_id = model_id or filename[11:]
+                                                elif "_" in filename:
+                                                    model_id = (
+                                                        model_id
+                                                        or filename.split("_", 1)[1]
+                                                    )
+                                            except (ValueError, IndexError):
+                                                pass
 
                         # 3) Last-resort fallback to top-level fields
                         user = user or str(obj.get("user", ""))
