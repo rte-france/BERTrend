@@ -83,8 +83,10 @@ def display_detailed_analysis(
         label=translate("topic_selection"),
         label_visibility="hidden",
         options=signal_list,
-        format_func=lambda signal_id: f"{'📈 [' + translate('emerging_topic') if signal_id in signal_topics[WEAK_SIGNALS] else '🌟 [' + translate('strong_topic')} "
-        f"{signal_id}] {get_row(signal_id, interpretations[WEAK_SIGNALS] if signal_id in signal_topics[WEAK_SIGNALS] else interpretations[STRONG_SIGNALS])[LLM_TOPIC_TITLE_COLUMN]}",
+        format_func=lambda signal_id: (
+            f"{'📈 [' + translate('emerging_topic') if signal_id in signal_topics[WEAK_SIGNALS] else '🌟 [' + translate('strong_topic')} "
+            f"{signal_id}] {get_row(signal_id, interpretations[WEAK_SIGNALS] if signal_id in signal_topics[WEAK_SIGNALS] else interpretations[STRONG_SIGNALS])[LLM_TOPIC_TITLE_COLUMN]}"
+        ),
     )
     # Summary of the topic
     desc = get_row(

@@ -160,7 +160,9 @@ def get_improved_topic_description(
         topic_df = df[df["topics"] == topic_number]
         user_prompt = "\n\n".join(
             topic_df.apply(
-                lambda row: f"Titre : {row[TITLE_COLUMN]}\nArticle : {row[TEXT_COLUMN][0:2000]}...",
+                lambda row: (
+                    f"Titre : {row[TITLE_COLUMN]}\nArticle : {row[TEXT_COLUMN][0:2000]}..."
+                ),
                 axis=1,
             )
         )
@@ -237,7 +239,9 @@ def create_newsletter(
         # Get a summary of the topic
         user_prompt = "\n\n".join(
             topic_df.apply(
-                lambda row: f"Titre : {row[TITLE_COLUMN]}\nArticle : {row[TEXT_COLUMN][0:2000]}...",
+                lambda row: (
+                    f"Titre : {row[TITLE_COLUMN]}\nArticle : {row[TEXT_COLUMN][0:2000]}..."
+                ),
                 axis=1,
             )
         )
