@@ -4,9 +4,9 @@
 #  This file is part of BERTrend.
 
 """
-BERTrend Worker - Processes requests from RabbitMQ queue.
+BERTrend Worker - Processes requests from RabbitMQ queue_management.
 
-This worker receives HTTP-like requests from the queue and processes them
+This worker receives HTTP-like requests from the queue_management and processes them
 by calling the appropriate core logic functions.
 """
 
@@ -35,20 +35,20 @@ from bertrend_apps.prospective_demo.process_new_data import (
 )
 
 # Import request models
-from bertrend_apps.services.models.bertrend_app_models import (
+from bertrend_apps.services.bertrend.models.bertrend_app_models import (
     GenerateReportRequest,
     RegenerateRequest,
     TrainNewModelRequest,
 )
-from bertrend_apps.services.models.data_provider_models import (
+from bertrend_apps.services.bertrend.models.data_provider_models import (
     AutoScrapeRequest,
     GenerateQueryFileRequest,
     ScrapeFeedRequest,
     ScrapeRequest,
 )
-from bertrend_apps.services.models.newsletters_models import NewsletterRequest
-from bertrend_apps.services.queue.queue_manager import QueueManager
-from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
+from bertrend_apps.services.bertrend.models.newsletters_models import NewsletterRequest
+from bertrend_apps.services.queue_management.queue_manager import QueueManager
+from bertrend_apps.services.queue_management.rabbitmq_config import RabbitMQConfig
 
 
 # Wrapper functions to match the core logic with the request models
@@ -213,7 +213,7 @@ class BertrendWorker:
         self,
         message: aio_pika.abc.AbstractIncomingMessage,
     ):
-        """Callback function for processing messages from the queue"""
+        """Callback function for processing messages from the queue_management"""
         correlation_id = message.correlation_id
 
         try:

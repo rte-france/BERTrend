@@ -5,7 +5,7 @@
 
 import os
 
-from bertrend_apps.services.config.settings import get_config
+from bertrend_apps.services.bertrend.config.settings import get_config
 
 # Load the configuration
 CONFIG = get_config()

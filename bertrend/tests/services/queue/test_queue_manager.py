@@ -1,10 +1,10 @@
+import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import json
 import pytest
 
-from bertrend_apps.services.queue.queue_manager import QueueManager
-from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
+from bertrend_apps.services.queue_management.queue_manager import QueueManager
+from bertrend_apps.services.queue_management.rabbitmq_config import RabbitMQConfig
 
 
 @pytest.fixture

@@ -12,8 +12,8 @@ from bertrend_apps import SCHEDULER_UTILS
 from bertrend_apps.data_provider.data_provider_utils import (
     generate_query_file,
 )
-from bertrend_apps.services.config.settings import get_config
-from bertrend_apps.services.models.data_provider_models import (
+from bertrend_apps.services.bertrend.config.settings import get_config
+from bertrend_apps.services.bertrend.models.data_provider_models import (
     AutoScrapeRequest,
     GenerateQueryFileRequest,
     GenerateQueryFileResponse,
@@ -21,8 +21,8 @@ from bertrend_apps.services.models.data_provider_models import (
     ScrapeRequest,
     ScrapeResponse,
 )
-from bertrend_apps.services.queue.queue_manager import QueueManager
-from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
+from bertrend_apps.services.queue_management.queue_manager import QueueManager
+from bertrend_apps.services.queue_management.rabbitmq_config import RabbitMQConfig
 
 # Load the configuration
 CONFIG = get_config()

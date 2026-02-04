@@ -1,10 +1,10 @@
+import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import json
 import pytest
 
-from bertrend_apps.services.queue.bertrend_worker import BertrendWorker
-from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
+from bertrend_apps.services.queue_management.bertrend_worker import BertrendWorker
+from bertrend_apps.services.queue_management.rabbitmq_config import RabbitMQConfig
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ async def test_process_request_success(worker):
     mock_model = MagicMock()
 
     with patch.dict(
-        "bertrend_apps.services.queue.bertrend_worker.ENDPOINT_HANDLERS",
+        "bertrend_apps.services.queue_management.bertrend_worker.ENDPOINT_HANDLERS",
         {"/test": (mock_handler, mock_model)},
     ):
         request_data = {
@@ -58,7 +58,7 @@ async def test_process_request_invalid_data(worker):
     mock_model = MagicMock(side_effect=ValueError("Invalid data"))
 
     with patch.dict(
-        "bertrend_apps.services.queue.bertrend_worker.ENDPOINT_HANDLERS",
+        "bertrend_apps.services.queue_management.bertrend_worker.ENDPOINT_HANDLERS",
         {"/test": (mock_handler, mock_model)},
     ):
         request_data = {"endpoint": "/test", "json_data": {"bad": "data"}}
@@ -107,8 +107,10 @@ async def test_callback_json_error(worker):
 
 @pytest.mark.asyncio
 async def test_handle_scrape_direct_call():
-    from bertrend_apps.services.models.data_provider_models import ScrapeRequest
-    from bertrend_apps.services.queue.bertrend_worker import handle_scrape
+    from bertrend_apps.services.bertrend.models.data_provider_models import (
+        ScrapeRequest,
+    )
+    from bertrend_apps.services.queue_management.bertrend_worker import handle_scrape
 
     req = ScrapeRequest(
         keywords="ai",
@@ -119,7 +121,7 @@ async def test_handle_scrape_direct_call():
     )
 
     with patch(
-        "bertrend_apps.services.queue.bertrend_worker.asyncio.to_thread",
+        "bertrend_apps.services.queue_management.bertrend_worker.asyncio.to_thread",
         new_callable=AsyncMock,
     ) as mock_to_thread:
         mock_to_thread.return_value = [{"title": "test"}]

@@ -4,10 +4,10 @@
 #  This file is part of BERTrend.
 
 """
-BERTrend Client - Sends requests to BERTrend service via RabbitMQ queue.
+BERTrend Client - Sends requests to BERTrend service via RabbitMQ queue_management.
 
 This client simulates requests similar to what the scheduler service sends,
-allowing testing of the queue-based execution flow.
+allowing testing of the queue_management-based execution flow.
 """
 
 import asyncio
@@ -16,8 +16,8 @@ from typing import Any
 
 from loguru import logger
 
-from bertrend_apps.services.queue.queue_manager import QueueManager
-from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
+from bertrend_apps.services.queue_management.queue_manager import QueueManager
+from bertrend_apps.services.queue_management.rabbitmq_config import RabbitMQConfig
 
 
 class BertrendClient:
@@ -35,7 +35,7 @@ class BertrendClient:
         self._response_consumer_task = asyncio.create_task(self._consume_responses())
 
     async def _consume_responses(self):
-        """Background task to consume responses from the response queue"""
+        """Background task to consume responses from the response queue_management"""
         if not self.queue_manager.channel:
             await self.queue_manager.connect()
 
@@ -63,7 +63,7 @@ class BertrendClient:
         priority: int = 5,
     ) -> str:
         """
-        Send a request to the BERTrend service via the queue.
+        Send a request to the BERTrend service via the queue_management.
 
         Args:
             endpoint: The API endpoint path (e.g., "/scrape-feed", "/train-new-model")

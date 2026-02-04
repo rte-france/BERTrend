@@ -10,7 +10,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from bertrend_apps.services.routers import bertrend_app
+from bertrend_apps.services.bertrend.routers import bertrend_app
 
 
 @pytest.fixture
@@ -43,15 +43,16 @@ class TestTrainNewModel:
         # Mock QueueManager
         mock_publish = AsyncMock(return_value="test_correlation_id")
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.publish_request",
             mock_publish,
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.connect",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.connect",
             AsyncMock(),
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.close", AsyncMock()
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.close",
+            AsyncMock(),
         )
 
         response = client.post(
@@ -75,15 +76,16 @@ class TestTrainNewModel:
         # Mock QueueManager
         mock_publish = AsyncMock(return_value="test_correlation_id")
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.publish_request",
             mock_publish,
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.connect",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.connect",
             AsyncMock(),
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.close", AsyncMock()
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.close",
+            AsyncMock(),
         )
 
         response = client.post(
@@ -103,15 +105,16 @@ class TestTrainNewModel:
         # Mock QueueManager
         mock_publish = AsyncMock(return_value="test_correlation_id")
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.publish_request",
             mock_publish,
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.connect",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.connect",
             AsyncMock(),
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.close", AsyncMock()
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.close",
+            AsyncMock(),
         )
 
         response = client.post(
@@ -132,11 +135,11 @@ class TestTrainNewModel:
         # Mock QueueManager to raise an exception
         mock_publish = AsyncMock(side_effect=RuntimeError("Queue error"))
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.publish_request",
             mock_publish,
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.connect",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.connect",
             AsyncMock(),
         )
 
@@ -156,15 +159,16 @@ class TestTrainNewModel:
         # Mock QueueManager
         mock_publish = AsyncMock(return_value="test_correlation_id")
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.publish_request",
             mock_publish,
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.connect",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.connect",
             AsyncMock(),
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.close", AsyncMock()
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.close",
+            AsyncMock(),
         )
 
         response = client.post(
@@ -187,15 +191,16 @@ class TestRegenerate:
         # Mock QueueManager
         mock_publish = AsyncMock(return_value="test_correlation_id")
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.publish_request",
             mock_publish,
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.connect",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.connect",
             AsyncMock(),
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.close", AsyncMock()
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.close",
+            AsyncMock(),
         )
 
         response = client.post(
@@ -218,15 +223,16 @@ class TestRegenerate:
         # Mock QueueManager
         mock_publish = AsyncMock(return_value="test_correlation_id")
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.publish_request",
             mock_publish,
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.connect",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.connect",
             AsyncMock(),
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.close", AsyncMock()
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.close",
+            AsyncMock(),
         )
 
         response = client.post(
@@ -251,15 +257,16 @@ class TestRegenerate:
         # Mock QueueManager
         mock_publish = AsyncMock(return_value="test_correlation_id")
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.publish_request",
             mock_publish,
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.connect",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.connect",
             AsyncMock(),
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.close", AsyncMock()
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.close",
+            AsyncMock(),
         )
 
         response = client.post(
@@ -281,15 +288,16 @@ class TestRegenerate:
         # Mock QueueManager
         mock_publish = AsyncMock(return_value="test_correlation_id")
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.publish_request",
             mock_publish,
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.connect",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.connect",
             AsyncMock(),
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.close", AsyncMock()
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.close",
+            AsyncMock(),
         )
 
         response = client.post(
@@ -311,11 +319,11 @@ class TestRegenerate:
         # Mock QueueManager to raise an exception
         mock_publish = AsyncMock(side_effect=RuntimeError("Queue error"))
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.publish_request",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.publish_request",
             mock_publish,
         )
         monkeypatch.setattr(
-            "bertrend_apps.services.queue.queue_manager.QueueManager.connect",
+            "bertrend_apps.services.queue_management.queue_manager.QueueManager.connect",
             AsyncMock(),
         )
 

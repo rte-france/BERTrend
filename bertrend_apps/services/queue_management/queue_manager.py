@@ -6,7 +6,7 @@ from typing import Callable
 import aio_pika
 from loguru import logger
 
-from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
+from bertrend_apps.services.queue_management.rabbitmq_config import RabbitMQConfig
 
 
 class QueueManager:
@@ -71,7 +71,7 @@ class QueueManager:
         priority: int = 5,
         correlation_id: str | None = None,
     ) -> str:
-        """Publish a request to the queue"""
+        """Publish a request to the queue_management"""
         if not self.channel or self.channel.is_closed:
             await self.connect()
 
@@ -105,7 +105,7 @@ class QueueManager:
     async def consume_requests(
         self, callback: Callable, prefetch_count: int | None = None
     ):
-        """Start consuming requests from the queue"""
+        """Start consuming requests from the queue_management"""
         if not self.channel or self.channel.is_closed:
             await self.connect()
 
@@ -122,7 +122,7 @@ class QueueManager:
         await queue.consume(callback, no_ack=False)
 
     async def publish_response(self, response_data: dict, correlation_id: str):
-        """Publish response to response queue"""
+        """Publish response to response queue_management"""
         if not self.channel or self.channel.is_closed:
             await self.connect()
 

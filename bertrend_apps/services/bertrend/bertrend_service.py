@@ -4,7 +4,7 @@
 #  This file is part of BERTrend.
 from fastapi import FastAPI
 
-from bertrend_apps.services.routers import (
+from bertrend_apps.services.bertrend.routers import (
     bertrend_app,
     data_provider,
     info,

@@ -7,7 +7,7 @@ import sys
 
 import requests
 
-from bertrend_apps.services.config.settings import get_config
+from bertrend_apps.services.bertrend.config.settings import get_config
 
 # Load config
 CONFIG = get_config()

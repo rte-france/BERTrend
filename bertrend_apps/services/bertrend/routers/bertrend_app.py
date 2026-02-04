@@ -6,14 +6,14 @@
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
-from bertrend_apps.services.models.bertrend_app_models import (
+from bertrend_apps.services.bertrend.models.bertrend_app_models import (
     GenerateReportRequest,
     RegenerateRequest,
     StatusResponse,
     TrainNewModelRequest,
 )
-from bertrend_apps.services.queue.queue_manager import QueueManager
-from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
+from bertrend_apps.services.queue_management.queue_manager import QueueManager
+from bertrend_apps.services.queue_management.rabbitmq_config import RabbitMQConfig
 
 router = APIRouter()
 

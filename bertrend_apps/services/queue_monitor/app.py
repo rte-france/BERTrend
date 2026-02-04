@@ -15,19 +15,7 @@ import requests
 import streamlit as st
 
 # Reuse project configuration for RabbitMQ
-# (Mocking the import for standalone usage if the file doesn't exist in this context)
-try:
-    from bertrend_apps.services.queue.rabbitmq_config import RabbitMQConfig
-except ImportError:
-    # Fallback config class for demonstration purposes
-    class RabbitMQConfig:
-        host = "localhost"
-        port = 5672
-        username = "guest"
-        password = "guest"
-        virtual_host = "/"
-        request_queue = "bertrend_requests"
-        response_queue = "bertrend_responses"
+from bertrend_apps.services.queue_management.rabbitmq_config import RabbitMQConfig
 
 
 # ---------- Helpers: Management API client ----------
@@ -120,7 +108,7 @@ def _decode_message_payload(msg: Dict[str, Any]) -> Tuple[str, Any]:
 
 
 def render_queue_config_grid(qinfo: Dict[str, Any]):
-    """Renders technical queue config in a compact way."""
+    """Renders technical queue_management config in a compact way."""
     params = {
         "Durable": str(qinfo.get("durable", False)),
         "Auto-Delete": str(qinfo.get("auto_delete", False)),
