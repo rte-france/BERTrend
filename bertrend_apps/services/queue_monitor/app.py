@@ -7,6 +7,7 @@ import base64
 import json
 import os
 import time
+from datetime import datetime
 from typing import Any, Dict, List, Tuple
 from urllib.parse import quote
 
@@ -113,6 +114,18 @@ def _decode_message_payload(msg: Dict[str, Any]) -> Tuple[str, Any]:
     )
 
 
+def _format_timestamp(value: Any) -> str:
+    if not value:
+        return ""
+    try:
+        ts = float(value)
+        if ts > 1_000_000_000_000:
+            ts /= 1000
+        return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H.%M:%S")
+    except (TypeError, ValueError, OSError):
+        return str(value)
+
+
 def render_queue_config_grid(qinfo: Dict[str, Any]):
     """Renders technical queue_management config in a compact way."""
     params = {
@@ -190,14 +203,18 @@ with st.sidebar:
     st.divider()
 
     # Auto-refresh Logic
-    c1, c2 = st.columns([1, 2])
+    c1, c2, c3 = st.columns([1, 2, 1])
     auto_refresh = c1.toggle("Live", value=False)
     refresh_rate = c2.select_slider(
         "Refresh (s)", options=[5, 10, 30, 60, 120], value=30
     )
+    force_refresh = c3.button("Refresh now")
 
     if auto_refresh:
         st.caption(f"Refreshing every {refresh_rate}s...")
+
+    if force_refresh:
+        st.rerun()
 
 # Initialize Client
 client_cfg = RabbitMQConfig(
@@ -556,7 +573,9 @@ else:
                                         },
                                         {
                                             "Key": "Timestamp",
-                                            "Val": str(props.get("timestamp") or ""),
+                                            "Val": _format_timestamp(
+                                                props.get("timestamp")
+                                            ),
                                         },
                                         {
                                             "Key": "App ID",
