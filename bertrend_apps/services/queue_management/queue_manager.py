@@ -2,7 +2,8 @@
 
 import json
 from datetime import datetime
-from typing import Callable
+from pathlib import Path
+from typing import Any, Callable
 
 import aio_pika
 from loguru import logger
@@ -12,6 +13,22 @@ from bertrend_apps.services.queue_management.rabbitmq_config import RabbitMQConf
 
 class QueueManager:
     """Manages RabbitMQ connections and operations"""
+
+    @staticmethod
+    def _json_default(value: Any) -> str | dict:
+        if isinstance(value, Path):
+            return str(value)
+        if isinstance(value, datetime):
+            return value.isoformat()
+        if hasattr(value, "model_dump"):
+            return value.model_dump(mode="json")
+        if hasattr(value, "dict"):
+            return value.dict()
+        return str(value)
+
+    @classmethod
+    def _json_dumps(cls, data: dict) -> bytes:
+        return json.dumps(data, default=cls._json_default).encode("utf-8")
 
     def __init__(self, config: RabbitMQConfig):
         self.config = config
@@ -83,7 +100,7 @@ class QueueManager:
             correlation_id = str(uuid.uuid4())
 
         # Prepare message
-        message_body = json.dumps(request_data).encode("utf-8")
+        message_body = self._json_dumps(request_data)
 
         # Publish with properties
         message = aio_pika.Message(
@@ -128,7 +145,7 @@ class QueueManager:
         if not self.channel or self.channel.is_closed:
             await self.connect()
 
-        message_body = json.dumps(response_data).encode("utf-8")
+        message_body = self._json_dumps(response_data)
 
         message = aio_pika.Message(
             body=message_body,
@@ -149,7 +166,7 @@ class QueueManager:
         if not self.channel or self.channel.is_closed:
             await self.connect()
 
-        message_body = json.dumps(error_data).encode("utf-8")
+        message_body = self._json_dumps(error_data)
 
         message = aio_pika.Message(
             body=message_body,

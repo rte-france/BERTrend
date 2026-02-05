@@ -188,7 +188,7 @@ class BertrendWorker:
 
             # Convert response to dict if it's a Pydantic model
             if hasattr(response, "model_dump"):
-                response_dict = response.model_dump()
+                response_dict = response.model_dump(mode="json")
             elif hasattr(response, "dict"):
                 response_dict = response.dict()
             else:
