@@ -206,7 +206,7 @@ with st.sidebar:
     c1, c2, c3 = st.columns([1, 2, 1])
     auto_refresh = c1.toggle("Live", value=False)
     refresh_rate = c2.select_slider(
-        "Refresh (s)", options=[5, 10, 30, 60, 120], value=30*
+        "Refresh (s)", options=[5, 10, 30, 60, 120], value=30
     )
     force_refresh = c3.button("Refresh")
 
