@@ -208,7 +208,7 @@ with st.sidebar:
     refresh_rate = c2.select_slider(
         "Refresh (s)", options=[5, 10, 30, 60, 120], value=30
     )
-    force_refresh = c3.button("Refresh")
+    force_refresh = c3.button("🔄", help="Force refresh the queue data")
 
     if auto_refresh:
         st.caption(f"Refreshing every {refresh_rate}s...")
