@@ -45,7 +45,7 @@ async def scrape_api(req: ScrapeRequest):
         request_data = {
             "endpoint": "/scrape",
             "method": "POST",
-            "json_data": req.model_dump(),
+            "json_data": req.model_dump(mode="json"),
         }
 
         correlation_id = await queue_manager.publish_request(
@@ -78,7 +78,7 @@ async def auto_scrape_api(req: AutoScrapeRequest):
         request_data = {
             "endpoint": "/auto-scrape",
             "method": "POST",
-            "json_data": req.model_dump(),
+            "json_data": req.model_dump(mode="json"),
         }
 
         correlation_id = await queue_manager.publish_request(
@@ -141,7 +141,7 @@ async def scrape_from_feed_api(req: ScrapeFeedRequest):
         request_data = {
             "endpoint": "/scrape-feed",
             "method": "POST",
-            "json_data": req.model_dump(),
+            "json_data": req.model_dump(mode="json"),
         }
 
         correlation_id = await queue_manager.publish_request(
