@@ -62,7 +62,7 @@ class QueueManager:
             durable=True,  # Survive broker restart
             arguments={
                 "x-max-priority": 10,  # Enable priority queue
-                "x-message-ttl": 3600000,  # 1 hour TTL
+                "x-message-ttl": self.config.request_queue_ttl_ms,
                 # Dead letter exchange for failed messages
                 "x-dead-letter-exchange": "bertrend_dlx",
                 "x-dead-letter-routing-key": "failed",
@@ -70,14 +70,26 @@ class QueueManager:
         )
 
         # Response queue
-        await self.channel.declare_queue(self.config.response_queue, durable=True)
+        await self.channel.declare_queue(
+            self.config.response_queue,
+            durable=True,
+            arguments={
+                "x-message-ttl": self.config.response_queue_ttl_ms,
+            },
+        )
 
         # Dead letter queue for failed requests
         await self.channel.declare_exchange(
             name="bertrend_dlx", type=aio_pika.ExchangeType.DIRECT, durable=True
         )
 
-        queue_failed = await self.channel.declare_queue("bertrend_failed", durable=True)
+        queue_failed = await self.channel.declare_queue(
+            self.config.error_queue,
+            durable=True,
+            arguments={
+                "x-message-ttl": self.config.error_queue_ttl_ms,
+            },
+        )
 
         await queue_failed.bind(exchange="bertrend_dlx", routing_key="failed")
 

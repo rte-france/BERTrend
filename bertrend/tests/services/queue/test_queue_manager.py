@@ -43,12 +43,25 @@ async def test_queue_manager_connect(mock_config, mock_aio_pika):
         durable=True,
         arguments={
             "x-max-priority": 10,
-            "x-message-ttl": 3600000,
+            "x-message-ttl": mock_config.request_queue_ttl_ms,
             "x-dead-letter-exchange": "bertrend_dlx",
             "x-dead-letter-routing-key": "failed",
         },
     )
-    qm.channel.declare_queue.assert_any_call(mock_config.response_queue, durable=True)
+    qm.channel.declare_queue.assert_any_call(
+        mock_config.response_queue,
+        durable=True,
+        arguments={
+            "x-message-ttl": mock_config.response_queue_ttl_ms,
+        },
+    )
+    qm.channel.declare_queue.assert_any_call(
+        mock_config.error_queue,
+        durable=True,
+        arguments={
+            "x-message-ttl": mock_config.error_queue_ttl_ms,
+        },
+    )
 
 
 @pytest.mark.asyncio

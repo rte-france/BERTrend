@@ -17,6 +17,16 @@ class RabbitMQConfig:
     response_queue: str = "bertrend_responses"
     error_queue: str = "bertrend_failed"
 
+    request_queue_ttl_ms: int = int(
+        os.getenv("RABBITMQ_REQUEST_QUEUE_TTL_MS", 86400000)
+    )  # 1 day
+    response_queue_ttl_ms: int = int(
+        os.getenv("RABBITMQ_RESPONSE_QUEUE_TTL_MS", 86400000)
+    )  # 1 day
+    error_queue_ttl_ms: int = int(
+        os.getenv("RABBITMQ_ERROR_QUEUE_TTL_MS", 604800000)
+    )  # 1 week
+
     # Performance tuning
     prefetch_count: int = int(os.getenv("RABBITMQ_PREFETCH_COUNT", 1))
 
