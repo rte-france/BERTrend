@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from bertrend_apps.common.apscheduler_utils import (
+from bertrend.bertrend_apps.common.apscheduler_utils import (
     APSchedulerUtils,
     _job_id_from_string,
     _list_jobs,
@@ -19,7 +19,7 @@ from bertrend_apps.common.apscheduler_utils import (
 class TestHelperFunctions:
     """Tests for module-level helper functions."""
 
-    @patch("bertrend_apps.common.apscheduler_utils._get_session")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._get_session")
     def test_request_success(self, mock_get_session):
         """Test successful HTTP request."""
         mock_session = MagicMock()
@@ -34,7 +34,7 @@ class TestHelperFunctions:
         assert result == mock_response
         mock_session.request.assert_called_once()
 
-    @patch("bertrend_apps.common.apscheduler_utils._get_session")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._get_session")
     def test_request_with_json(self, mock_get_session):
         """Test HTTP request with JSON payload."""
         mock_session = MagicMock()
@@ -69,7 +69,7 @@ class TestHelperFunctions:
 
         assert id1 != id2
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_list_jobs_success(self, mock_request):
         """Test successfully listing jobs."""
         mock_response = MagicMock()
@@ -86,7 +86,7 @@ class TestHelperFunctions:
         assert result[0]["job_id"] == "job1"
         mock_request.assert_called_once_with("GET", "/jobs")
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_list_jobs_failure(self, mock_request):
         """Test listing jobs when request fails."""
         mock_response = MagicMock()
@@ -98,7 +98,7 @@ class TestHelperFunctions:
 
         assert result == []
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_list_jobs_json_error(self, mock_request):
         """Test listing jobs when JSON parsing fails."""
         mock_response = MagicMock()
@@ -129,7 +129,7 @@ class TestAPSchedulerUtils:
 
         assert scheduler is not None
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_find_jobs_success(self, mock_request):
         """Test successfully finding jobs."""
         mock_response = MagicMock()
@@ -150,7 +150,7 @@ class TestAPSchedulerUtils:
         assert "job1" in result
         assert "job2" in result
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_find_jobs_no_matches(self, mock_request):
         """Test finding jobs when no matches exist."""
         mock_response = MagicMock()
@@ -166,7 +166,7 @@ class TestAPSchedulerUtils:
 
         assert result == []
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_find_jobs_error(self, mock_request):
         """Test finding jobs when request fails."""
         mock_response = MagicMock()
@@ -179,7 +179,7 @@ class TestAPSchedulerUtils:
         with pytest.raises(Exception, match="Failed to find jobs"):
             APSchedulerUtils.find_jobs(patterns)
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_find_jobs_match_all_false(self, mock_request):
         """Test finding jobs with match_all=False."""
         mock_response = MagicMock()
@@ -196,7 +196,7 @@ class TestAPSchedulerUtils:
         call_args = mock_request.call_args[1]["json"]
         assert call_args["match_all"] is False
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_remove_jobs_success(self, mock_request):
         """Test successfully removing jobs."""
         mock_response = MagicMock()
@@ -210,7 +210,7 @@ class TestAPSchedulerUtils:
         mock_request.assert_any_call("DELETE", "/jobs/job1")
         mock_request.assert_any_call("DELETE", "/jobs/job2")
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_remove_jobs_partial_failure(self, mock_request):
         """Test removing jobs when some deletions fail."""
 
@@ -231,7 +231,7 @@ class TestAPSchedulerUtils:
 
         assert mock_request.call_count == 2
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_add_job_to_crontab_success(self, mock_request):
         """Test successfully adding a job."""
         # Mock job creation
@@ -250,7 +250,7 @@ class TestAPSchedulerUtils:
         assert result is True
         assert mock_request.call_count == 1
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_add_job_to_crontab_with_kwargs(self, mock_request):
         """Test adding a job with command kwargs."""
         mock_health_response = MagicMock()
@@ -274,7 +274,7 @@ class TestAPSchedulerUtils:
 
         assert result is True
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_add_job_to_crontab_failure(self, mock_request):
         """Test adding a job when request fails."""
         mock_job_response = MagicMock()
@@ -292,8 +292,8 @@ class TestAPSchedulerUtils:
 
         assert result is False
 
-    @patch("bertrend_apps.common.apscheduler_utils.load_toml_config")
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.load_toml_config")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_schedule_scrapping(self, mock_request, mock_load_config):
         """Test scheduling a scraping job."""
         mock_config = {
@@ -316,8 +316,8 @@ class TestAPSchedulerUtils:
         # Verify job creation was called
         assert mock_request.call_count == 1
 
-    @patch("bertrend_apps.common.apscheduler_utils.load_toml_config")
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.load_toml_config")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_schedule_newsletter(self, mock_request, mock_load_config):
         """Test scheduling a newsletter job."""
         mock_config = {
@@ -340,7 +340,7 @@ class TestAPSchedulerUtils:
 
         assert mock_request.call_count == 1
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_schedule_training_for_user(self, mock_request):
         """Test scheduling a training job."""
         mock_health_response = MagicMock()
@@ -360,7 +360,7 @@ class TestAPSchedulerUtils:
 
         assert result is True
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_schedule_report_generation_with_auto_send(self, mock_request):
         """Test scheduling report generation when auto_send is enabled."""
         mock_health_response = MagicMock()
@@ -385,7 +385,7 @@ class TestAPSchedulerUtils:
 
         assert result is True
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_schedule_report_generation_auto_send_disabled(self, mock_request):
         """Test that report generation is not scheduled when auto_send is disabled."""
         scheduler = APSchedulerUtils()
@@ -404,7 +404,7 @@ class TestAPSchedulerUtils:
         # No job creation should happen when auto_send is disabled
         assert mock_request.call_count == 0
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_schedule_report_generation_no_recipients(self, mock_request):
         """Test that report generation is not scheduled when no recipients."""
         mock_health_response = MagicMock()
@@ -425,9 +425,11 @@ class TestAPSchedulerUtils:
 
         assert result is False
 
-    @patch("bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
-    @patch("bertrend_apps.common.apscheduler_utils.APSchedulerUtils.remove_jobs")
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
+    @patch(
+        "bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.remove_jobs"
+    )
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_remove_scrapping_for_user(self, mock_request, mock_remove, mock_find):
         """Test removing scraping job for a user."""
         mock_health_response = MagicMock()
@@ -443,8 +445,8 @@ class TestAPSchedulerUtils:
         mock_find.assert_called_once()
         mock_remove.assert_called_once_with(["job1"])
 
-    @patch("bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_remove_scrapping_no_jobs_found(self, mock_request, mock_find):
         """Test removing scraping when no jobs are found."""
         mock_health_response = MagicMock()
@@ -459,9 +461,11 @@ class TestAPSchedulerUtils:
         # Returns True even when no jobs found (successful operation, nothing to remove)
         assert result is True
 
-    @patch("bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
-    @patch("bertrend_apps.common.apscheduler_utils.APSchedulerUtils.remove_jobs")
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
+    @patch(
+        "bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.remove_jobs"
+    )
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_remove_scheduled_training_for_user(
         self, mock_request, mock_remove, mock_find
     ):
@@ -478,8 +482,8 @@ class TestAPSchedulerUtils:
         assert result is True
         mock_remove.assert_called_once()
 
-    @patch("bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_check_if_scrapping_active(self, mock_request, mock_find):
         """Test checking if scraping is active."""
         mock_health_response = MagicMock()
@@ -495,8 +499,8 @@ class TestAPSchedulerUtils:
 
         assert result is True
 
-    @patch("bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_check_if_scrapping_not_active(self, mock_request, mock_find):
         """Test checking if scraping is not active."""
         mock_health_response = MagicMock()
@@ -512,8 +516,8 @@ class TestAPSchedulerUtils:
 
         assert result is False
 
-    @patch("bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_check_if_learning_active(self, mock_request, mock_find):
         """Test checking if learning is active."""
         mock_health_response = MagicMock()
@@ -527,8 +531,8 @@ class TestAPSchedulerUtils:
 
         assert result is True
 
-    @patch("bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_check_if_report_generation_active(self, mock_request, mock_find):
         """Test checking if report generation is active."""
         mock_health_response = MagicMock()
@@ -544,8 +548,8 @@ class TestAPSchedulerUtils:
 
         assert result is True
 
-    @patch("bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_check_if_report_generation_not_active(self, mock_request, mock_find):
         """Test checking if report generation is not active."""
         mock_health_response = MagicMock()

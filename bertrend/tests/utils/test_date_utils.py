@@ -5,7 +5,7 @@
 
 from datetime import datetime
 
-from bertrend_apps.common.date_utils import daterange
+from bertrend.bertrend_apps.common.date_utils import daterange
 
 
 class TestDateRange:

@@ -7,7 +7,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from bertrend_apps.services.bertrend.routers import info
+from bertrend.bertrend_apps.services.bertrend.routers import info
 
 
 @pytest.fixture

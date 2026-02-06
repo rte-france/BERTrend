@@ -12,7 +12,10 @@ import jsonlines
 import pandas as pd
 import pytest
 
-from bertrend_apps.prospective_demo.process_new_data import (
+from bertrend.bertrend_apps.prospective_demo.process_new_data import (
+    ConfigFileNotFoundError,
+    InvalidModelConfigError,
+    NoDataAvailableError,
     generate_llm_interpretation,
     get_model_config,
     load_all_data,
@@ -24,10 +27,12 @@ from bertrend_apps.prospective_demo.process_new_data import (
 class TestLoadAllData:
     """Test the load_all_data function."""
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.get_user_feed_path")
-    @patch("bertrend_apps.prospective_demo.process_new_data.load_toml_config")
-    @patch("bertrend_apps.prospective_demo.process_new_data.load_data")
-    @patch("bertrend_apps.prospective_demo.process_new_data.Path")
+    @patch(
+        "bertrend.bertrend_apps.prospective_demo.process_new_data.get_user_feed_path"
+    )
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.load_toml_config")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.load_data")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.Path")
     def test_load_all_data_success(
         self, mock_path, mock_load_data, mock_load_toml_config, mock_get_user_feed_path
     ):
@@ -68,13 +73,11 @@ class TestLoadAllData:
         mock_get_user_feed_path.assert_called_once_with("test_user", "test_model")
         mock_load_toml_config.assert_called_once_with(mock_cfg_file)
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.get_user_feed_path")
+    @patch(
+        "bertrend.bertrend_apps.prospective_demo.process_new_data.get_user_feed_path"
+    )
     def test_load_all_data_config_not_found(self, mock_get_user_feed_path):
         """Test behavior when config file doesn't exist."""
-        from bertrend_apps.prospective_demo.process_new_data import (
-            ConfigFileNotFoundError,
-        )
-
         mock_cfg_file = Mock()
         mock_cfg_file.exists.return_value = False
         mock_get_user_feed_path.return_value = mock_cfg_file
@@ -82,15 +85,15 @@ class TestLoadAllData:
         with pytest.raises(ConfigFileNotFoundError):
             load_all_data("test_model", "test_user", "en")
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.get_user_feed_path")
-    @patch("bertrend_apps.prospective_demo.process_new_data.load_toml_config")
-    @patch("bertrend_apps.prospective_demo.process_new_data.Path")
+    @patch(
+        "bertrend.bertrend_apps.prospective_demo.process_new_data.get_user_feed_path"
+    )
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.load_toml_config")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.Path")
     def test_load_all_data_no_files(
         self, mock_path, mock_load_toml_config, mock_get_user_feed_path
     ):
         """Test behavior when no data files are found."""
-        from bertrend_apps.prospective_demo.process_new_data import NoDataAvailableError
-
         mock_cfg_file = Mock()
         mock_cfg_file.exists.return_value = True
         mock_get_user_feed_path.return_value = mock_cfg_file
@@ -110,8 +113,10 @@ class TestLoadAllData:
 class TestGetModelConfig:
     """Test the get_model_config function."""
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.get_model_cfg_path")
-    @patch("bertrend_apps.prospective_demo.process_new_data.load_toml_config")
+    @patch(
+        "bertrend.bertrend_apps.prospective_demo.process_new_data.get_model_cfg_path"
+    )
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.load_toml_config")
     def test_get_model_config_success(
         self, mock_load_toml_config, mock_get_model_cfg_path
     ):
@@ -129,16 +134,14 @@ class TestGetModelConfig:
         assert model_config["window_size"] == 30
         assert model_config["language"] == "en"
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.get_model_cfg_path")
-    @patch("bertrend_apps.prospective_demo.process_new_data.load_toml_config")
+    @patch(
+        "bertrend.bertrend_apps.prospective_demo.process_new_data.get_model_cfg_path"
+    )
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.load_toml_config")
     def test_get_model_config_exception(
         self, mock_load_toml_config, mock_get_model_cfg_path
     ):
         """Test exception when loading fails."""
-        from bertrend_apps.prospective_demo.process_new_data import (
-            InvalidModelConfigError,
-        )
-
         mock_cfg_path = Mock(spec=Path)
         mock_cfg_path.exists.return_value = True
         mock_get_model_cfg_path.return_value = mock_cfg_path
@@ -147,8 +150,10 @@ class TestGetModelConfig:
         with pytest.raises(InvalidModelConfigError):
             get_model_config("test_model", "test_user")
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.get_model_cfg_path")
-    @patch("bertrend_apps.prospective_demo.process_new_data.load_toml_config")
+    @patch(
+        "bertrend.bertrend_apps.prospective_demo.process_new_data.get_model_cfg_path"
+    )
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.load_toml_config")
     def test_get_model_config_split_by_paragraph(
         self, mock_load_toml_config, mock_get_model_cfg_path
     ):
@@ -195,7 +200,7 @@ class TestGenerateLLMInterpretation:
         """Clean up test fixtures."""
         shutil.rmtree(self.temp_dir)
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.analyze_signal")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.analyze_signal")
     def test_generate_llm_interpretation_success(self, mock_analyze_signal):
         """Test successful generation of LLM interpretation with parallel processing."""
         # Setup mock analyze_signal responses
@@ -237,7 +242,7 @@ class TestGenerateLLMInterpretation:
             assert "summary" in result
             assert "analysis" in result
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.analyze_signal")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.analyze_signal")
     def test_generate_llm_interpretation_with_failures(self, mock_analyze_signal):
         """Test handling of analyze_signal failures."""
 
@@ -278,7 +283,7 @@ class TestGenerateLLMInterpretation:
         result_topics = [result["topic"] for result in results]
         assert sorted(result_topics) == [1, 3]
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.analyze_signal")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.analyze_signal")
     def test_generate_llm_interpretation_exception_handling(self, mock_analyze_signal):
         """Test exception handling during topic processing."""
 
@@ -343,18 +348,20 @@ class TestGenerateLLMInterpretation:
 class TestTrainNewModelForPeriod:
     """Test the train_new_model_for_period function."""
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.EmbeddingService")
-    @patch("bertrend_apps.prospective_demo.process_new_data.get_user_models_path")
-    @patch("bertrend_apps.prospective_demo.process_new_data.get_model_config")
-    @patch("bertrend_apps.prospective_demo.process_new_data.train_new_data")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.EmbeddingService")
     @patch(
-        "bertrend_apps.prospective_demo.process_new_data.get_model_interpretation_path"
+        "bertrend.bertrend_apps.prospective_demo.process_new_data.get_user_models_path"
+    )
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.get_model_config")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.train_new_data")
+    @patch(
+        "bertrend.bertrend_apps.prospective_demo.process_new_data.get_model_interpretation_path"
     )
     @patch(
-        "bertrend_apps.prospective_demo.process_new_data.generate_bertrend_topic_description"
+        "bertrend.bertrend_apps.prospective_demo.process_new_data.generate_bertrend_topic_description"
     )
     @patch(
-        "bertrend_apps.prospective_demo.process_new_data.generate_llm_interpretation"
+        "bertrend.bertrend_apps.prospective_demo.process_new_data.generate_llm_interpretation"
     )
     def test_train_new_model_for_period_success(
         self,
@@ -440,10 +447,12 @@ class TestTrainNewModelForPeriod:
         mock_bertrend.classify_signals.assert_called_once()
         mock_generate_llm.assert_called()  # Should be called for each non-empty DataFrame
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.EmbeddingService")
-    @patch("bertrend_apps.prospective_demo.process_new_data.get_user_models_path")
-    @patch("bertrend_apps.prospective_demo.process_new_data.get_model_config")
-    @patch("bertrend_apps.prospective_demo.process_new_data.train_new_data")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.EmbeddingService")
+    @patch(
+        "bertrend.bertrend_apps.prospective_demo.process_new_data.get_user_models_path"
+    )
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.get_model_config")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.train_new_data")
     def test_train_new_model_for_period_insufficient_doc_groups(
         self,
         mock_train_new_data,
@@ -481,11 +490,13 @@ class TestTrainNewModelForPeriod:
 class TestRegenerateModels:
     """Test the regenerate_models function."""
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.get_model_config")
-    @patch("bertrend_apps.prospective_demo.process_new_data.load_all_data")
-    @patch("bertrend_apps.prospective_demo.process_new_data.split_data")
-    @patch("bertrend_apps.prospective_demo.process_new_data.group_by_days")
-    @patch("bertrend_apps.prospective_demo.process_new_data.train_new_model_for_period")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.get_model_config")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.load_all_data")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.split_data")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.group_by_days")
+    @patch(
+        "bertrend.bertrend_apps.prospective_demo.process_new_data.train_new_model_for_period"
+    )
     def test_regenerate_models_success(
         self,
         mock_train_new_model,
@@ -532,8 +543,8 @@ class TestRegenerateModels:
         mock_split_data.assert_called_once()
         assert mock_train_new_model.call_count == 2  # Should train for each period
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.get_model_config")
-    @patch("bertrend_apps.prospective_demo.process_new_data.load_all_data")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.get_model_config")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.load_all_data")
     def test_regenerate_models_no_data(self, mock_load_all_data, mock_get_config):
         """Test behavior when no data is available."""
         mock_get_config.return_value = {
@@ -553,10 +564,12 @@ class TestRegenerateModels:
         # Verify function attempted to load data
         mock_load_all_data.assert_called_once()
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.get_model_config")
-    @patch("bertrend_apps.prospective_demo.process_new_data.load_all_data")
-    @patch("bertrend_apps.prospective_demo.process_new_data.split_data")
-    @patch("bertrend_apps.prospective_demo.process_new_data.train_new_model_for_period")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.get_model_config")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.load_all_data")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.split_data")
+    @patch(
+        "bertrend.bertrend_apps.prospective_demo.process_new_data.train_new_model_for_period"
+    )
     def test_regenerate_models_with_since_filter(
         self, mock_train_new_model, mock_split_data, mock_load_all_data, mock_get_config
     ):
@@ -607,7 +620,7 @@ class TestParallelProcessing:
         """Clean up test fixtures."""
         shutil.rmtree(self.temp_dir)
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.analyze_signal")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.analyze_signal")
     def test_parallel_processing_maintains_order(self, mock_analyze_signal):
         """Test that parallel processing maintains consistent output order."""
         # Setup mock with variable delay to test race conditions
@@ -663,7 +676,7 @@ class TestParallelProcessing:
             # Clean up for next iteration
             output_file.unlink()
 
-    @patch("bertrend_apps.prospective_demo.process_new_data.analyze_signal")
+    @patch("bertrend.bertrend_apps.prospective_demo.process_new_data.analyze_signal")
     def test_parallel_processing_with_different_worker_counts(
         self, mock_analyze_signal
     ):

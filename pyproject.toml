@@ -1,6 +1,6 @@
 [project]
 name = "bertrend"
-version = "0.3.25"
+version = "0.4.0"
 description = "BERTrend analyses topic evolution over time using state-of-the-art transformer models: topic modelling and LLM"
 license = "LICENSE.md"
 readme = "README.md"
@@ -59,7 +59,7 @@ dependencies = [
     "requests (>=2.32.3)",
     "seaborn (>=0.13.2)",
     "sentencepiece (>=0.2.0)",
-    "streamlit (>=1.50)",
+    "streamlit (>=1.51.0)",
     "streamlit-code-editor (>=0.1.22)",
     "SQLAlchemy (>=2.0.40)",
     "supervisor (>=4.3.0)",
@@ -74,10 +74,6 @@ dependencies = [
     "psutil>=7.2.1",
     "pika>=1.3.2",
     "aio-pika>=9.5.5",
-]
-
-[project.optional-dependencies]
-apps = [
     "arxiv>=2.2.0",
     "feedparser>=6.0.11",
     "googlenewsdecoder>=0.1.7",

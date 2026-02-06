@@ -17,7 +17,7 @@ def helper_test_import_in_worker():
     """Test that importing bertrend_apps works in a forked worker process."""
     try:
         # Import bertrend_apps which triggers SCHEDULER_UTILS initialization
-        from bertrend_apps import SCHEDULER_UTILS
+        from bertrend.bertrend_apps import SCHEDULER_UTILS
 
         print(
             f"[Worker {os.getpid()}] Successfully imported SCHEDULER_UTILS: {type(SCHEDULER_UTILS).__name__}"

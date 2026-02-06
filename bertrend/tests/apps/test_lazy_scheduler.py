@@ -20,7 +20,7 @@ def helper_test_lazy_init_in_worker():
         print(f"[Worker {pid}] Importing bertrend_apps...")
 
         # Import should not trigger initialization
-        from bertrend_apps import SCHEDULER_UTILS
+        from bertrend.bertrend_apps import SCHEDULER_UTILS
 
         print(f"[Worker {pid}] Import complete (should not have initialized yet)")
 

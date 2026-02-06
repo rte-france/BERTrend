@@ -16,13 +16,10 @@ from unittest.mock import Mock, patch
 import psutil
 import pytest
 
+from bertrend.bertrend_apps.common.apscheduler_utils import APSchedulerUtils, _request
+
 # Add parent directory to path to import the module
 sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from bertrend_apps.common.apscheduler_utils import (
-    APSchedulerUtils,
-    _request,
-)
 
 
 class FileDescriptorMonitor:
@@ -141,7 +138,7 @@ def mock_session():
 class TestSessionStress:
     """Stress tests for session management."""
 
-    @patch("bertrend_apps.common.apscheduler_utils._get_session")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._get_session")
     def test_sequential_requests(self, mock_session_ctx, fd_monitor, mock_session):
         """Test sequential requests don't leak file descriptors."""
         mock_session_ctx.return_value.__enter__ = Mock(return_value=mock_session)
@@ -162,7 +159,7 @@ class TestSessionStress:
             f"Too many file descriptors leaked: {results['leaked']}"
         )
 
-    @patch("bertrend_apps.common.apscheduler_utils._get_session")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._get_session")
     def test_concurrent_requests(self, mock_session_ctx, fd_monitor, mock_session):
         """Test concurrent requests don't leak file descriptors."""
         mock_session_ctx.return_value.__enter__ = Mock(return_value=mock_session)
@@ -194,7 +191,7 @@ class TestSessionStress:
             f"Too many file descriptors leaked: {results['leaked']}"
         )
 
-    @patch("bertrend_apps.common.apscheduler_utils._get_session")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._get_session")
     def test_rapid_fire_requests(self, mock_session_ctx, fd_monitor, mock_session):
         """Test rapid-fire requests without delays."""
         mock_session_ctx.return_value.__enter__ = Mock(return_value=mock_session)
@@ -223,7 +220,7 @@ class TestSessionStress:
             f"Too many file descriptors leaked: {results['leaked']}"
         )
 
-    @patch("bertrend_apps.common.apscheduler_utils._request")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_apscheduler_utils_methods(self, mock_request_func, fd_monitor):
         """Test APSchedulerUtils methods under load."""
         mock_request_func.return_value = mock_request_with_jobs()
@@ -265,7 +262,7 @@ class TestSessionStress:
             f"Too many file descriptors leaked: {results['leaked']}"
         )
 
-    @patch("bertrend_apps.common.apscheduler_utils._get_session")
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._get_session")
     def test_error_handling_leak(self, mock_session_ctx, fd_monitor):
         """Test that errors don't cause FD leaks."""
         mock_session = Mock()

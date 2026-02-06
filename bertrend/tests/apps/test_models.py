@@ -8,18 +8,20 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from bertrend_apps.services.bertrend.models.bertrend_app_models import (
+from bertrend.bertrend_apps.services.bertrend.models.bertrend_app_models import (
     RegenerateRequest,
     StatusResponse,
     TrainNewModelRequest,
 )
-from bertrend_apps.services.bertrend.models.data_provider_models import (
+from bertrend.bertrend_apps.services.bertrend.models.data_provider_models import (
     AutoScrapeRequest,
     GenerateQueryFileRequest,
     ScrapeRequest,
     ScrapeResponse,
 )
-from bertrend_apps.services.bertrend.models.newsletters_models import NewsletterRequest
+from bertrend.bertrend_apps.services.bertrend.models.newsletters_models import (
+    NewsletterRequest,
+)
 
 
 class TestBertrendAppModels:

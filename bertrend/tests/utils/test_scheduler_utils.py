@@ -6,7 +6,7 @@
 import locale
 from unittest.mock import patch
 
-from bertrend_apps.common.scheduler_utils import SchedulerUtils
+from bertrend.bertrend_apps.common.scheduler_utils import SchedulerUtils
 
 
 class TestSchedulerUtils:
@@ -85,7 +85,7 @@ class TestSchedulerUtils:
         assert len(results) > 1
 
     @patch(
-        "bertrend_apps.common.scheduler_utils.get_current_internationalization_language"
+        "bertrend.bertrend_apps.common.scheduler_utils.get_current_internationalization_language"
     )
     def test_get_understandable_cron_description_english(self, mock_get_lang):
         """Test cron description generation in English."""
@@ -103,7 +103,7 @@ class TestSchedulerUtils:
         assert "2:30" in description or "02:30" in description
 
     @patch(
-        "bertrend_apps.common.scheduler_utils.get_current_internationalization_language"
+        "bertrend.bertrend_apps.common.scheduler_utils.get_current_internationalization_language"
     )
     def test_get_understandable_cron_description_french(self, mock_get_lang):
         """Test cron description generation in French."""
@@ -121,7 +121,7 @@ class TestSchedulerUtils:
         assert "12:00" in description or "12h" in description.lower()
 
     @patch(
-        "bertrend_apps.common.scheduler_utils.get_current_internationalization_language"
+        "bertrend.bertrend_apps.common.scheduler_utils.get_current_internationalization_language"
     )
     def test_get_understandable_cron_description_complex_expression(
         self, mock_get_lang
@@ -141,7 +141,7 @@ class TestSchedulerUtils:
         assert "monday" in description.lower() or "mon" in description.lower()
 
     @patch(
-        "bertrend_apps.common.scheduler_utils.get_current_internationalization_language"
+        "bertrend.bertrend_apps.common.scheduler_utils.get_current_internationalization_language"
     )
     def test_get_understandable_cron_description_restores_locale(self, mock_get_lang):
         """Test that locale is restored after cron description generation."""
@@ -158,7 +158,7 @@ class TestSchedulerUtils:
         assert current_locale == original_locale
 
     @patch(
-        "bertrend_apps.common.scheduler_utils.get_current_internationalization_language"
+        "bertrend.bertrend_apps.common.scheduler_utils.get_current_internationalization_language"
     )
     def test_get_understandable_cron_description_daily(self, mock_get_lang):
         """Test description for daily execution."""
@@ -174,7 +174,7 @@ class TestSchedulerUtils:
         assert "14:15" in description
 
     @patch(
-        "bertrend_apps.common.scheduler_utils.get_current_internationalization_language"
+        "bertrend.bertrend_apps.common.scheduler_utils.get_current_internationalization_language"
     )
     def test_get_understandable_cron_description_specific_days(self, mock_get_lang):
         """Test description for specific days of month."""

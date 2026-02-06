@@ -38,7 +38,7 @@ DB_PATH.mkdir(parents=True, exist_ok=True)
 # Number of jobs executed simultaneously
 MAX_WORKERS = 100  # some data gathering may be triggered at the same time
 # Number of instances of a same job that can run concurrently
-MAX_INSTANCES = 3
+MAX_INSTANCES = 1
 
 # Scheduler will be initialized on first use or set by tests
 scheduler = None
