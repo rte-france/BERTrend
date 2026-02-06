@@ -17,7 +17,9 @@ import requests
 import streamlit as st
 
 # Reuse project configuration for RabbitMQ
-from bertrend.bertrend_apps.services.queue_management.rabbitmq_config import RabbitMQConfig
+from bertrend.bertrend_apps.services.queue_management.rabbitmq_config import (
+    RabbitMQConfig,
+)
 
 
 # ---------- Helpers: Management API client ----------

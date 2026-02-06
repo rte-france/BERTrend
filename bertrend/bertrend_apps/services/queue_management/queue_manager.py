@@ -8,7 +8,9 @@ from typing import Any, Callable
 import aio_pika
 from loguru import logger
 
-from bertrend.bertrend_apps.services.queue_management.rabbitmq_config import RabbitMQConfig
+from bertrend.bertrend_apps.services.queue_management.rabbitmq_config import (
+    RabbitMQConfig,
+)
 
 
 class QueueManager:

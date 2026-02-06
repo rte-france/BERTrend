@@ -19,7 +19,10 @@ from newspaper import Article
 from bertrend.article_scoring.article_scoring import QualityLevel
 from bertrend.article_scoring.scoring_agent import score_articles
 from bertrend.utils.data_loading import TEXT_COLUMN
-from bertrend.bertrend_apps.data_provider.utils import decode_google_news_url, wait_if_seen_url
+from bertrend.bertrend_apps.data_provider.utils import (
+    decode_google_news_url,
+    wait_if_seen_url,
+)
 
 # Ensures to write with +rw for both user and groups
 os.umask(0o002)

@@ -4,7 +4,12 @@
 #  This file is part of BERTrend.
 from fastapi import FastAPI
 
-from bertrend.bertrend_apps.services.bertrend.routers import bertrend_app, data_provider, info, newsletters
+from bertrend.bertrend_apps.services.bertrend.routers import (
+    bertrend_app,
+    data_provider,
+    info,
+    newsletters,
+)
 
 app = FastAPI()
 

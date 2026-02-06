@@ -34,7 +34,9 @@ from bertrend.bertrend_apps.prospective_demo import (
     get_user_feed_path,
     get_user_models_path,
 )
-from bertrend.bertrend_apps.prospective_demo.llm_utils import generate_bertrend_topic_description
+from bertrend.bertrend_apps.prospective_demo.llm_utils import (
+    generate_bertrend_topic_description,
+)
 
 DEFAULT_TOP_K = 5
 

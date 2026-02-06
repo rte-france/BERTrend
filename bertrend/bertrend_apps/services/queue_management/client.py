@@ -17,7 +17,9 @@ from typing import Any
 from loguru import logger
 
 from bertrend.bertrend_apps.services.queue_management.queue_manager import QueueManager
-from bertrend.bertrend_apps.services.queue_management.rabbitmq_config import RabbitMQConfig
+from bertrend.bertrend_apps.services.queue_management.rabbitmq_config import (
+    RabbitMQConfig,
+)
 
 
 class BertrendClient:
