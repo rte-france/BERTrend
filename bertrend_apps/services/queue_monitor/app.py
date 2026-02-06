@@ -10,6 +10,7 @@ import time
 from datetime import datetime
 from typing import Any, Dict, List, Tuple
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
@@ -120,8 +121,12 @@ def _format_timestamp(value: Any) -> str:
     try:
         ts = float(value)
         if ts > 1_000_000_000_000:
-            ts /= 1000
-        return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H.%M:%S")
+            ts /= 1000  # milliseconds → seconds
+
+        dt_utc = datetime.fromtimestamp(ts, tz=ZoneInfo("UTC"))
+        dt_paris = dt_utc.astimezone(ZoneInfo("Europe/Paris"))
+
+        return dt_paris.strftime("%Y-%m-%d %H.%M:%S")
     except (TypeError, ValueError, OSError):
         return str(value)
 
