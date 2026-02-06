@@ -67,15 +67,6 @@ def _init_scheduler():
         scheduler.start()
 
 
-# Initialize scheduler at module load if not in test environment
-# Tests will monkeypatch this before it's used
-try:
-    _init_scheduler()
-except Exception:
-    # If initialization fails (e.g., in test environment), scheduler will be set by tests
-    pass
-
-
 def get_trigger(job_data: JobCreate):
     """Create appropriate trigger based on job type"""
     if job_data.job_type == "interval":
@@ -132,6 +123,7 @@ def get_trigger(job_data: JobCreate):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _init_scheduler()
     # Startup
     logger.info("FastAPI Job Scheduler started")
     logger.info("Job store: SQLite (jobs.sqlite)")
