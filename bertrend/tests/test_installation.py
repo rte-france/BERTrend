@@ -3,6 +3,11 @@ Test script to verify that the installation process works correctly with the new
 This script attempts to import key components from each dependency group.
 """
 
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
+#  See AUTHORS.txt
+#  SPDX-License-Identifier: MPL-2.0
+#  This file is part of BERTrend.
+
 import pytest
 
 

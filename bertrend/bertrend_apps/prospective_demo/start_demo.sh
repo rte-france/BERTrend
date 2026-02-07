@@ -1,10 +1,9 @@
 #
-# Copyright (c) 2024, RTE (https://www.rte-france.com)
+# Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 # See AUTHORS.txt
 # SPDX-License-Identifier: MPL-2.0
 # This file is part of BERTrend.
 #
-# Use Python to load .env file and export variables
 eval $(python3 << 'EOF'
 from dotenv import dotenv_values
 from dotenv import find_dotenv
