@@ -4,13 +4,10 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
-from agents import Agent, OpenAIChatCompletionsModel, RunConfig, Runner
+from agents import Agent, RunConfig, Runner
 from agents.extensions.models.litellm_model import LitellmModel
 from dotenv import load_dotenv
 from loguru import logger
-from openai import AsyncAzureOpenAI
-
-from bertrend.llm_utils.openai_client import AZURE_API_VERSION
 
 # Load environment variables at module import
 load_dotenv(override=True)
@@ -63,15 +60,6 @@ class BaseAgentFactory:
         if not self.base_url:
             # assume standard openai model
             self.model = self.model_name
-        elif "azure.com" in self.base_url:
-            self.model = OpenAIChatCompletionsModel(
-                model=self.model_name,
-                openai_client=AsyncAzureOpenAI(
-                    api_key=self.api_key,
-                    api_version=AZURE_API_VERSION,
-                    azure_endpoint=self.base_url,
-                ),
-            )
         else:
             # assume openAI compatible model
             self.model = LitellmModel(

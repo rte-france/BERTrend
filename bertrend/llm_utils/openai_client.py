@@ -8,25 +8,27 @@ import re
 from enum import Enum
 from typing import Type
 
+from agents import ModelSettings, RunConfig, Runner
 from loguru import logger
-from openai import AzureOpenAI, OpenAI, Stream, Timeout
+from openai import OpenAI, Stream, Timeout
+from openai.types import Reasoning
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from pydantic import BaseModel
+
+from bertrend.llm_utils.agent_utils import BaseAgentFactory, run_config_no_tracing
 
 # Note: .env is loaded in bertrend/__init__.py which is imported before this module
 
 MAX_ATTEMPTS = 3
 TIMEOUT = 60.0
 DEFAULT_TEMPERATURE = 0.1
-DEFAULT_MAX_OUTPUT_TOKENS = 512
 DEFAULT_MODEL = "gpt-4.1-mini"
-AZURE_API_VERSION = "2025-03-01-preview"
 
 
 class APIType(Enum):
     """Allow choosing between completions and responses API from OpenAI"""
 
-    # NB. LiteLLM does not support responses API for <=gpt4* models
+    # NB. Preferred: RESPONSES
     COMPLETIONS = "completions"
     RESPONSES = "responses"
 
@@ -51,8 +53,7 @@ class OpenAI_Client:
         base_url: str = None,
         model: str = None,
         temperature: float = DEFAULT_TEMPERATURE,
-        api_version: str = AZURE_API_VERSION,
-        api_type: APIType = APIType.COMPLETIONS,
+        api_type: APIType = APIType.RESPONSES,
     ):
         """
         Initialize the OpenAI client.
@@ -62,61 +63,34 @@ class OpenAI_Client:
         api_key : str, optional
             OpenAI API key. If None, will try to get from OPENAI_API_KEY environment variable.
         base_url : str, optional
-            API endpoint (Azure) or base_url URL (LiteLLM and openAI compatible deployments). If None, will try to get from OPENAI_BASE_URL environment variable.
-            Should be set for Azure or local deployments.
+            API base_url URL (LiteLLM and openAI compatible deployments). If None, will try to get from OPENAI_BASE_URL environment variable.
         model : str, optional
             Name of the model to use. If None, will try to get from OPENAI_DEFAULT_MODEL environment variable.
         temperature : float, default=DEFAULT_TEMPERATURE
             Temperature parameter for controlling randomness in generation.
-        api_version : str, default=AZURE_API_VERSION
-            API version to use for Azure OpenAI service.
 
         Raises
         ------
         EnvironmentError
             If api_key is None and OPENAI_API_KEY environment variable is not set.
         """
-        if not api_key:
-            api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        if not self.api_key:
             logger.error(
                 "WARNING: OPENAI_API_KEY environment variable not found. Please set it before using OpenAI services."
             )
             raise EnvironmentError("OPENAI_API_KEY environment variable not found.")
+        self.base_url = (base_url or os.getenv("OPENAI_BASE_URL")) or None
 
-        base_url = base_url or os.getenv("OPENAI_BASE_URL", None)
-        if base_url == "":  # check empty env var
-            base_url = None
-
-        run_on_azure = "azure.com" in base_url if base_url else False
-
-        common_params = {
+        openai_params = {
+            "base_url": base_url,
             "api_key": api_key,
             "timeout": Timeout(TIMEOUT, connect=10.0),
             "max_retries": MAX_ATTEMPTS,
         }
-        openai_params = {
-            "base_url": base_url,
-        }
-        azure_params = {
-            "azure_endpoint": base_url,
-            "api_version": api_version or AZURE_API_VERSION,
-        }
-
-        if not run_on_azure:
-            self.llm_client = OpenAI(
-                **common_params,
-                **openai_params,
-            )
-        else:
-            self.llm_client = AzureOpenAI(
-                **common_params,
-                **azure_params,
-            )
+        self.llm_client = OpenAI(**openai_params)
         self.model_name = model or os.getenv("OPENAI_DEFAULT_MODEL") or DEFAULT_MODEL
-        self.temperature = temperature
-        self.max_output_tokens = DEFAULT_MAX_OUTPUT_TOKENS
-
+        self.temperature = temperature if not test_gpt5_version(self.model_name) else 1
         self.api_type = api_type
 
     def generate(
@@ -175,14 +149,11 @@ class OpenAI_Client:
         if not kwargs.get("model"):
             kwargs["model"] = self.model_name
 
-        if not kwargs.get("temperature"):
-            kwargs["temperature"] = self.temperature
-        if test_gpt_version(kwargs["model"]):  # gpt >=5
+        kwargs["temperature"] = kwargs.get("temperature", self.temperature)
+        if test_gpt5_version(kwargs["model"]):
             kwargs["temperature"] = 1
 
         if self.api_type == APIType.COMPLETIONS:
-            if not kwargs.get("max_tokens"):
-                kwargs["max_tokens"] = self.max_output_tokens
             try:
                 answer = self.llm_client.chat.completions.create(
                     messages=messages,
@@ -200,8 +171,6 @@ class OpenAI_Client:
                 return msg
 
         elif self.api_type == APIType.RESPONSES:
-            if not kwargs.get("max_output_tokens"):
-                kwargs["max_output_tokens"] = self.max_output_tokens
             try:
                 response = self.llm_client.responses.create(input=messages, **kwargs)
                 logger.debug(f"API returned: {response}")
@@ -223,58 +192,41 @@ class OpenAI_Client:
         response_format: Type[BaseModel] = None,
         **kwargs,
     ) -> BaseModel | None:
-        """
-        Call OpenAI model for generation with structured output.
-
-        Parameters
-        ----------
-        user_prompt : str
-            Prompt to send to the model with role=user.
-        system_prompt : str, optional
-            Prompt to send to the model with role=system.
-        response_format : Type[BaseModel], optional
-            Pydantic model class defining the expected output structure.
-        **kwargs : dict
-            Additional arguments to pass to the OpenAI API.
-
-        Returns
-        -------
-        BaseModel or None
-            A pydantic object instance of the specified response_format type,
-            or None if an error occurs.
-
-        Notes
-        -----
-        This method uses the chat.completions.parse API which supports
-        structured outputs in the format defined by the response_format parameter.
-        """
-        # Transform messages into OpenAI API compatible format
-        messages = [{"role": "user", "content": user_prompt}]
-        # Add a system prompt if one is provided
-        if system_prompt:
-            messages.insert(0, {"role": "system", "content": system_prompt})
-        # For important parameters, set a default value if not given
+        """Call OpenAI model for generation with structured output"""
+        # Due to recurrent problems with the parse function of openai with Litellm, use of the agents sdk for that
         if not kwargs.get("model"):
             kwargs["model"] = self.model_name
-        if not kwargs.get("temperature"):
-            kwargs["temperature"] = self.temperature
-
-        try:
-            # NB. here use beta.chat...parse to support structured outputs
-            answer = self.llm_client.chat.completions.parse(
-                messages=messages,
-                response_format=response_format,
-                **kwargs,
+        model_name = kwargs["model"]
+        model_settings = (
+            ModelSettings(
+                reasoning=Reasoning(effort="low"),
+                verbosity="low",
             )
-            logger.debug(f"API returned: {answer}")
-            return answer.choices[0].message.parsed
-            # Details of errors available here: https://platform.openai.com/docs/guides/error-codes/api-errors
-        except Exception as e:
-            msg = f"OpenAI API fatal error: {e}"
-            logger.error(msg)
+            if test_gpt5_version(model_name)
+            else None
+        )
+
+        parsing_agent = BaseAgentFactory().create_agent(
+            name="parsing_agent",
+            model_name=model_name,
+            instructions=system_prompt,
+            output_type=response_format,
+            model_settings=model_settings,
+        )
+
+        # invoke agent
+        result = Runner.run_sync(
+            input=user_prompt,
+            starting_agent=parsing_agent,
+            run_config=run_config_no_tracing,
+        )
+        response = (
+            result.final_output if hasattr(result, "final_output") else str(result)
+        )
+        return response
 
 
-def test_gpt_version(version_string):
+def test_gpt5_version(version_string):
     # Regular expression to match "gpt-" followed by a number (integer or float)
     pattern = r"^gpt-(\d+(\.\d+)?).*$"  # Matches numbers like 4, 4.1, 5, 10.0
     match = re.match(pattern, version_string)
