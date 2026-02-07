@@ -1,4 +1,4 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
@@ -6,12 +6,10 @@ from loguru import logger
 
 from bertrend import LLM_CONFIG
 from bertrend.llm_utils.openai_client import OpenAI_Client
+from bertrend.services.summarizer import DEFAULT_MAX_SENTENCES, Summarizer
 from bertrend.services.summary.prompts import (
     SYSTEM_SUMMARY_SENTENCES,
 )
-from bertrend.services.summarizer import DEFAULT_MAX_SENTENCES
-
-from bertrend.services.summarizer import Summarizer
 
 
 class GPTSummarizer(Summarizer):

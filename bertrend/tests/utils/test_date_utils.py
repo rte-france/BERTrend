@@ -1,11 +1,11 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
 from datetime import datetime
 
-from bertrend_apps.common.date_utils import daterange
+from bertrend.bertrend_apps.common.date_utils import daterange
 
 
 class TestDateRange:

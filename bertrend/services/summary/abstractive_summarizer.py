@@ -1,15 +1,14 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
 import re
 
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from bertrend.config.parameters import EMBEDDING_DEVICE
 from bertrend.services.summarizer import Summarizer
-
 
 # DEFAULT_ABSTRACTIVE_MODEL = "mrm8488/camembert2camembert_shared-finetuned-french-summarization"
 # DEFAULT_ABSTRACTIVE_MODEL = "csebuetnlp/mT5_multilingual_XLSum"

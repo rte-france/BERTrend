@@ -7,7 +7,6 @@ import pandas as pd
 import plotly.graph_objects as go
 from bertopic import BERTopic
 from pandas import Timestamp
-from plotly_resampler import FigureWidgetResampler
 
 # Visualization Settings
 SANKEY_NODE_PAD = 15
@@ -336,8 +335,6 @@ def _transform_merge_histories_for_sankey(df: pd.DataFrame) -> pd.DataFrame:
             representation1 = row["Representation1"]
             representation2 = row["Representation2"]
             timestamp_index = row["Timestamp_Index"]
-            count1 = row["Count1"]
-            count2 = row["Count2"]
             doc_count1 = row["Document_Count1"]
             doc_count2 = row["Document_Count2"]
 

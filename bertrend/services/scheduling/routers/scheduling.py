@@ -1,32 +1,32 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import re
 from contextlib import asynccontextmanager
-from pathlib import Path
-
-from fastapi import HTTPException, APIRouter, FastAPI
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
-from apscheduler.executors.pool import ProcessPoolExecutor
-from apscheduler.triggers.cron import CronTrigger
-from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.triggers.date import DateTrigger
 from datetime import datetime
-from typing import List, Union, Any
+from pathlib import Path
+from typing import Any, List, Union
 
+from apscheduler.executors.pool import ProcessPoolExecutor
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.date import DateTrigger
+from apscheduler.triggers.interval import IntervalTrigger
+from fastapi import APIRouter, FastAPI, HTTPException
 from loguru import logger
+
 from bertrend.services.scheduling.job_utils.job_functions import JOB_FUNCTIONS
 from bertrend.services.scheduling.models.scheduling_models import (
-    JobCreate,
-    JobUpdate,
-    JobResponse,
-    JobExecutionResponse,
     CronExpressionRequest,
     CronExpressionResponse,
-    JobFindResponse,
+    JobCreate,
+    JobExecutionResponse,
     JobFindRequest,
+    JobFindResponse,
+    JobResponse,
+    JobUpdate,
 )
 
 router = APIRouter()
@@ -36,9 +36,9 @@ DB_NAME = "bertrend_jobs.sqlite"
 DB_PATH.mkdir(parents=True, exist_ok=True)
 
 # Number of jobs executed simultaneously
-MAX_WORKERS = 50  # some data gathering may be triggered at the same time
+MAX_WORKERS = 100  # some data gathering may be triggered at the same time
 # Number of instances of a same job that can run concurrently
-MAX_INSTANCES = 3
+MAX_INSTANCES = 1
 
 # Scheduler will be initialized on first use or set by tests
 scheduler = None
@@ -65,15 +65,6 @@ def _init_scheduler():
             timezone="Europe/Paris",
         )
         scheduler.start()
-
-
-# Initialize scheduler at module load if not in test environment
-# Tests will monkeypatch this before it's used
-try:
-    _init_scheduler()
-except Exception:
-    # If initialization fails (e.g., in test environment), scheduler will be set by tests
-    pass
 
 
 def get_trigger(job_data: JobCreate):
@@ -132,6 +123,7 @@ def get_trigger(job_data: JobCreate):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _init_scheduler()
     # Startup
     logger.info("FastAPI Job Scheduler started")
     logger.info("Job store: SQLite (jobs.sqlite)")

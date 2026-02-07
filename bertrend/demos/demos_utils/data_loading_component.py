@@ -2,7 +2,6 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -11,35 +10,32 @@ import streamlit as st
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 from bertrend import DATA_PATH
-from bertrend.demos.demos_utils.i18n import (
-    translate,
-    get_current_internationalization_language,
-)
+from bertrend.config.parameters import MIN_CHARS_DEFAULT, SAMPLE_SIZE_DEFAULT
+from bertrend.demos.demos_utils.i18n import translate
 from bertrend.demos.demos_utils.icons import (
-    WARNING_ICON,
-    JSON_ICON,
-    CSV_ICON,
-    PARQUET_ICON,
-    XLSX_ICON,
     CLIENT_STORAGE_ICON,
+    CSV_ICON,
+    JSON_ICON,
+    PARQUET_ICON,
     SERVER_STORAGE_ICON,
+    WARNING_ICON,
+    XLSX_ICON,
 )
 from bertrend.demos.demos_utils.state_utils import (
-    save_widget_state,
-    register_widget,
     SessionStateManager,
+    register_widget,
+    save_widget_state,
 )
-from bertrend.config.parameters import MIN_CHARS_DEFAULT, SAMPLE_SIZE_DEFAULT
 from bertrend.utils.data_loading import (
-    find_compatible_files,
     TEXT_COLUMN,
-    load_data,
-    split_data,
     TIMESTAMP_COLUMN,
     DataLoadingError,
-    _file_to_pd,
-    _clean_data,
     _check_data,
+    _clean_data,
+    _file_to_pd,
+    find_compatible_files,
+    load_data,
+    split_data,
 )
 
 FORMAT_ICONS = {
@@ -273,20 +269,6 @@ def display_data_loading_component():
             help=translate("split_help"),
             on_change=save_widget_state,
             format_func=lambda x: translate("split_option_" + x),
-        )
-
-    if get_current_internationalization_language() == "en":
-        split_by_paragraph_param = SessionStateManager.get("split_by_paragraph")
-    else:
-        # option has been translated
-        split_by_paragraph_param = (
-            "no"
-            if SessionStateManager.get("split_by_paragraph") == "non"
-            else (
-                "enhanced"
-                if SessionStateManager.get("split_by_paragraph") == "amélioré"
-                else "yes"
-            )
         )
 
     df = split_data(

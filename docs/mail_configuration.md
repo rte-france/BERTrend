@@ -1,28 +1,33 @@
 # Mail Configuration Guide
 
-BERTrend includes email functionality for sending newsletters automatically. This guide explains how to configure email sending using Gmail OAuth and provides alternatives for other email providers.
+BERTrend includes email functionality for sending newsletters automatically. This guide explains how to configure email
+sending using Gmail OAuth and provides alternatives for other email providers.
 
 ## Purpose
 
 The mail functionality in BERTrend is primarily used for:
+
 - **Newsletter Distribution**: Automatically sending generated newsletters to configured recipients
 - **Report Delivery**: Sending topic analysis reports and summaries via email
 - **Automated Notifications**: Delivering scheduled content based on data feeds and topic modeling results
 
 ## Gmail OAuth Configuration
 
-BERTrend uses Gmail API with OAuth 2.0 authentication for secure email sending. This requires setting up Google Cloud credentials.
+BERTrend uses Gmail API with OAuth 2.0 authentication for secure email sending. This requires setting up Google Cloud
+credentials.
 
 ### 1. Creating Gmail Credentials
 
 #### Step 1: Google Cloud Console Setup
+
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select an existing one
 3. Enable the Gmail API:
-   - Navigate to "APIs & Services" > "Library"
-   - Search for "Gmail API" and enable it
+    - Navigate to "APIs & Services" > "Library"
+    - Search for "Gmail API" and enable it
 
 #### Step 2: Create OAuth 2.0 Credentials
+
 1. Go to "APIs & Services" > "Credentials"
 2. Click "Create Credentials" > "OAuth client ID"
 3. Choose "Desktop application" as the application type
@@ -30,6 +35,7 @@ BERTrend uses Gmail API with OAuth 2.0 authentication for secure email sending. 
 5. Download the JSON file
 
 #### Step 3: Configure BERTrend
+
 1. Place the downloaded JSON file at: `bertrend_apps/config/gmail_credentials.json`
 2. Ensure the file has the following structure:
    ```json
@@ -49,6 +55,7 @@ BERTrend uses Gmail API with OAuth 2.0 authentication for secure email sending. 
 ### 2. First-Time Authentication
 
 When running BERTrend's newsletter functionality for the first time:
+
 1. The system will automatically open a browser window
 2. Sign in with the Gmail account you want to use for sending
 3. Grant permissions for BERTrend to send emails
@@ -58,6 +65,7 @@ When running BERTrend's newsletter functionality for the first time:
 ### 3. Configuration in Newsletter Settings
 
 In your newsletter TOML configuration file, specify recipients:
+
 ```toml
 [newsletter]
 recipients = "['recipient1@example.com', 'recipient2@example.com']"
@@ -71,7 +79,8 @@ If you prefer not to use Gmail or need to use a different email provider, you ca
 
 ### Modifying mail_utils.py
 
-The file `bertrend_apps/common/mail_utils.py` contains the mail implementation. Here's how to adapt it for other providers:
+The file `bertrend_apps/common/mail_utils.py` contains the mail implementation. Here's how to adapt it for other
+providers:
 
 #### Option 1: SMTP-based Email (e.g., Outlook, Corporate Email)
 
@@ -128,6 +137,7 @@ def send_email_smtp(
 #### Option 2: Other Email APIs (SendGrid, Mailgun, etc.)
 
 For SendGrid example:
+
 ```python
 import sendgrid
 from sendgrid.helpers.mail import Mail
@@ -183,6 +193,7 @@ def send_email(credentials, subject: str, recipients: list[str], content, **kwar
 ### Required Changes in Newsletter Code
 
 When modifying mail_utils.py, ensure you also update the import and function calls in:
+
 - `bertrend_apps/newsletters/__main__.py` (lines 37, 204, 208)
 
 For non-Gmail solutions, you might not need the `get_credentials()` function, so adapt the newsletter code accordingly:
@@ -199,11 +210,13 @@ send_email(...)  # for SMTP or API-based solutions
 ## Security Considerations
 
 ### Gmail OAuth
+
 - Keep `gmail_credentials.json` and `gmail_token.json` secure
 - Add these files to your `.gitignore`
 - Use project-specific Google Cloud projects for better isolation
 
 ### SMTP/API Solutions
+
 - Use environment variables for sensitive credentials
 - Consider using application-specific passwords
 - Enable two-factor authentication on email accounts
@@ -212,11 +225,13 @@ send_email(...)  # for SMTP or API-based solutions
 ## Troubleshooting
 
 ### Common Gmail OAuth Issues
+
 - **Token expired**: Delete `gmail_token.json` and re-authenticate
 - **Insufficient permissions**: Ensure Gmail API is enabled and OAuth consent screen is configured
 - **Rate limiting**: Gmail API has sending limits; consider batching for large recipient lists
 
 ### General Email Issues
+
 - **Firewall/Network**: Ensure outbound connections are allowed (port 587 for SMTP, 443 for APIs)
 - **Spam filters**: Configure SPF/DKIM records for better deliverability
 - **Large attachments**: Consider file size limits (Gmail: 25MB, others vary)
@@ -226,8 +241,9 @@ send_email(...)  # for SMTP or API-based solutions
 To test your email setup:
 
 1. Create a simple test script:
+
 ```python
-from bertrend_apps.common.mail_utils import get_credentials, send_email
+from bertrend.bertrend_apps.common import get_credentials, send_email
 
 # For Gmail OAuth
 credentials = get_credentials()

@@ -3,32 +3,31 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import inspect
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
-from pathlib import Path
 
 from bertrend.demos.demos_utils.i18n import translate
 from bertrend.demos.demos_utils.icons import ERROR_ICON
 from bertrend.demos.demos_utils.state_utils import (
-    save_widget_state,
-    restore_widget_state,
-    register_multiple_widget,
     SessionStateManager,
-)
-from bertrend.llm_utils.newsletter_model import Newsletter
-from bertrend.services.summary.abstractive_summarizer import AbstractiveSummarizer
-from bertrend.services.summary.chatgpt_summarizer import GPTSummarizer
-from bertrend.services.summary.extractive_summarizer import (
-    ExtractiveSummarizer,
-    EnhancedExtractiveSummarizer,
+    register_multiple_widget,
+    restore_widget_state,
+    save_widget_state,
 )
 from bertrend.llm_utils.newsletter_features import (
     generate_newsletter,
     render_newsletter_html,
 )
-
+from bertrend.llm_utils.newsletter_model import Newsletter
+from bertrend.services.summary.abstractive_summarizer import AbstractiveSummarizer
+from bertrend.services.summary.chatgpt_summarizer import GPTSummarizer
+from bertrend.services.summary.extractive_summarizer import (
+    EnhancedExtractiveSummarizer,
+    ExtractiveSummarizer,
+)
 
 # Define summarizer options
 SUMMARIZER_OPTIONS_MAPPER = {

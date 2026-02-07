@@ -5,10 +5,10 @@
 
 from itertools import combinations
 
-import pandas as pd
 import gensim.corpora as corpora
-from gensim.models.coherencemodel import CoherenceModel
+import pandas as pd
 from bertopic import BERTopic
+from gensim.models.coherencemodel import CoherenceModel
 from loguru import logger
 
 
@@ -139,7 +139,7 @@ def compute_cluster_metrics(bertopic: BERTopic, topics: list[int], dataset: list
         )
         logger.success(f"Coherence score [{coherence_score_type}]: {coherence}")
 
-    except IndexError as e:
+    except IndexError:
         logger.error(
             "Error while calculating coherence metric. This likely happens when you're using an LLM to represent "
             "the topics instead of keywords."
@@ -152,7 +152,7 @@ def compute_cluster_metrics(bertopic: BERTopic, topics: list[int], dataset: list
             diversity_score_type="puw",
         )
         logger.success(f"Diversity score [{diversity_score_type}]: {diversity}")
-    except IndexError as e:
+    except IndexError:
         logger.error(
             "Error while calculating diversity metric. This likely happens when you're using an LLM to represent "
             "the topics instead of keywords."

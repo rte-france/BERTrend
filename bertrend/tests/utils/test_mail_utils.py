@@ -1,25 +1,25 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-from pathlib import Path
-from unittest.mock import patch, MagicMock, mock_open
 import tempfile
+from pathlib import Path
+from unittest.mock import MagicMock, mock_open, patch
 
-from bertrend_apps.common.mail_utils import (
-    get_credentials,
-    send_email,
+from bertrend.bertrend_apps.common.mail_utils import (
     FROM,
     SCOPES,
+    get_credentials,
+    send_email,
 )
 
 
 class TestGetCredentials:
     """Tests for the get_credentials function."""
 
-    @patch("bertrend_apps.common.mail_utils.TOKEN_PATH")
-    @patch("bertrend_apps.common.mail_utils.Credentials")
+    @patch("bertrend.bertrend_apps.common.mail_utils.TOKEN_PATH")
+    @patch("bertrend.bertrend_apps.common.mail_utils.Credentials")
     def test_get_credentials_with_valid_token(
         self, mock_credentials_class, mock_token_path
     ):
@@ -36,9 +36,9 @@ class TestGetCredentials:
             mock_token_path, SCOPES
         )
 
-    @patch("bertrend_apps.common.mail_utils.TOKEN_PATH")
-    @patch("bertrend_apps.common.mail_utils.Credentials")
-    @patch("bertrend_apps.common.mail_utils.Request")
+    @patch("bertrend.bertrend_apps.common.mail_utils.TOKEN_PATH")
+    @patch("bertrend.bertrend_apps.common.mail_utils.Credentials")
+    @patch("bertrend.bertrend_apps.common.mail_utils.Request")
     def test_get_credentials_with_expired_token(
         self, mock_request, mock_credentials_class, mock_token_path
     ):
@@ -56,9 +56,9 @@ class TestGetCredentials:
         mock_creds.refresh.assert_called_once()
         assert mock_file.called
 
-    @patch("bertrend_apps.common.mail_utils.TOKEN_PATH")
-    @patch("bertrend_apps.common.mail_utils.Credentials")
-    @patch("bertrend_apps.common.mail_utils.InstalledAppFlow")
+    @patch("bertrend.bertrend_apps.common.mail_utils.TOKEN_PATH")
+    @patch("bertrend.bertrend_apps.common.mail_utils.Credentials")
+    @patch("bertrend.bertrend_apps.common.mail_utils.InstalledAppFlow")
     def test_get_credentials_no_token_file(
         self, mock_flow_class, mock_credentials_class, mock_token_path
     ):
@@ -77,9 +77,9 @@ class TestGetCredentials:
         assert mock_file.called
         assert result == mock_creds
 
-    @patch("bertrend_apps.common.mail_utils.TOKEN_PATH")
-    @patch("bertrend_apps.common.mail_utils.Credentials")
-    @patch("bertrend_apps.common.mail_utils.InstalledAppFlow")
+    @patch("bertrend.bertrend_apps.common.mail_utils.TOKEN_PATH")
+    @patch("bertrend.bertrend_apps.common.mail_utils.Credentials")
+    @patch("bertrend.bertrend_apps.common.mail_utils.InstalledAppFlow")
     def test_get_credentials_invalid_token_no_refresh(
         self, mock_flow_class, mock_credentials_class, mock_token_path
     ):
@@ -102,9 +102,9 @@ class TestGetCredentials:
         mock_flow.run_local_server.assert_called_once_with(port=0)
         assert result == mock_new_creds
 
-    @patch("bertrend_apps.common.mail_utils.TOKEN_PATH")
-    @patch("bertrend_apps.common.mail_utils.Credentials")
-    @patch("bertrend_apps.common.mail_utils.InstalledAppFlow")
+    @patch("bertrend.bertrend_apps.common.mail_utils.TOKEN_PATH")
+    @patch("bertrend.bertrend_apps.common.mail_utils.Credentials")
+    @patch("bertrend.bertrend_apps.common.mail_utils.InstalledAppFlow")
     def test_get_credentials_custom_path(
         self, mock_flow_class, mock_credentials_class, mock_token_path
     ):
@@ -128,7 +128,7 @@ class TestGetCredentials:
 class TestSendEmail:
     """Tests for the send_email function."""
 
-    @patch("bertrend_apps.common.mail_utils.build")
+    @patch("bertrend.bertrend_apps.common.mail_utils.build")
     def test_send_email_with_text_content(self, mock_build):
         """Test sending email with text content."""
         mock_service = MagicMock()
@@ -146,7 +146,7 @@ class TestSendEmail:
         mock_build.assert_called_once_with("gmail", "v1", credentials=mock_creds)
         mock_service.users().messages().send.assert_called_once()
 
-    @patch("bertrend_apps.common.mail_utils.build")
+    @patch("bertrend.bertrend_apps.common.mail_utils.build")
     def test_send_email_with_html_content(self, mock_build):
         """Test sending email with HTML content."""
         mock_service = MagicMock()
@@ -164,7 +164,7 @@ class TestSendEmail:
         mock_build.assert_called_once()
         mock_service.users().messages().send.assert_called_once()
 
-    @patch("bertrend_apps.common.mail_utils.build")
+    @patch("bertrend.bertrend_apps.common.mail_utils.build")
     def test_send_email_multiple_recipients(self, mock_build):
         """Test sending email to multiple recipients."""
         mock_service = MagicMock()
@@ -183,7 +183,7 @@ class TestSendEmail:
         mock_build.assert_called_once()
         mock_service.users().messages().send.assert_called_once()
 
-    @patch("bertrend_apps.common.mail_utils.build")
+    @patch("bertrend.bertrend_apps.common.mail_utils.build")
     def test_send_email_with_file_attachment(self, mock_build):
         """Test sending email with file attachment."""
         mock_service = MagicMock()
@@ -210,7 +210,7 @@ class TestSendEmail:
             if temp_file_path.exists():
                 temp_file_path.unlink()
 
-    @patch("bertrend_apps.common.mail_utils.build")
+    @patch("bertrend.bertrend_apps.common.mail_utils.build")
     def test_send_email_with_custom_filename(self, mock_build):
         """Test sending email with file attachment and custom filename."""
         mock_service = MagicMock()
@@ -238,8 +238,8 @@ class TestSendEmail:
             if temp_file_path.exists():
                 temp_file_path.unlink()
 
-    @patch("bertrend_apps.common.mail_utils.build")
-    @patch("bertrend_apps.common.mail_utils.logger")
+    @patch("bertrend.bertrend_apps.common.mail_utils.build")
+    @patch("bertrend.bertrend_apps.common.mail_utils.logger")
     def test_send_email_http_error(self, mock_logger, mock_build):
         """Test send_email handles HttpError gracefully."""
         from googleapiclient.errors import HttpError
@@ -261,7 +261,7 @@ class TestSendEmail:
         # Should log error
         mock_logger.error.assert_called()
 
-    @patch("bertrend_apps.common.mail_utils.build")
+    @patch("bertrend.bertrend_apps.common.mail_utils.build")
     def test_send_email_file_not_found(self, mock_build):
         """Test send_email with non-existent Path (treated as string content)."""
         mock_service = MagicMock()
@@ -280,8 +280,8 @@ class TestSendEmail:
         # Should send successfully (Path is converted to string since is_file() returns False)
         mock_service.users().messages().send.assert_called_once()
 
-    @patch("bertrend_apps.common.mail_utils.build")
-    @patch("bertrend_apps.common.mail_utils.logger")
+    @patch("bertrend.bertrend_apps.common.mail_utils.build")
+    @patch("bertrend.bertrend_apps.common.mail_utils.logger")
     def test_send_email_unexpected_error(self, mock_logger, mock_build):
         """Test send_email handles unexpected errors gracefully."""
         mock_service = MagicMock()
@@ -299,7 +299,7 @@ class TestSendEmail:
         # Should log exception
         mock_logger.exception.assert_called()
 
-    @patch("bertrend_apps.common.mail_utils.build")
+    @patch("bertrend.bertrend_apps.common.mail_utils.build")
     def test_send_email_from_address(self, mock_build):
         """Test that FROM address is correctly set."""
         mock_service = MagicMock()
@@ -317,7 +317,7 @@ class TestSendEmail:
         assert FROM == "wattelse.ai@gmail.com"
         mock_build.assert_called_once()
 
-    @patch("bertrend_apps.common.mail_utils.build")
+    @patch("bertrend.bertrend_apps.common.mail_utils.build")
     def test_send_email_content_type_markdown(self, mock_build):
         """Test sending email with markdown content type."""
         mock_service = MagicMock()
@@ -335,8 +335,8 @@ class TestSendEmail:
         mock_build.assert_called_once()
         mock_service.users().messages().send.assert_called_once()
 
-    @patch("bertrend_apps.common.mail_utils.build")
-    @patch("bertrend_apps.common.mail_utils.logger")
+    @patch("bertrend.bertrend_apps.common.mail_utils.build")
+    @patch("bertrend.bertrend_apps.common.mail_utils.logger")
     def test_send_email_success_logging(self, mock_logger, mock_build):
         """Test that successful email send is logged."""
         mock_service = MagicMock()

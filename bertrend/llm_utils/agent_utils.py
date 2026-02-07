@@ -1,16 +1,18 @@
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
+#  See AUTHORS.txt
+#  SPDX-License-Identifier: MPL-2.0
+#  This file is part of BERTrend.
+
 import asyncio
 import os
 import time
 from dataclasses import dataclass
 from typing import Optional
 
-from agents import RunConfig, Agent, Runner, OpenAIChatCompletionsModel
+from agents import Agent, RunConfig, Runner
 from agents.extensions.models.litellm_model import LitellmModel
 from dotenv import load_dotenv
 from loguru import logger
-from openai import AsyncAzureOpenAI
-
-from bertrend.llm_utils.openai_client import AZURE_API_VERSION
 
 # Load environment variables at module import
 load_dotenv(override=True)
@@ -51,7 +53,7 @@ class BaseAgentFactory:
             logger.error(
                 "WARNING: OPENAI_API_KEY environment variable not found. Please set it before using OpenAI services."
             )
-            raise EnvironmentError(f"OPENAI_API_KEY environment variable not found.")
+            raise EnvironmentError("OPENAI_API_KEY environment variable not found.")
         self.base_url = (
             base_url if base_url is not None else os.getenv("OPENAI_BASE_URL")
         )
@@ -63,15 +65,6 @@ class BaseAgentFactory:
         if not self.base_url:
             # assume standard openai model
             self.model = self.model_name
-        elif "azure.com" in self.base_url:
-            self.model = OpenAIChatCompletionsModel(
-                model=self.model_name,
-                openai_client=AsyncAzureOpenAI(
-                    api_key=self.api_key,
-                    api_version=AZURE_API_VERSION,
-                    azure_endpoint=self.base_url,
-                ),
-            )
         else:
             # assume openAI compatible model
             self.model = LitellmModel(

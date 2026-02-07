@@ -39,7 +39,7 @@ RUN mkdir -p /app/nltk_data && \
 COPY supervisord.conf run_demos.sh /app/
 
 # Install BERTrend
-RUN uv pip install --no-cache-dir --system -U bertrend[apps] && \
+RUN uv pip install --no-cache-dir --system -U bertrend && \
     chmod -R a+w /usr/local/lib/python3.12/site-packages/ # Workaround for packages (such as numba which use caching in __pycache__ (requires writing rights)
 
 # Expose Streamlit ports for all three demos

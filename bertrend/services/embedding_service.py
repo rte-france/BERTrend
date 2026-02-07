@@ -1,8 +1,7 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-import json
 import os
 from typing import Literal
 
@@ -18,8 +17,8 @@ from tqdm import tqdm
 
 from bertrend import EMBEDDING_CONFIG
 from bertrend.config.parameters import (
-    EMBEDDING_DEVICE,
     EMBEDDING_BATCH_SIZE,
+    EMBEDDING_DEVICE,
     EMBEDDING_MAX_SEQ_LENGTH,
 )
 from bertrend.services.embedding_client import EmbeddingAPIClient
@@ -249,7 +248,7 @@ class EmbeddingService(BaseEmbedder):
             - None : Placeholder for token strings (not available in remote mode)
             - None : Placeholder for token embeddings (not available in remote mode)
         """
-        logger.debug(f"Computing embeddings...")
+        logger.debug("Computing embeddings...")
         embeddings = self.secure_client.embed_documents(
             texts, show_progress_bar=show_progress_bar
         )

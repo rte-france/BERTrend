@@ -1,16 +1,17 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
 from datetime import datetime, timedelta
+
 import pytest
 from fastapi.testclient import TestClient
 
 # Import the module under test
 from bertrend.services.scheduling import scheduling_service as svc
-from bertrend.services.scheduling.routers import scheduling
 from bertrend.services.scheduling.models.scheduling_models import JobCreate
+from bertrend.services.scheduling.routers import scheduling
 
 
 class FakeJob:
@@ -122,7 +123,8 @@ def test_list_functions(client):
     assert r.status_code == 200
     data = r.json()
     assert "available_functions" in data
-    assert "sample_job" in data["available_functions"]
+    # http_request in scheduling/routers/scheduling.py is mapped to basic_http_request
+    assert "http_request" in data["available_functions"]
 
 
 def test_create_job_success_interval(client):

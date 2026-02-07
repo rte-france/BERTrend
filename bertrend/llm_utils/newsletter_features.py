@@ -3,33 +3,33 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import inspect
-from pathlib import Path
 import os
+from pathlib import Path
 
 import jinja2
 
 # from md2pdf.core import md2pdf
 import pandas as pd
 import tldextract
+from bertopic._bertopic import BERTopic
 from loguru import logger
+from tqdm import tqdm
 
 from bertrend import LLM_CONFIG
 from bertrend.llm_utils.newsletter_model import (
-    Newsletter,
-    Topic,
     STRONG_TOPIC_TYPE,
     Article,
+    Newsletter,
+    Topic,
 )
 from bertrend.llm_utils.openai_client import OpenAI_Client
-from bertrend.services.summary.chatgpt_summarizer import GPTSummarizer
-from bertrend.topic_analysis.representative_docs import get_most_representative_docs
 from bertrend.llm_utils.prompts import (
-    USER_SUMMARY_MULTIPLE_DOCS,
     USER_GENERATE_TOPIC_LABEL_SUMMARIES,
+    USER_SUMMARY_MULTIPLE_DOCS,
 )
 from bertrend.services.summarizer import Summarizer
-from bertopic._bertopic import BERTopic
-from tqdm import tqdm
+from bertrend.services.summary.chatgpt_summarizer import GPTSummarizer
+from bertrend.topic_analysis.representative_docs import get_most_representative_docs
 
 # Ensures to write with +rw for both user and groups
 os.umask(0o002)
@@ -172,7 +172,7 @@ def generate_newsletter(
         for _, doc in sub_df.iterrows():
             try:
                 domain = tldextract.extract(doc.url).domain
-            except:
+            except Exception:
                 logger.warning(f"Cannot extract URL for {doc}")
                 domain = None
             # Add the full text when no summarization is performed

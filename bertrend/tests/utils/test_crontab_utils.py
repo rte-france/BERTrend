@@ -1,14 +1,13 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
 import subprocess
 from pathlib import Path
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import MagicMock, patch
 
-from bertrend_apps.common.crontab_utils import CrontabSchedulerUtils
+from bertrend.bertrend_apps.common.crontab_utils import CrontabSchedulerUtils
 
 
 class TestCrontabSchedulerUtils:
@@ -103,7 +102,9 @@ class TestCrontabSchedulerUtils:
 
         assert result is False
 
-    @patch("bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job")
+    @patch(
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job"
+    )
     @patch("subprocess.check_output")
     def test_remove_from_crontab_success(self, mock_check_output, mock_check_job):
         """Test successfully removing a job from crontab."""
@@ -115,7 +116,9 @@ class TestCrontabSchedulerUtils:
         assert result is True
         mock_check_output.assert_called_once()
 
-    @patch("bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job")
+    @patch(
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job"
+    )
     def test_remove_from_crontab_not_found(self, mock_check_job):
         """Test removing a job that doesn't exist."""
         mock_check_job.return_value = False
@@ -124,7 +127,9 @@ class TestCrontabSchedulerUtils:
 
         assert result is False
 
-    @patch("bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job")
+    @patch(
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job"
+    )
     @patch("subprocess.check_output")
     def test_remove_from_crontab_error(self, mock_check_output, mock_check_job):
         """Test error handling when removing from crontab."""
@@ -135,11 +140,13 @@ class TestCrontabSchedulerUtils:
 
         assert result is False
 
-    @patch("bertrend_apps.common.crontab_utils.load_toml_config")
+    @patch("bertrend.bertrend_apps.common.crontab_utils.load_toml_config")
     @patch(
-        "bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
     )
-    @patch("bertrend_apps.common.crontab_utils.BERTREND_LOG_PATH", Path("/logs"))
+    @patch(
+        "bertrend.bertrend_apps.common.crontab_utils.BERTREND_LOG_PATH", Path("/logs")
+    )
     def test_schedule_scrapping(self, mock_add_job, mock_load_config):
         """Test scheduling a scraping job."""
         mock_config = {
@@ -161,11 +168,13 @@ class TestCrontabSchedulerUtils:
         assert "scrape-feed" in call_args[0][1]
         assert "test_feed" in call_args[0][1]
 
-    @patch("bertrend_apps.common.crontab_utils.load_toml_config")
+    @patch("bertrend.bertrend_apps.common.crontab_utils.load_toml_config")
     @patch(
-        "bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
     )
-    @patch("bertrend_apps.common.crontab_utils.BERTREND_LOG_PATH", Path("/logs"))
+    @patch(
+        "bertrend.bertrend_apps.common.crontab_utils.BERTREND_LOG_PATH", Path("/logs")
+    )
     def test_schedule_scrapping_with_user(self, mock_add_job, mock_load_config):
         """Test scheduling a scraping job for a specific user."""
         mock_config = {
@@ -185,11 +194,13 @@ class TestCrontabSchedulerUtils:
         call_args = mock_add_job.call_args
         assert "users/testuser" in call_args[0][1]
 
-    @patch("bertrend_apps.common.crontab_utils.load_toml_config")
+    @patch("bertrend.bertrend_apps.common.crontab_utils.load_toml_config")
     @patch(
-        "bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
     )
-    @patch("bertrend_apps.common.crontab_utils.BERTREND_LOG_PATH", Path("/logs"))
+    @patch(
+        "bertrend.bertrend_apps.common.crontab_utils.BERTREND_LOG_PATH", Path("/logs")
+    )
     def test_schedule_newsletter(self, mock_add_job, mock_load_config):
         """Test scheduling a newsletter job."""
         mock_config = {
@@ -211,10 +222,12 @@ class TestCrontabSchedulerUtils:
         assert "newsletters" in call_args[0][1]
 
     @patch(
-        "bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
     )
-    @patch("bertrend_apps.common.crontab_utils.BERTREND_LOG_PATH", Path("/logs"))
-    @patch("bertrend_apps.common.crontab_utils.BEST_CUDA_DEVICE", "1")
+    @patch(
+        "bertrend.bertrend_apps.common.crontab_utils.BERTREND_LOG_PATH", Path("/logs")
+    )
+    @patch("bertrend.bertrend_apps.common.crontab_utils.BEST_CUDA_DEVICE", "1")
     def test_schedule_training_for_user(self, mock_add_job):
         """Test scheduling a training job for a user."""
         mock_add_job.return_value = True
@@ -234,9 +247,11 @@ class TestCrontabSchedulerUtils:
         assert "CUDA_VISIBLE_DEVICES=1" in call_args[0][2]
 
     @patch(
-        "bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
     )
-    @patch("bertrend_apps.common.crontab_utils.BERTREND_LOG_PATH", Path("/logs"))
+    @patch(
+        "bertrend.bertrend_apps.common.crontab_utils.BERTREND_LOG_PATH", Path("/logs")
+    )
     def test_schedule_report_generation_with_auto_send(self, mock_add_job):
         """Test scheduling report generation when auto_send is enabled."""
         mock_add_job.return_value = True
@@ -257,7 +272,7 @@ class TestCrontabSchedulerUtils:
         mock_add_job.assert_called_once()
 
     @patch(
-        "bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
     )
     def test_schedule_report_generation_auto_send_disabled(self, mock_add_job):
         """Test that report generation is not scheduled when auto_send is disabled."""
@@ -277,7 +292,7 @@ class TestCrontabSchedulerUtils:
         mock_add_job.assert_not_called()
 
     @patch(
-        "bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils.add_job_to_crontab"
     )
     def test_schedule_report_generation_no_recipients(self, mock_add_job):
         """Test that report generation is not scheduled when no recipients are configured."""
@@ -297,7 +312,7 @@ class TestCrontabSchedulerUtils:
         mock_add_job.assert_not_called()
 
     @patch(
-        "bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._remove_from_crontab"
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._remove_from_crontab"
     )
     def test_remove_scrapping_for_user_with_user(self, mock_remove):
         """Test removing scraping job for a specific user."""
@@ -312,7 +327,7 @@ class TestCrontabSchedulerUtils:
         assert "test_feed" in pattern
 
     @patch(
-        "bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._remove_from_crontab"
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._remove_from_crontab"
     )
     def test_remove_scrapping_for_user_without_user(self, mock_remove):
         """Test removing scraping job without user specification."""
@@ -327,7 +342,7 @@ class TestCrontabSchedulerUtils:
         assert "users" not in pattern
 
     @patch(
-        "bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._remove_from_crontab"
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._remove_from_crontab"
     )
     def test_remove_scheduled_training_for_user(self, mock_remove):
         """Test removing training job for a user."""
@@ -345,7 +360,7 @@ class TestCrontabSchedulerUtils:
         assert "test_model" in pattern
 
     @patch(
-        "bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._remove_from_crontab"
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._remove_from_crontab"
     )
     def test_remove_scheduled_training_no_user(self, mock_remove):
         """Test that removing training without user returns False."""
@@ -355,7 +370,7 @@ class TestCrontabSchedulerUtils:
         mock_remove.assert_not_called()
 
     @patch(
-        "bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._remove_from_crontab"
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._remove_from_crontab"
     )
     def test_remove_scheduled_report_generation_for_user(self, mock_remove):
         """Test removing report generation job for a user."""
@@ -372,7 +387,9 @@ class TestCrontabSchedulerUtils:
         assert "testuser" in pattern
         assert "test_model" in pattern
 
-    @patch("bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job")
+    @patch(
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job"
+    )
     def test_check_if_scrapping_active_with_user(self, mock_check):
         """Test checking if scraping is active for a specific user."""
         mock_check.return_value = True
@@ -387,7 +404,9 @@ class TestCrontabSchedulerUtils:
         assert "users/testuser" in pattern
         assert "test_feed" in pattern
 
-    @patch("bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job")
+    @patch(
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job"
+    )
     def test_check_if_scrapping_active_without_user(self, mock_check):
         """Test checking if scraping is active without user specification."""
         mock_check.return_value = True
@@ -401,7 +420,9 @@ class TestCrontabSchedulerUtils:
         pattern = mock_check.call_args[0][0]
         assert "test_feed" in pattern
 
-    @patch("bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job")
+    @patch(
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job"
+    )
     def test_check_if_learning_active_for_user(self, mock_check):
         """Test checking if learning is active for a user."""
         mock_check.return_value = True
@@ -417,7 +438,9 @@ class TestCrontabSchedulerUtils:
         assert "testuser" in pattern
         assert "test_model" in pattern
 
-    @patch("bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job")
+    @patch(
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job"
+    )
     def test_check_if_learning_active_no_user(self, mock_check):
         """Test that checking learning without user returns False."""
         result = self.scheduler.check_if_learning_active_for_user("test_model", None)
@@ -425,7 +448,9 @@ class TestCrontabSchedulerUtils:
         assert result is False
         mock_check.assert_not_called()
 
-    @patch("bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job")
+    @patch(
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job"
+    )
     def test_check_if_report_generation_active_for_user(self, mock_check):
         """Test checking if report generation is active for a user."""
         mock_check.return_value = True
@@ -441,7 +466,9 @@ class TestCrontabSchedulerUtils:
         assert "testuser" in pattern
         assert "test_model" in pattern
 
-    @patch("bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job")
+    @patch(
+        "bertrend.bertrend_apps.common.crontab_utils.CrontabSchedulerUtils._check_cron_job"
+    )
     def test_check_if_report_generation_active_no_user(self, mock_check):
         """Test that checking report generation without user returns False."""
         result = self.scheduler.check_if_report_generation_active_for_user(

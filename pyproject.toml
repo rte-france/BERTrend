@@ -1,21 +1,21 @@
 [project]
 name = "bertrend"
-version = "0.3.24"
+version = "0.4.0"
 description = "BERTrend analyses topic evolution over time using state-of-the-art transformer models: topic modelling and LLM"
 license = "LICENSE.md"
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
 authors = [
     { name = "Jérôme Picault", email = "jerome.picault@rte-france.com" },
-    { name="Guillaume Grosjean", email="guillaume.grosjean@rte-france.com>" },
-    { name="Allaa Boutaleb", email="allaa.boutaleb@lip6.fr>"}
+    { name = "Guillaume Grosjean", email = "guillaume.grosjean@rte-france.com>" },
+    { name = "Allaa Boutaleb", email = "allaa.boutaleb@lip6.fr>" }
 ]
 maintainers = [
     { name = "Jérôme Picault", email = "jerome.picault@rte-france.com" },
-    { name="Guillaume Grosjean", email="guillaume.grosjean@rte-france.com>" },
+    { name = "Guillaume Grosjean", email = "guillaume.grosjean@rte-france.com>" },
 ]
 keywords = ["topics", "BERTopic", "transformers", "weak signals", "LLM", "trend analysis"]
-classifiers = [ "Topic :: Scientific/Engineering :: Artificial Intelligence"]
+classifiers = ["Topic :: Scientific/Engineering :: Artificial Intelligence"]
 
 dependencies = [
     "APScheduler (>=3.11.0)",
@@ -39,11 +39,10 @@ dependencies = [
     "lxml-html-clean (>=0.2.2)",
     "markdown (>=3.7)",
     "nltk (>=3.9.1)",
-    "numpy (<2)",
     "openai (>=1.77.0)",
     "openai-agents[litellm] (>=0.4.0)",
     "openpyxl (>=3.1.5)",
-    "opentelemetry-exporter-otlp-proto-grpc (==1.25.0)",  # to avoid error chroma with protobuf
+    "opentelemetry-exporter-otlp-proto-grpc (==1.25.0)", # to avoid error chroma with protobuf
     "pandas (>=2.2.2)",
     "plotly (>=5.24.1)",
     "plotly-resampler (>=0.10.0)",
@@ -60,7 +59,7 @@ dependencies = [
     "requests (>=2.32.3)",
     "seaborn (>=0.13.2)",
     "sentencepiece (>=0.2.0)",
-    "streamlit (>=1.50)",
+    "streamlit (>=1.51.0)",
     "streamlit-code-editor (>=0.1.22)",
     "SQLAlchemy (>=2.0.40)",
     "supervisor (>=4.3.0)",
@@ -73,10 +72,8 @@ dependencies = [
     "umap-learn (>=0.5.7)",
     "ruff>=0.14.14",
     "psutil>=7.2.1",
-]
-
-[project.optional-dependencies]
-apps = [
+    "pika>=1.3.2",
+    "aio-pika>=9.5.5",
     "arxiv>=2.2.0",
     "feedparser>=6.0.11",
     "googlenewsdecoder>=0.1.7",
@@ -94,13 +91,9 @@ repository = "https://github.com/rte-france/BERTrend"
 documentation = "https://github.com/rte-france/BERTrend"
 "Bug Tracker" = "https://github.com/rte-france/BERTrend/issues"
 
-[tool.poetry]
-packages = [
-    { include = "bertrend" },
-    { include = "bertrend_apps" },
-]
-exclude = [ "data" ]
-requires-poetry = ">=2.0"
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

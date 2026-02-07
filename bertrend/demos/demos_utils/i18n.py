@@ -7,16 +7,15 @@ Provides functionality for translating text between French and English.
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-
 from typing import Optional
 
 import streamlit as st
 
-from bertrend.demos.topic_analysis.i18n_translations import (
-    TRANSLATIONS as TOPIC_ANALYSIS_TRANSLATIONS,
-)
 from bertrend.demos.demos_utils.i18n_translations import (
     TRANSLATIONS as DEMOS_UTILS_TRANSLATIONS,
+)
+from bertrend.demos.topic_analysis.i18n_translations import (
+    TRANSLATIONS as TOPIC_ANALYSIS_TRANSLATIONS,
 )
 from bertrend.demos.weak_signals.i18n_translations import (
     TRANSLATIONS as WEAK_SIGNALS_TRANSLATIONS,

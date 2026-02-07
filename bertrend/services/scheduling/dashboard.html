@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright (c) 2024, RTE (https://www.rte-france.com)
+  ~ Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
   ~ See AUTHORS.txt
   ~ SPDX-License-Identifier: MPL-2.0
   ~ This file is part of BERTrend.
@@ -34,7 +34,7 @@
             background: white;
             padding: 30px;
             border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             margin-bottom: 30px;
         }
 
@@ -64,7 +64,7 @@
             background: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             margin-bottom: 30px;
             display: flex;
             gap: 15px;
@@ -135,13 +135,13 @@
             background: white;
             border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s;
         }
 
         .job-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
 
         .job-header {
@@ -208,7 +208,7 @@
             padding: 60px;
             border-radius: 10px;
             text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .empty-state h2 {
@@ -227,7 +227,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 1000;
             align-items: center;
             justify-content: center;
@@ -331,179 +331,180 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🕒 Job Scheduler Dashboard</h1>
-            <p>Manage and monitor your scheduled jobs</p>
-            <div class="status">
-                <div class="status-item">
-                    <strong id="totalJobs">0</strong> Total Jobs
-                </div>
-                <div class="status-item">
-                    Timezone: <strong>Europe/Paris</strong>
-                </div>
-                <div class="status-item">
-                    API: <strong id="apiStatus">Checking...</strong>
-                </div>
+<div class="container">
+    <div class="header">
+        <h1>🕒 Job Scheduler Dashboard</h1>
+        <p>Manage and monitor your scheduled jobs</p>
+        <div class="status">
+            <div class="status-item">
+                <strong id="totalJobs">0</strong> Total Jobs
             </div>
-        </div>
-
-        <div class="controls">
-            <button class="btn btn-primary" onclick="showCreateModal()">➕ Create New Job</button>
-            <button class="btn btn-success" onclick="loadJobs()">🔄 Refresh</button>
-            <button class="btn btn-warning" onclick="showCronHelper()">📅 Cron Helper</button>
-            <input type="text" id="searchInput" placeholder="Search jobs..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" oninput="filterJobs()">
-        </div>
-
-        <div id="message"></div>
-
-        <div id="jobsContainer" class="jobs-grid">
-            <div class="loading">Loading jobs...</div>
+            <div class="status-item">
+                Timezone: <strong>Europe/Paris</strong>
+            </div>
+            <div class="status-item">
+                API: <strong id="apiStatus">Checking...</strong>
+            </div>
         </div>
     </div>
 
-    <!-- Create Job Modal -->
-    <div id="createModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Create New Job</h2>
-                <button class="close-btn" onclick="closeModal('createModal')">&times;</button>
-            </div>
-            <form onsubmit="createJob(event)">
-                <div class="form-group">
-                    <label>Job ID *</label>
-                    <input type="text" id="jobId" required>
-                    <small>Unique identifier for the job</small>
-                </div>
-                <div class="form-group">
-                    <label>Job Type *</label>
-                    <select id="jobType" onchange="updateJobTypeFields()" required>
-                        <option value="interval">Interval (periodic)</option>
-                        <option value="cron">Cron (scheduled)</option>
-                        <option value="date">Date (one-time)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Function *</label>
-                    <select id="functionName" required>
-                        <option value="sample_job">Sample Job</option>
-                        <option value="cleanup_task">Cleanup Task</option>
-                        <option value="report_generator">Report Generator</option>
-                        <option value="data_processor">Data Processor</option>
-                        <option value="email_sender">Email Sender</option>
-                    </select>
-                </div>
+    <div class="controls">
+        <button class="btn btn-primary" onclick="showCreateModal()">➕ Create New Job</button>
+        <button class="btn btn-success" onclick="loadJobs()">🔄 Refresh</button>
+        <button class="btn btn-warning" onclick="showCronHelper()">📅 Cron Helper</button>
+        <input type="text" id="searchInput" placeholder="Search jobs..."
+               style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" oninput="filterJobs()">
+    </div>
 
-                <!-- Interval fields -->
-                <div id="intervalFields">
-                    <div class="form-group">
-                        <label>Interval</label>
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                            <div>
-                                <label style="font-size: 12px;">Seconds</label>
-                                <input type="number" id="seconds" min="0" placeholder="0">
-                            </div>
-                            <div>
-                                <label style="font-size: 12px;">Minutes</label>
-                                <input type="number" id="minutes" min="0" placeholder="0">
-                            </div>
-                            <div>
-                                <label style="font-size: 12px;">Hours</label>
-                                <input type="number" id="hours" min="0" placeholder="0">
-                            </div>
-                            <div>
-                                <label style="font-size: 12px;">Days</label>
-                                <input type="number" id="days" min="0" placeholder="0">
-                            </div>
+    <div id="message"></div>
+
+    <div id="jobsContainer" class="jobs-grid">
+        <div class="loading">Loading jobs...</div>
+    </div>
+</div>
+
+<!-- Create Job Modal -->
+<div id="createModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Create New Job</h2>
+            <button class="close-btn" onclick="closeModal('createModal')">&times;</button>
+        </div>
+        <form onsubmit="createJob(event)">
+            <div class="form-group">
+                <label>Job ID *</label>
+                <input type="text" id="jobId" required>
+                <small>Unique identifier for the job</small>
+            </div>
+            <div class="form-group">
+                <label>Job Type *</label>
+                <select id="jobType" onchange="updateJobTypeFields()" required>
+                    <option value="interval">Interval (periodic)</option>
+                    <option value="cron">Cron (scheduled)</option>
+                    <option value="date">Date (one-time)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Function *</label>
+                <select id="functionName" required>
+                    <option value="sample_job">Sample Job</option>
+                    <option value="cleanup_task">Cleanup Task</option>
+                    <option value="report_generator">Report Generator</option>
+                    <option value="data_processor">Data Processor</option>
+                    <option value="email_sender">Email Sender</option>
+                </select>
+            </div>
+
+            <!-- Interval fields -->
+            <div id="intervalFields">
+                <div class="form-group">
+                    <label>Interval</label>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                        <div>
+                            <label style="font-size: 12px;">Seconds</label>
+                            <input type="number" id="seconds" min="0" placeholder="0">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px;">Minutes</label>
+                            <input type="number" id="minutes" min="0" placeholder="0">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px;">Hours</label>
+                            <input type="number" id="hours" min="0" placeholder="0">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px;">Days</label>
+                            <input type="number" id="days" min="0" placeholder="0">
                         </div>
                     </div>
                 </div>
-
-                <!-- Cron fields -->
-                <div id="cronFields" style="display: none;">
-                    <div class="form-group">
-                        <label>Cron Expression</label>
-                        <input type="text" id="cronExpression" placeholder="0 9 * * * (9 AM daily)">
-                        <small>Format: minute hour day month day_of_week</small>
-                    </div>
-                </div>
-
-                <!-- Date fields -->
-                <div id="dateFields" style="display: none;">
-                    <div class="form-group">
-                        <label>Run Date & Time</label>
-                        <input type="datetime-local" id="runDate">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Arguments (JSON)</label>
-                    <textarea id="kwargs" rows="3" placeholder='{"message": "Hello"}'>{}</textarea>
-                    <small>JSON format for function arguments</small>
-                </div>
-
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Create Job</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Cron Helper Modal -->
-    <div id="cronModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Cron Expression Helper</h2>
-                <button class="close-btn" onclick="closeModal('cronModal')">&times;</button>
             </div>
-            <div id="cronExamples"></div>
-        </div>
+
+            <!-- Cron fields -->
+            <div id="cronFields" style="display: none;">
+                <div class="form-group">
+                    <label>Cron Expression</label>
+                    <input type="text" id="cronExpression" placeholder="0 9 * * * (9 AM daily)">
+                    <small>Format: minute hour day month day_of_week</small>
+                </div>
+            </div>
+
+            <!-- Date fields -->
+            <div id="dateFields" style="display: none;">
+                <div class="form-group">
+                    <label>Run Date & Time</label>
+                    <input type="datetime-local" id="runDate">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Arguments (JSON)</label>
+                <textarea id="kwargs" rows="3" placeholder='{"message": "Hello"}'>{}</textarea>
+                <small>JSON format for function arguments</small>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Create Job</button>
+        </form>
     </div>
+</div>
 
-    <script>
-        const API_URL = 'http://localhost:8000';
-        let allJobs = [];
+<!-- Cron Helper Modal -->
+<div id="cronModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Cron Expression Helper</h2>
+            <button class="close-btn" onclick="closeModal('cronModal')">&times;</button>
+        </div>
+        <div id="cronExamples"></div>
+    </div>
+</div>
 
-        async function checkAPI() {
-            try {
-                const response = await fetch(`${API_URL}/`);
-                if (response.ok) {
-                    document.getElementById('apiStatus').textContent = 'Connected';
-                    document.getElementById('apiStatus').style.color = '#48bb78';
-                } else {
-                    document.getElementById('apiStatus').textContent = 'Error';
-                    document.getElementById('apiStatus').style.color = '#f56565';
-                }
-            } catch (error) {
-                document.getElementById('apiStatus').textContent = 'Disconnected';
+<script>
+    const API_URL = 'http://localhost:8000';
+    let allJobs = [];
+
+    async function checkAPI() {
+        try {
+            const response = await fetch(`${API_URL}/`);
+            if (response.ok) {
+                document.getElementById('apiStatus').textContent = 'Connected';
+                document.getElementById('apiStatus').style.color = '#48bb78';
+            } else {
+                document.getElementById('apiStatus').textContent = 'Error';
                 document.getElementById('apiStatus').style.color = '#f56565';
             }
+        } catch (error) {
+            document.getElementById('apiStatus').textContent = 'Disconnected';
+            document.getElementById('apiStatus').style.color = '#f56565';
+        }
+    }
+
+    async function loadJobs() {
+        try {
+            const response = await fetch(`${API_URL}/jobs`);
+            allJobs = await response.json();
+            displayJobs(allJobs);
+            document.getElementById('totalJobs').textContent = allJobs.length;
+        } catch (error) {
+            showMessage('Error loading jobs: ' + error.message, 'error');
+            document.getElementById('jobsContainer').innerHTML = '<div class="empty-state"><h2>Error loading jobs</h2><p>Check API connection</p></div>';
+        }
+    }
+
+    function displayJobs(jobs) {
+        const container = document.getElementById('jobsContainer');
+
+        if (jobs.length === 0) {
+            container.innerHTML = '<div class="empty-state"><h2>No jobs scheduled</h2><p>Create your first job to get started</p></div>';
+            return;
         }
 
-        async function loadJobs() {
-            try {
-                const response = await fetch(`${API_URL}/jobs`);
-                allJobs = await response.json();
-                displayJobs(allJobs);
-                document.getElementById('totalJobs').textContent = allJobs.length;
-            } catch (error) {
-                showMessage('Error loading jobs: ' + error.message, 'error');
-                document.getElementById('jobsContainer').innerHTML = '<div class="empty-state"><h2>Error loading jobs</h2><p>Check API connection</p></div>';
-            }
-        }
+        container.innerHTML = jobs.map(job => {
+            const nextRun = job.next_run_time ? new Date(job.next_run_time).toLocaleString('fr-FR', {timeZone: 'Europe/Paris'}) : 'Not scheduled';
+            const jobType = job.trigger.toLowerCase().includes('interval') ? 'interval' :
+                job.trigger.toLowerCase().includes('cron') ? 'cron' : 'date';
 
-        function displayJobs(jobs) {
-            const container = document.getElementById('jobsContainer');
-
-            if (jobs.length === 0) {
-                container.innerHTML = '<div class="empty-state"><h2>No jobs scheduled</h2><p>Create your first job to get started</p></div>';
-                return;
-            }
-
-            container.innerHTML = jobs.map(job => {
-                const nextRun = job.next_run_time ? new Date(job.next_run_time).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }) : 'Not scheduled';
-                const jobType = job.trigger.toLowerCase().includes('interval') ? 'interval' :
-                               job.trigger.toLowerCase().includes('cron') ? 'cron' : 'date';
-
-                return `
+            return `
                     <div class="job-card">
                         <div class="job-header">
                             <div class="job-id">${job.job_id}</div>
@@ -534,165 +535,165 @@
                         </div>
                     </div>
                 `;
-            }).join('');
+        }).join('');
+    }
+
+    function filterJobs() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const filteredJobs = allJobs.filter(job =>
+            job.job_id.toLowerCase().includes(searchTerm) ||
+            job.trigger.toLowerCase().includes(searchTerm)
+        );
+        displayJobs(filteredJobs);
+    }
+
+    function showCreateModal() {
+        document.getElementById('createModal').classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    function updateJobTypeFields() {
+        const jobType = document.getElementById('jobType').value;
+        document.getElementById('intervalFields').style.display = jobType === 'interval' ? 'block' : 'none';
+        document.getElementById('cronFields').style.display = jobType === 'cron' ? 'block' : 'none';
+        document.getElementById('dateFields').style.display = jobType === 'date' ? 'block' : 'none';
+    }
+
+    async function createJob(event) {
+        event.preventDefault();
+
+        const jobData = {
+            job_id: document.getElementById('jobId').value,
+            job_type: document.getElementById('jobType').value,
+            function_name: document.getElementById('functionName').value
+        };
+
+        if (jobData.job_type === 'interval') {
+            jobData.seconds = parseInt(document.getElementById('seconds').value) || 0;
+            jobData.minutes = parseInt(document.getElementById('minutes').value) || 0;
+            jobData.hours = parseInt(document.getElementById('hours').value) || 0;
+            jobData.days = parseInt(document.getElementById('days').value) || 0;
+        } else if (jobData.job_type === 'cron') {
+            jobData.cron_expression = document.getElementById('cronExpression').value;
+        } else if (jobData.job_type === 'date') {
+            jobData.run_date = document.getElementById('runDate').value;
         }
 
-        function filterJobs() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const filteredJobs = allJobs.filter(job =>
-                job.job_id.toLowerCase().includes(searchTerm) ||
-                job.trigger.toLowerCase().includes(searchTerm)
-            );
-            displayJobs(filteredJobs);
+        try {
+            const kwargs = JSON.parse(document.getElementById('kwargs').value || '{}');
+            jobData.kwargs = kwargs;
+        } catch (e) {
+            showMessage('Invalid JSON in arguments', 'error');
+            return;
         }
 
-        function showCreateModal() {
-            document.getElementById('createModal').classList.add('active');
-        }
+        try {
+            const response = await fetch(`${API_URL}/jobs`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(jobData)
+            });
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-
-        function updateJobTypeFields() {
-            const jobType = document.getElementById('jobType').value;
-            document.getElementById('intervalFields').style.display = jobType === 'interval' ? 'block' : 'none';
-            document.getElementById('cronFields').style.display = jobType === 'cron' ? 'block' : 'none';
-            document.getElementById('dateFields').style.display = jobType === 'date' ? 'block' : 'none';
-        }
-
-        async function createJob(event) {
-            event.preventDefault();
-
-            const jobData = {
-                job_id: document.getElementById('jobId').value,
-                job_type: document.getElementById('jobType').value,
-                function_name: document.getElementById('functionName').value
-            };
-
-            if (jobData.job_type === 'interval') {
-                jobData.seconds = parseInt(document.getElementById('seconds').value) || 0;
-                jobData.minutes = parseInt(document.getElementById('minutes').value) || 0;
-                jobData.hours = parseInt(document.getElementById('hours').value) || 0;
-                jobData.days = parseInt(document.getElementById('days').value) || 0;
-            } else if (jobData.job_type === 'cron') {
-                jobData.cron_expression = document.getElementById('cronExpression').value;
-            } else if (jobData.job_type === 'date') {
-                jobData.run_date = document.getElementById('runDate').value;
+            if (response.ok) {
+                showMessage('Job created successfully!', 'success');
+                closeModal('createModal');
+                loadJobs();
+            } else {
+                const error = await response.json();
+                showMessage('Error: ' + error.detail, 'error');
             }
-
-            try {
-                const kwargs = JSON.parse(document.getElementById('kwargs').value || '{}');
-                jobData.kwargs = kwargs;
-            } catch (e) {
-                showMessage('Invalid JSON in arguments', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/jobs`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(jobData)
-                });
-
-                if (response.ok) {
-                    showMessage('Job created successfully!', 'success');
-                    closeModal('createModal');
-                    loadJobs();
-                } else {
-                    const error = await response.json();
-                    showMessage('Error: ' + error.detail, 'error');
-                }
-            } catch (error) {
-                showMessage('Error creating job: ' + error.message, 'error');
-            }
+        } catch (error) {
+            showMessage('Error creating job: ' + error.message, 'error');
         }
+    }
 
-        async function runJob(jobId) {
-            try {
-                const response = await fetch(`${API_URL}/jobs/${jobId}/run`, { method: 'POST' });
-                if (response.ok) {
-                    showMessage(`Job ${jobId} executed successfully!`, 'success');
-                } else {
-                    showMessage('Error running job', 'error');
-                }
-            } catch (error) {
-                showMessage('Error: ' + error.message, 'error');
+    async function runJob(jobId) {
+        try {
+            const response = await fetch(`${API_URL}/jobs/${jobId}/run`, {method: 'POST'});
+            if (response.ok) {
+                showMessage(`Job ${jobId} executed successfully!`, 'success');
+            } else {
+                showMessage('Error running job', 'error');
             }
+        } catch (error) {
+            showMessage('Error: ' + error.message, 'error');
         }
+    }
 
-        async function pauseJob(jobId) {
-            try {
-                const response = await fetch(`${API_URL}/jobs/${jobId}/pause`, { method: 'POST' });
-                if (response.ok) {
-                    showMessage(`Job ${jobId} paused`, 'success');
-                    loadJobs();
-                }
-            } catch (error) {
-                showMessage('Error: ' + error.message, 'error');
+    async function pauseJob(jobId) {
+        try {
+            const response = await fetch(`${API_URL}/jobs/${jobId}/pause`, {method: 'POST'});
+            if (response.ok) {
+                showMessage(`Job ${jobId} paused`, 'success');
+                loadJobs();
             }
+        } catch (error) {
+            showMessage('Error: ' + error.message, 'error');
         }
+    }
 
-        async function resumeJob(jobId) {
-            try {
-                const response = await fetch(`${API_URL}/jobs/${jobId}/resume`, { method: 'POST' });
-                if (response.ok) {
-                    showMessage(`Job ${jobId} resumed`, 'success');
-                    loadJobs();
-                }
-            } catch (error) {
-                showMessage('Error: ' + error.message, 'error');
+    async function resumeJob(jobId) {
+        try {
+            const response = await fetch(`${API_URL}/jobs/${jobId}/resume`, {method: 'POST'});
+            if (response.ok) {
+                showMessage(`Job ${jobId} resumed`, 'success');
+                loadJobs();
             }
+        } catch (error) {
+            showMessage('Error: ' + error.message, 'error');
         }
+    }
 
-        async function deleteJob(jobId) {
-            if (!confirm(`Are you sure you want to delete job "${jobId}"?`)) return;
+    async function deleteJob(jobId) {
+        if (!confirm(`Are you sure you want to delete job "${jobId}"?`)) return;
 
-            try {
-                const response = await fetch(`${API_URL}/jobs/${jobId}`, { method: 'DELETE' });
-                if (response.ok) {
-                    showMessage(`Job ${jobId} deleted`, 'success');
-                    loadJobs();
-                }
-            } catch (error) {
-                showMessage('Error: ' + error.message, 'error');
+        try {
+            const response = await fetch(`${API_URL}/jobs/${jobId}`, {method: 'DELETE'});
+            if (response.ok) {
+                showMessage(`Job ${jobId} deleted`, 'success');
+                loadJobs();
             }
+        } catch (error) {
+            showMessage('Error: ' + error.message, 'error');
         }
+    }
 
-        async function showCronHelper() {
-            try {
-                const response = await fetch(`${API_URL}/cron/examples`);
-                const data = await response.json();
+    async function showCronHelper() {
+        try {
+            const response = await fetch(`${API_URL}/cron/examples`);
+            const data = await response.json();
 
-                const examples = data.examples.map(ex => `
+            const examples = data.examples.map(ex => `
                     <div style="background: #f7fafc; padding: 15px; border-radius: 5px; margin-bottom: 10px;">
                         <div style="font-weight: bold; color: #333;">${ex.description}</div>
                         <code style="background: white; padding: 5px 10px; border-radius: 3px; display: inline-block; margin-top: 5px;">${ex.expression}</code>
                     </div>
                 `).join('');
 
-                document.getElementById('cronExamples').innerHTML = examples;
-                document.getElementById('cronModal').classList.add('active');
-            } catch (error) {
-                showMessage('Error loading cron examples', 'error');
-            }
+            document.getElementById('cronExamples').innerHTML = examples;
+            document.getElementById('cronModal').classList.add('active');
+        } catch (error) {
+            showMessage('Error loading cron examples', 'error');
         }
+    }
 
-        function showMessage(message, type) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.innerHTML = `<div class="${type}">${message}</div>`;
-            setTimeout(() => {
-                messageDiv.innerHTML = '';
-            }, 5000);
-        }
+    function showMessage(message, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.innerHTML = `<div class="${type}">${message}</div>`;
+        setTimeout(() => {
+            messageDiv.innerHTML = '';
+        }, 5000);
+    }
 
-        // Initialize
-        checkAPI();
+    // Initialize
+    checkAPI();
+    loadJobs();
+    setInterval(() => {
         loadJobs();
-        setInterval(() => {
-            loadJobs();
-        }, 30000); // Refresh every 30 seconds
-    </script>
+    }, 30000); // Refresh every 30 seconds
+</script>
 </body>
 </html>

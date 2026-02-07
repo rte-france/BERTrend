@@ -3,7 +3,6 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import streamlit as st
-
 from code_editor import code_editor
 
 from bertrend import (
@@ -12,23 +11,22 @@ from bertrend import (
     EMBEDDING_CONFIG,
     load_toml_config,
 )
-from bertrend.demos.demos_utils.i18n import translate
-from bertrend.demos.demos_utils.state_utils import (
-    register_widget,
-    save_widget_state,
-    register_multiple_widget,
-    reset_widget_state,
-)
 from bertrend.config.parameters import (
     EMBEDDING_DTYPES,
-    LANGUAGES,
     ENGLISH_EMBEDDING_MODELS,
     FRENCH_EMBEDDING_MODELS,
-    REPRESENTATION_MODELS,
+    LANGUAGES,
     MMR_REPRESENTATION_MODEL,
+    REPRESENTATION_MODELS,
 )
-
+from bertrend.demos.demos_utils.i18n import translate
 from bertrend.demos.demos_utils.icons import INFO_ICON
+from bertrend.demos.demos_utils.state_utils import (
+    register_multiple_widget,
+    register_widget,
+    reset_widget_state,
+    save_widget_state,
+)
 
 
 def display_local_embeddings():
@@ -153,7 +151,7 @@ def display_representation_model_options():
     """UI settings for representation model options"""
     with st.expander("Representation model selection", expanded=False):
         register_widget("representation_models")
-        selected_models = st.multiselect(
+        st.multiselect(
             label="Select representation models",
             options=REPRESENTATION_MODELS,
             default=MMR_REPRESENTATION_MODEL,

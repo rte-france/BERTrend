@@ -1,28 +1,27 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
-import pandas as pd
-import numpy as np
-from unittest.mock import patch, MagicMock
-from datetime import datetime
+from unittest.mock import MagicMock, patch
 
+import numpy as np
+import pandas as pd
+import pytest
+
+from bertrend.trend_analysis.data_structure import SignalAnalysis, TopicSummaryList
 from bertrend.trend_analysis.weak_signals import (
-    detect_weak_signals_zeroshot,
     _apply_decay,
-    _filter_data,
-    _is_rising_popularity,
-    _create_df,
-    _create_dataframes,
-    _initialize_new_topic,
-    update_existing_topic,
     _apply_decay_to_inactive_topics,
+    _create_dataframes,
+    _create_df,
+    _filter_data,
+    _initialize_new_topic,
+    _is_rising_popularity,
     analyze_signal,
-    MAXIMUM_ANALYZED_PERIODS,
+    detect_weak_signals_zeroshot,
+    update_existing_topic,
 )
-from bertrend.trend_analysis.data_structure import TopicSummaryList, SignalAnalysis
 
 
 @pytest.fixture

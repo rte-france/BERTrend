@@ -1,15 +1,16 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
 import pytest
 from pydantic import ValidationError
+
 from bertrend.article_scoring.article_scoring import (
-    QualityLevel,
-    CriteriaScores,
-    WeightConfig,
     ArticleScore,
+    CriteriaScores,
+    QualityLevel,
+    WeightConfig,
 )
 
 

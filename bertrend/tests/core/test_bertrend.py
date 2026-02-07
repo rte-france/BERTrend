@@ -1,22 +1,20 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import os
-import pytest
+from pathlib import Path
+from unittest.mock import MagicMock, mock_open, patch
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from unittest.mock import patch, MagicMock, mock_open
-from datetime import datetime
-
+import pytest
 from bertopic import BERTopic
 from sentence_transformers import SentenceTransformer
 
 from bertrend import BERTREND_DEFAULT_CONFIG_PATH
-from bertrend.BERTrend import BERTrend, _preprocess_model
 from bertrend.BERTopicModel import BERTopicModel
+from bertrend.BERTrend import BERTrend, _preprocess_model
 
 
 @pytest.fixture

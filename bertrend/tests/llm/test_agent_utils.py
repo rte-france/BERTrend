@@ -1,17 +1,18 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
 import asyncio
 import os
 from unittest.mock import Mock, patch
 
+import pytest
+
 from bertrend.llm_utils.agent_utils import (
+    AsyncAgentConcurrentProcessor,
     BaseAgentFactory,
     ProcessingResult,
-    AsyncAgentConcurrentProcessor,
     progress_reporter,
 )
 
@@ -91,14 +92,19 @@ class TestBaseAgentFactory:
         assert factory.model_name == "custom-model"
 
     @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"}, clear=True)
-    @patch("bertrend.llm_utils.agent_utils.OpenAIChatCompletionsModel")
-    @patch("bertrend.llm_utils.agent_utils.AsyncAzureOpenAI")
-    def test_base_agent_factory_azure_model(self, mock_azure_client, mock_openai_model):
-        """Test creating BaseAgentFactory with Azure URL."""
-        factory = BaseAgentFactory(base_url="https://test.openai.azure.com")
+    @patch("bertrend.llm_utils.agent_utils.LitellmModel")
+    def test_base_agent_factory_azure_model(self, mock_litellm_model):
+        """Test creating BaseAgentFactory with Azure-style base URL."""
+        factory = BaseAgentFactory(
+            model_name="gpt-4.1-mini", base_url="https://test.openai.azure.com"
+        )
         assert "azure.com" in factory.base_url
-        mock_azure_client.assert_called_once()
-        mock_openai_model.assert_called_once()
+        mock_litellm_model.assert_called_once_with(
+            model="gpt-4.1-mini",
+            api_key="test-key",
+            base_url="https://test.openai.azure.com",
+        )
+        assert factory.model == mock_litellm_model.return_value
 
     @patch("bertrend.llm_utils.agent_utils.LitellmModel")
     def test_base_agent_factory_litellm_model(self, mock_litellm_model):
@@ -111,6 +117,7 @@ class TestBaseAgentFactory:
         mock_litellm_model.assert_called_once_with(
             model="gpt-4.1-mini", api_key="test-key", base_url="https://custom-api.com"
         )
+        assert factory.model == mock_litellm_model.return_value
 
     @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
     @patch("bertrend.llm_utils.agent_utils.Agent")

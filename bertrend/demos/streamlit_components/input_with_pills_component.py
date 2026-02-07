@@ -1,5 +1,6 @@
-import streamlit as st
 from typing import Callable
+
+import streamlit as st
 
 from bertrend.demos.demos_utils.icons import PERSON_ADD_ICON
 
@@ -88,7 +89,7 @@ def input_with_pills(
                     pills_widget_key
                 ][:]
 
-            selected = st.pills(
+            st.pills(
                 "Items",
                 st.session_state[all_items_key],
                 selection_mode="multi",

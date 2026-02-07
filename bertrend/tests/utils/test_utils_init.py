@@ -1,4 +1,4 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
@@ -48,6 +48,7 @@ def test_ssl_workaround():
         try:
             # Re-import to trigger the code
             import importlib
+
             import bertrend.utils
 
             importlib.reload(bertrend.utils)
@@ -64,6 +65,7 @@ def test_ssl_workaround():
     ):
         # This should not raise an exception
         import importlib
+
         import bertrend.utils
 
         importlib.reload(bertrend.utils)

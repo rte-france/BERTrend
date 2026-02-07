@@ -1,20 +1,20 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import json
+from enum import Enum
 from functools import total_ordering
+from typing import Any, Dict, List, Optional
 
 from pydantic import (
     BaseModel,
-    Field,
-    model_validator,
     ConfigDict,
+    Field,
     computed_field,
     model_serializer,
+    model_validator,
 )
-from typing import Optional, List, Dict, Any
-from enum import Enum
 
 
 @total_ordering

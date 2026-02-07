@@ -10,28 +10,28 @@ import streamlit as st
 
 from bertrend.demos.demos_utils.i18n import translate
 from bertrend.demos.demos_utils.icons import ERROR_ICON, INFO_ICON
-from bertrend.metrics.temporal_metrics_embedding import TempTopic
+from bertrend.demos.demos_utils.state_utils import (
+    SessionStateManager,
+    register_multiple_widget,
+    register_widget,
+    restore_widget_state,
+    save_widget_state,
+)
 from bertrend.demos.topic_analysis.app_utils import (
     compute_topics_over_time,
 )
-from bertrend.topic_analysis.visualizations import (
-    plot_topics_over_time,
-    plot_topic_evolution,
-    plot_temporal_stability_metrics,
-    plot_overall_topic_stability,
-)
-from bertrend.demos.demos_utils.state_utils import (
-    register_widget,
-    save_widget_state,
-    restore_widget_state,
-    register_multiple_widget,
-    SessionStateManager,
-)
 from bertrend.demos.weak_signals.visualizations_utils import PLOTLY_BUTTON_SAVE_CONFIG
+from bertrend.metrics.temporal_metrics_embedding import TempTopic
+from bertrend.topic_analysis.visualizations import (
+    plot_overall_topic_stability,
+    plot_temporal_stability_metrics,
+    plot_topic_evolution,
+    plot_topics_over_time,
+)
 from bertrend.utils.data_loading import (
-    TIMESTAMP_COLUMN,
-    TEXT_COLUMN,
     DOCUMENT_ID_COLUMN,
+    TEXT_COLUMN,
+    TIMESTAMP_COLUMN,
 )
 
 
@@ -433,7 +433,7 @@ def display_overall_topic_stability(topics_to_show):
     """Display Overall Topic Stability."""
     st.header(translate("overall_topic_stability"))
     normalize_overall_stability = st.checkbox(translate("normalize"), value=False)
-    overall_stability_df = st.session_state.temptopic.calculate_overall_topic_stability(
+    st.session_state.temptopic.calculate_overall_topic_stability(
         window_size=st.session_state.window_size,
         k=st.session_state.k,
         alpha=st.session_state.alpha,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
@@ -9,9 +9,8 @@ Test script to verify lazy initialization of SCHEDULER_UTILS.
 This tests that importing bertrend_apps doesn't immediately create scheduler instances.
 """
 
-import os
-import sys
 import multiprocessing
+import os
 
 
 def helper_test_lazy_init_in_worker():
@@ -21,7 +20,7 @@ def helper_test_lazy_init_in_worker():
         print(f"[Worker {pid}] Importing bertrend_apps...")
 
         # Import should not trigger initialization
-        from bertrend_apps import SCHEDULER_UTILS
+        from bertrend.bertrend_apps import SCHEDULER_UTILS
 
         print(f"[Worker {pid}] Import complete (should not have initialized yet)")
 

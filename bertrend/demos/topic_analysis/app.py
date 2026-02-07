@@ -12,18 +12,18 @@ import locale
 
 import streamlit as st
 
+from bertrend.demos.demos_utils.i18n import (
+    create_internationalization_language_selector,
+    translate,
+)
 from bertrend.demos.demos_utils.icons import (
+    NEWSLETTER_ICON,
     SAVE_ICON,
+    TEMPORAL_VISUALIZATION_ICON,
     TOPIC_EXPLORATION_ICON,
     TOPIC_VISUALIZATION_ICON,
-    TEMPORAL_VISUALIZATION_ICON,
-    NEWSLETTER_ICON,
 )
 from bertrend.demos.demos_utils.state_utils import restore_widget_state
-from bertrend.demos.demos_utils.i18n import (
-    translate,
-    create_internationalization_language_selector,
-)
 
 LAYOUT = "wide"
 

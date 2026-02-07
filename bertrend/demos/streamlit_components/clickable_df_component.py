@@ -8,7 +8,7 @@ from typing import Callable
 import pandas as pd
 import streamlit as st
 
-from bertrend_apps.prospective_demo.i18n import translate
+from bertrend.bertrend_apps.prospective_demo.i18n import translate
 
 
 def clickable_df(

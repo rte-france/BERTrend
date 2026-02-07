@@ -5,6 +5,8 @@ import streamlit as st
 from loguru import logger
 
 from bertrend import OUTPUT_PATH
+from bertrend.BERTopicModel import BERTopicModel
+from bertrend.config.parameters import BERTOPIC_SERIALIZATION
 from bertrend.demos.demos_utils.data_loading_component import (
     display_data_loading_component,
 )
@@ -13,27 +15,25 @@ from bertrend.demos.demos_utils.embed_documents_component import (
 )
 from bertrend.demos.demos_utils.i18n import translate
 from bertrend.demos.demos_utils.icons import (
-    WARNING_ICON,
-    SUCCESS_ICON,
-    ERROR_ICON,
-    SETTINGS_ICON,
-    INFO_ICON,
     EMBEDDING_ICON,
+    ERROR_ICON,
+    INFO_ICON,
+    SETTINGS_ICON,
+    SUCCESS_ICON,
     TOPIC_ICON,
-)
-from bertrend.demos.demos_utils.state_utils import (
-    restore_widget_state,
-    SessionStateManager,
+    WARNING_ICON,
 )
 from bertrend.demos.demos_utils.parameters_component import (
     display_bertopic_hyperparameters,
     display_embedding_hyperparameters,
 )
+from bertrend.demos.demos_utils.state_utils import (
+    SessionStateManager,
+    restore_widget_state,
+)
 from bertrend.demos.weak_signals.visualizations_utils import PLOTLY_BUTTON_SAVE_CONFIG
 from bertrend.metrics.topic_metrics import compute_cluster_metrics
-from bertrend.config.parameters import BERTOPIC_SERIALIZATION
 from bertrend.topic_analysis.visualizations import plot_docs_repartition_over_time
-from bertrend.BERTopicModel import BERTopicModel
 from bertrend.utils.data_loading import (
     TEXT_COLUMN,
 )
@@ -104,7 +104,7 @@ def save_model_interface():
                     icon=SUCCESS_ICON,
                 )
                 st.session_state["model_saved"] = True
-                logger.success(f"Model saved successfully!", icon=SUCCESS_ICON)
+                logger.success("Model saved successfully!", icon=SUCCESS_ICON)
             except Exception as e:
                 st.error(f"Failed to save the model: {e}", icon=ERROR_ICON)
                 logger.error(f"Failed to save the model: {e}")

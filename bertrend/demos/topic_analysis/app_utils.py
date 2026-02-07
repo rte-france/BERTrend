@@ -8,12 +8,12 @@ import streamlit as st
 from bertopic import BERTopic
 
 from bertrend.utils.data_loading import (
-    TIMESTAMP_COLUMN,
+    CITATION_COUNT_COL,
     GROUPED_TIMESTAMP_COLUMN,
     TEXT_COLUMN,
+    TIMESTAMP_COLUMN,
     TITLE_COLUMN,
     URL_COLUMN,
-    CITATION_COUNT_COL,
 )
 
 

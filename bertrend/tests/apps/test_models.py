@@ -1,25 +1,26 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
 from pathlib import Path
+
+import pytest
 from pydantic import ValidationError
 
-from bertrend_apps.services.models.bertrend_app_models import (
-    TrainNewModelRequest,
+from bertrend.bertrend_apps.services.bertrend.models.bertrend_app_models import (
     RegenerateRequest,
     StatusResponse,
+    TrainNewModelRequest,
 )
-from bertrend_apps.services.models.newsletters_models import (
-    NewsletterRequest,
-)
-from bertrend_apps.services.models.data_provider_models import (
-    ScrapeRequest,
-    ScrapeResponse,
+from bertrend.bertrend_apps.services.bertrend.models.data_provider_models import (
     AutoScrapeRequest,
     GenerateQueryFileRequest,
+    ScrapeRequest,
+    ScrapeResponse,
+)
+from bertrend.bertrend_apps.services.bertrend.models.newsletters_models import (
+    NewsletterRequest,
 )
 
 

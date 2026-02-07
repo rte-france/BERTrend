@@ -1,3 +1,8 @@
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
+#  See AUTHORS.txt
+#  SPDX-License-Identifier: MPL-2.0
+#  This file is part of BERTrend.
+
 import asyncio
 from pathlib import Path
 
@@ -6,8 +11,8 @@ from agents import ModelSettings
 from bertrend.article_scoring.article_scoring import ArticleScore
 from bertrend.article_scoring.prompts import ARTICLE_SCORING_PROMPT
 from bertrend.llm_utils.agent_utils import (
-    BaseAgentFactory,
     AsyncAgentConcurrentProcessor,
+    BaseAgentFactory,
     progress_reporter,
 )
 from bertrend.utils.data_loading import load_data
@@ -40,8 +45,7 @@ if __name__ == "__main__":
     path = Path("/DSIA/nlp/bertrend/data/feeds/feed_nlp/2025-01-07_feed_nlp.jsonl")
     df = load_data(path)
     print(len(df), df.columns)
-    l = list(df.text)
-    results = asyncio.run(score_articles(l))
+    results = asyncio.run(score_articles(list(df.text)))
 
     assert len(results) == len(df)
     df["quality_metrics"] = [r.output if not r.error else None for r in results]

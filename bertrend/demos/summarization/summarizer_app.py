@@ -3,6 +3,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import os
+
 import streamlit as st
 from dotenv import load_dotenv
 from loguru import logger
@@ -16,7 +17,6 @@ from bertrend.services.summary.extractive_summarizer import (
 )
 
 load_dotenv(override=True)
-
 
 SUMMARIZER_OPTIONS_MAPPER = {
     "GPTSummarizer": GPTSummarizer,

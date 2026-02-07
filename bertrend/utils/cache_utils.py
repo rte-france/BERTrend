@@ -4,11 +4,10 @@
 #  This file is part of BERTrend.
 
 import hashlib
+import os
 import pickle
 from pathlib import Path
 from typing import Any
-
-import os
 
 # Ensures to write with +rw for both user and groups
 os.umask(0o002)

@@ -1,24 +1,28 @@
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
+#  See AUTHORS.txt
+#  SPDX-License-Identifier: MPL-2.0
+#  This file is part of BERTrend.
+
 import json
+import os
 import secrets
 import time
 from collections import defaultdict, deque
+from datetime import datetime, timedelta, timezone
+from typing import Annotated, Deque
 
+import jwt  # PyJWT
 import urllib3
-from fastapi import Depends, HTTPException, status, Request
+from dotenv import load_dotenv
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import (
     OAuth2PasswordRequestForm,
     SecurityScopes,
 )
 from fastapi.security.oauth2 import OAuth2PasswordBearer
-import jwt  # PyJWT
-from datetime import datetime, timedelta, timezone
-from typing import Annotated, Deque
-
 from jwt import InvalidTokenError
 from loguru import logger
 from pydantic import BaseModel, ValidationError
-import os
-from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv(override=True)
