@@ -8,6 +8,19 @@ resolution-markers = [
 ]
 
 [[package]]
+name = "aio-pika"
+version = "9.5.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiormq" },
+    { name = "yarl" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c5/73/8d1020683970de5532b3b01732d75c8bf922a6505fcdad1a9c7c6405242a/aio_pika-9.5.8.tar.gz", hash = "sha256:7c36874115f522bbe7486c46d8dd711a4dbedd67c4e8a8c47efe593d01862c62", size = 47408, upload-time = "2025-11-12T10:37:10.215Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7c/91/513971861d845d28160ecb205ae2cfaf618b16918a9cd4e0b832b5360ce7/aio_pika-9.5.8-py3-none-any.whl", hash = "sha256:f4c6cb8a6c5176d00f39fd7431e9702e638449bc6e86d1769ad7548b2a506a8d", size = 54397, upload-time = "2025-11-12T10:37:08.374Z" },
+]
+
+[[package]]
 name = "aiohappyeyeballs"
 version = "2.6.1"
 source = { registry = "https://pypi.org/simple" }
@@ -99,6 +112,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/3c/5f/24155e30ba7f8c96918af1350eb0663e2430aad9e001c0489d89cd708ab1/aiohttp-3.13.3-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:fc353029f176fd2b3ec6cfc71be166aba1936fe5d73dd1992ce289ca6647a9aa", size = 1769801, upload-time = "2026-01-03T17:32:20.25Z" },
     { url = "https://files.pythonhosted.org/packages/eb/f8/7314031ff5c10e6ece114da79b338ec17eeff3a079e53151f7e9f43c4723/aiohttp-3.13.3-cp314-cp314t-win32.whl", hash = "sha256:2e41b18a58da1e474a057b3d35248d8320029f61d70a37629535b16a0c8f3767", size = 466523, upload-time = "2026-01-03T17:32:22.215Z" },
     { url = "https://files.pythonhosted.org/packages/b4/63/278a98c715ae467624eafe375542d8ba9b4383a016df8fdefe0ae28382a7/aiohttp-3.13.3-cp314-cp314t-win_amd64.whl", hash = "sha256:44531a36aa2264a1860089ffd4dce7baf875ee5a6079d5fb42e261c704ef7344", size = 499694, upload-time = "2026-01-03T17:32:24.546Z" },
+]
+
+[[package]]
+name = "aiormq"
+version = "6.9.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pamqp" },
+    { name = "yarl" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8e/f6/01bc850db6d9b46ae825e3c373f610b0544e725a1159745a6de99ad0d9f1/aiormq-6.9.2.tar.gz", hash = "sha256:d051d46086079934d3a7157f4d8dcb856b77683c2a94aee9faa165efa6a785d3", size = 30554, upload-time = "2025-10-20T10:49:59.763Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/52/ec/763b13f148f3760c1562cedb593feaffbae177eeece61af5d0ace7b72a3e/aiormq-6.9.2-py3-none-any.whl", hash = "sha256:ab0f4e88e70f874b0ea344b3c41634d2484b5dc8b17cb6ae0ae7892a172ad003", size = 31829, upload-time = "2025-10-20T10:49:58.547Z" },
 ]
 
 [[package]]
@@ -239,10 +265,12 @@ wheels = [
 
 [[package]]
 name = "bertrend"
-version = "0.3.24"
+version = "0.4.0"
 source = { editable = "." }
 dependencies = [
+    { name = "aio-pika" },
     { name = "apscheduler" },
+    { name = "arxiv" },
     { name = "bertopic" },
     { name = "black" },
     { name = "coverage" },
@@ -252,7 +280,12 @@ dependencies = [
     { name = "dateparser" },
     { name = "dill" },
     { name = "fastapi" },
+    { name = "feedparser" },
     { name = "gensim" },
+    { name = "google-api-python-client" },
+    { name = "google-auth-oauthlib" },
+    { name = "googlenewsdecoder" },
+    { name = "goose3" },
     { name = "hdbscan" },
     { name = "ipython" },
     { name = "joblib" },
@@ -262,8 +295,9 @@ dependencies = [
     { name = "loguru" },
     { name = "lxml-html-clean" },
     { name = "markdown" },
+    { name = "newscatcher-sdk" },
+    { name = "newspaper4k" },
     { name = "nltk" },
-    { name = "numpy" },
     { name = "openai" },
     { name = "openai-agents", extra = ["litellm"] },
     { name = "openpyxl" },
@@ -276,6 +310,7 @@ dependencies = [
     { name = "plotly-resampler", version = "0.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
     { name = "psutil" },
     { name = "pyarrow" },
+    { name = "pygooglenews" },
     { name = "pyjwt" },
     { name = "pylabeladjust" },
     { name = "pyqtree" },
@@ -302,23 +337,11 @@ dependencies = [
     { name = "umap-learn" },
 ]
 
-[package.optional-dependencies]
-apps = [
-    { name = "arxiv" },
-    { name = "feedparser" },
-    { name = "google-api-python-client" },
-    { name = "google-auth-oauthlib" },
-    { name = "googlenewsdecoder" },
-    { name = "goose3" },
-    { name = "newscatcher-sdk" },
-    { name = "newspaper4k" },
-    { name = "pygooglenews" },
-]
-
 [package.metadata]
 requires-dist = [
+    { name = "aio-pika", specifier = ">=9.5.5" },
     { name = "apscheduler", specifier = ">=3.11.0" },
-    { name = "arxiv", marker = "extra == 'apps'", specifier = ">=2.2.0" },
+    { name = "arxiv", specifier = ">=2.2.0" },
     { name = "bertopic", specifier = "==0.16.2" },
     { name = "black", specifier = ">=24.10.0" },
     { name = "coverage", specifier = ">=7.6.9" },
@@ -328,12 +351,12 @@ requires-dist = [
     { name = "dateparser", specifier = ">=1.2.0" },
     { name = "dill", specifier = ">=0.4.0" },
     { name = "fastapi", specifier = ">=0.120.0" },
-    { name = "feedparser", marker = "extra == 'apps'", specifier = ">=6.0.11" },
+    { name = "feedparser", specifier = ">=6.0.11" },
     { name = "gensim", specifier = ">=4.3.3" },
-    { name = "google-api-python-client", marker = "extra == 'apps'", specifier = ">=2.148.0" },
-    { name = "google-auth-oauthlib", marker = "extra == 'apps'", specifier = ">=1.2.1" },
-    { name = "googlenewsdecoder", marker = "extra == 'apps'", specifier = ">=0.1.7" },
-    { name = "goose3", marker = "extra == 'apps'", specifier = ">=3.1.19" },
+    { name = "google-api-python-client", specifier = ">=2.148.0" },
+    { name = "google-auth-oauthlib", specifier = ">=1.2.1" },
+    { name = "googlenewsdecoder", specifier = ">=0.1.7" },
+    { name = "goose3", specifier = ">=3.1.19" },
     { name = "hdbscan", specifier = ">=0.8.40" },
     { name = "ipython", specifier = ">=8.28.0" },
     { name = "joblib", specifier = ">=1.4.2" },
@@ -343,10 +366,9 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "lxml-html-clean", specifier = ">=0.2.2" },
     { name = "markdown", specifier = ">=3.7" },
-    { name = "newscatcher-sdk", marker = "extra == 'apps'", specifier = ">=1.4.0" },
-    { name = "newspaper4k", marker = "extra == 'apps'", specifier = ">=0.9.3.1" },
+    { name = "newscatcher-sdk", specifier = ">=1.4.0" },
+    { name = "newspaper4k", specifier = ">=0.9.3.1" },
     { name = "nltk", specifier = ">=3.9.1" },
-    { name = "numpy", specifier = "<2" },
     { name = "openai", specifier = ">=1.77.0" },
     { name = "openai-agents", extras = ["litellm"], specifier = ">=0.4.0" },
     { name = "openpyxl", specifier = ">=3.1.5" },
@@ -357,7 +379,7 @@ requires-dist = [
     { name = "plotly-resampler", specifier = ">=0.10.0" },
     { name = "psutil", specifier = ">=7.2.1" },
     { name = "pyarrow", specifier = ">=21.0.0" },
-    { name = "pygooglenews", marker = "extra == 'apps'", specifier = ">=0.1.3" },
+    { name = "pygooglenews", specifier = ">=0.1.3" },
     { name = "pyjwt", specifier = ">=2.10.1" },
     { name = "pylabeladjust", specifier = "==0.1.13" },
     { name = "pyqtree", specifier = "==1.0.0" },
@@ -372,7 +394,7 @@ requires-dist = [
     { name = "sentencepiece", specifier = ">=0.2.0" },
     { name = "sqlalchemy", specifier = ">=2.0.40" },
     { name = "starlette", specifier = ">=0.46.2" },
-    { name = "streamlit", specifier = ">=1.50" },
+    { name = "streamlit", specifier = ">=1.51.0" },
     { name = "streamlit-code-editor", specifier = ">=0.1.22" },
     { name = "supervisor", specifier = ">=4.3.0" },
     { name = "thefuzz", specifier = ">=0.22.1" },
@@ -383,7 +405,6 @@ requires-dist = [
     { name = "typer", specifier = ">=0.16.0" },
     { name = "umap-learn", specifier = ">=0.5.7" },
 ]
-provides-extras = ["apps"]
 
 [[package]]
 name = "black"
@@ -2971,6 +2992,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pamqp"
+version = "3.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fb/62/35bbd3d3021e008606cd0a9532db7850c65741bbf69ac8a3a0d8cfeb7934/pamqp-3.3.0.tar.gz", hash = "sha256:40b8795bd4efcf2b0f8821c1de83d12ca16d5760f4507836267fd7a02b06763b", size = 30993, upload-time = "2024-01-12T20:37:25.085Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ac/8d/c1e93296e109a320e508e38118cf7d1fc2a4d1c2ec64de78565b3c445eb5/pamqp-3.3.0-py2.py3-none-any.whl", hash = "sha256:c901a684794157ae39b52cbf700db8c9aae7a470f13528b9d7b4e5f7202f8eb0", size = 33848, upload-time = "2024-01-12T20:37:21.359Z" },
+]
+
+[[package]]
 name = "pandas"
 version = "2.3.3"
 source = { registry = "https://pypi.org/simple" }
@@ -4943,6 +4973,8 @@ dependencies = [
     { name = "typing-extensions" },
 ]
 wheels = [
+    { url = "https://files.pythonhosted.org/packages/c9/2f/0b295dd8d199ef71e6f176f576473d645d41357b7b8aa978cc6b042575df/torch-2.10.0-1-cp312-none-macosx_11_0_arm64.whl", hash = "sha256:6abb224c2b6e9e27b592a1c0015c33a504b00a0e0938f1499f7f514e9b7bfb5c", size = 79498197, upload-time = "2026-02-06T17:37:27.627Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/1b/af5fccb50c341bd69dc016769503cb0857c1423fbe9343410dfeb65240f2/torch-2.10.0-1-cp313-none-macosx_11_0_arm64.whl", hash = "sha256:7350f6652dfd761f11f9ecb590bfe95b573e2961f7a242eccb3c8e78348d26fe", size = 79498248, upload-time = "2026-02-06T17:37:31.982Z" },
     { url = "https://files.pythonhosted.org/packages/cc/af/758e242e9102e9988969b5e621d41f36b8f258bb4a099109b7a4b4b50ea4/torch-2.10.0-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:5fd4117d89ffd47e3dcc71e71a22efac24828ad781c7e46aaaf56bf7f2796acf", size = 145996088, upload-time = "2026-01-21T16:24:44.171Z" },
     { url = "https://files.pythonhosted.org/packages/23/8e/3c74db5e53bff7ed9e34c8123e6a8bfef718b2450c35eefab85bb4a7e270/torch-2.10.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:787124e7db3b379d4f1ed54dd12ae7c741c16a4d29b49c0226a89bea50923ffb", size = 915711952, upload-time = "2026-01-21T16:23:53.503Z" },
     { url = "https://files.pythonhosted.org/packages/6e/01/624c4324ca01f66ae4c7cd1b74eb16fb52596dce66dbe51eff95ef9e7a4c/torch-2.10.0-cp312-cp312-win_amd64.whl", hash = "sha256:2c66c61f44c5f903046cc696d088e21062644cbe541c7f1c4eaae88b2ad23547", size = 113757972, upload-time = "2026-01-21T16:24:39.516Z" },

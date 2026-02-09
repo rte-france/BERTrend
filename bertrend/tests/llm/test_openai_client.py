@@ -107,14 +107,16 @@ def test_parse_basic_functionality(mock_api_key):
     client = OpenAI_Client(api_key="test_api_key")
 
     mock_agent = Mock()
+    mock_factory = Mock()
+    mock_factory.create_agent.return_value = mock_agent
     mock_parsed = _TestResponseModel(answer="This is a test answer", confidence=0.95)
     mock_result = Mock(final_output=mock_parsed)
 
     with (
         patch(
-            "bertrend.llm_utils.openai_client.BaseAgentFactory.create_agent",
-            return_value=mock_agent,
-        ) as mock_create_agent,
+            "bertrend.llm_utils.openai_client.BaseAgentFactory",
+            return_value=mock_factory,
+        ) as mock_factory_cls,
         patch(
             "bertrend.llm_utils.openai_client.Runner.run_sync",
             return_value=mock_result,
@@ -124,12 +126,11 @@ def test_parse_basic_functionality(mock_api_key):
             "What is the weather today?", response_format=_TestResponseModel
         )
         assert result == mock_parsed
-        mock_create_agent.assert_called_once_with(
+        mock_factory_cls.assert_called_once_with(model_name=client.model)
+        mock_factory.create_agent.assert_called_once_with(
             name="parsing_agent",
-            model_name=client.model_name,
             instructions=None,
             output_type=_TestResponseModel,
-            model_settings=None,
         )
         mock_run_sync.assert_called_once_with(
             input="What is the weather today?",
@@ -143,14 +144,16 @@ def test_parse_with_system_prompt(mock_api_key):
     client = OpenAI_Client(api_key="test_api_key")
 
     mock_agent = Mock()
+    mock_factory = Mock()
+    mock_factory.create_agent.return_value = mock_agent
     mock_parsed = _TestResponseModel(answer="System prompt response", confidence=0.9)
     mock_result = Mock(final_output=mock_parsed)
 
     with (
         patch(
-            "bertrend.llm_utils.openai_client.BaseAgentFactory.create_agent",
-            return_value=mock_agent,
-        ) as mock_create_agent,
+            "bertrend.llm_utils.openai_client.BaseAgentFactory",
+            return_value=mock_factory,
+        ) as mock_factory_cls,
         patch(
             "bertrend.llm_utils.openai_client.Runner.run_sync",
             return_value=mock_result,
@@ -162,12 +165,11 @@ def test_parse_with_system_prompt(mock_api_key):
             response_format=_TestResponseModel,
         )
         assert result == mock_parsed
-        mock_create_agent.assert_called_once_with(
+        mock_factory_cls.assert_called_once_with(model_name=client.model)
+        mock_factory.create_agent.assert_called_once_with(
             name="parsing_agent",
-            model_name=client.model_name,
             instructions="You are a weather assistant",
             output_type=_TestResponseModel,
-            model_settings=None,
         )
         mock_run_sync.assert_called_once_with(
             input="What is the weather today?",
@@ -181,10 +183,12 @@ def test_parse_error_handling(mock_api_key):
     client = OpenAI_Client(api_key="test_api_key")
 
     mock_agent = Mock()
+    mock_factory = Mock()
+    mock_factory.create_agent.return_value = mock_agent
     with (
         patch(
-            "bertrend.llm_utils.openai_client.BaseAgentFactory.create_agent",
-            return_value=mock_agent,
+            "bertrend.llm_utils.openai_client.BaseAgentFactory",
+            return_value=mock_factory,
         ),
         patch(
             "bertrend.llm_utils.openai_client.Runner.run_sync",
@@ -200,14 +204,16 @@ def test_parse_with_none_response_format(mock_api_key):
     client = OpenAI_Client(api_key="test_api_key")
 
     mock_agent = Mock()
+    mock_factory = Mock()
+    mock_factory.create_agent.return_value = mock_agent
     mock_parsed = {"answer": "Default response", "confidence": 0.8}
     mock_result = Mock(final_output=mock_parsed)
 
     with (
         patch(
-            "bertrend.llm_utils.openai_client.BaseAgentFactory.create_agent",
-            return_value=mock_agent,
-        ) as mock_create_agent,
+            "bertrend.llm_utils.openai_client.BaseAgentFactory",
+            return_value=mock_factory,
+        ) as mock_factory_cls,
         patch(
             "bertrend.llm_utils.openai_client.Runner.run_sync",
             return_value=mock_result,
@@ -215,12 +221,11 @@ def test_parse_with_none_response_format(mock_api_key):
     ):
         result = client.parse("What is the weather today?", response_format=None)
 
-        mock_create_agent.assert_called_once_with(
+        mock_factory_cls.assert_called_once_with(model_name=client.model)
+        mock_factory.create_agent.assert_called_once_with(
             name="parsing_agent",
-            model_name=client.model_name,
             instructions=None,
             output_type=None,
-            model_settings=None,
         )
         mock_run_sync.assert_called_once_with(
             input="What is the weather today?",
@@ -228,3 +233,32 @@ def test_parse_with_none_response_format(mock_api_key):
             run_config=run_config_no_tracing,
         )
         assert result == mock_parsed
+
+
+def test_parse_includes_model_settings_for_gpt5(mock_api_key):
+    """Test parse method includes model settings when using GPT-5"""
+    client = OpenAI_Client(api_key="test_api_key", model="gpt-5")
+
+    mock_agent = Mock()
+    mock_factory = Mock()
+    mock_factory.create_agent.return_value = mock_agent
+    mock_result = Mock(final_output=_TestResponseModel(answer="Ok", confidence=0.5))
+
+    with (
+        patch(
+            "bertrend.llm_utils.openai_client.BaseAgentFactory",
+            return_value=mock_factory,
+        ) as mock_factory_cls,
+        patch(
+            "bertrend.llm_utils.openai_client.Runner.run_sync",
+            return_value=mock_result,
+        ),
+    ):
+        client.parse("What is the weather today?", response_format=_TestResponseModel)
+
+        mock_factory_cls.assert_called_once_with(model_name="gpt-5")
+        _, kwargs = mock_factory.create_agent.call_args
+        assert kwargs["name"] == "parsing_agent"
+        assert kwargs["instructions"] is None
+        assert kwargs["output_type"] == _TestResponseModel
+        assert kwargs["model_settings"] is not None

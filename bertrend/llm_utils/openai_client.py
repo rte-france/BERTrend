@@ -8,7 +8,7 @@ import re
 from enum import Enum
 from typing import Type
 
-from agents import ModelSettings, RunConfig, Runner
+from agents import ModelSettings, Runner
 from loguru import logger
 from openai import OpenAI, Stream, Timeout
 from openai.types import Reasoning
@@ -89,8 +89,8 @@ class OpenAI_Client:
             "max_retries": MAX_ATTEMPTS,
         }
         self.llm_client = OpenAI(**openai_params)
-        self.model_name = model or os.getenv("OPENAI_DEFAULT_MODEL") or DEFAULT_MODEL
-        self.temperature = temperature if not test_gpt5_version(self.model_name) else 1
+        self.model = model or os.getenv("OPENAI_DEFAULT_MODEL") or DEFAULT_MODEL
+        self.temperature = temperature if not test_gpt5_version(self.model) else 1
         self.api_type = api_type
 
     def generate(
@@ -147,7 +147,7 @@ class OpenAI_Client:
         """
         # For important parameters, set a default value if not given
         if not kwargs.get("model"):
-            kwargs["model"] = self.model_name
+            kwargs["model"] = self.model
 
         kwargs["temperature"] = kwargs.get("temperature", self.temperature)
         if test_gpt5_version(kwargs["model"]):
@@ -192,27 +192,27 @@ class OpenAI_Client:
         response_format: Type[BaseModel] = None,
         **kwargs,
     ) -> BaseModel | None:
-        """Call OpenAI model for generation with structured output"""
-        # Due to recurrent problems with the parse function of openai with Litellm, use of the agents sdk for that
-        if not kwargs.get("model"):
-            kwargs["model"] = self.model_name
-        model_name = kwargs["model"]
+        """Call OpenAI model for generation with structured output (with openai-agents sdk)"""
+        kwargs.setdefault("model", self.model)
+        model = kwargs["model"]
         model_settings = (
             ModelSettings(
                 reasoning=Reasoning(effort="low"),
                 verbosity="low",
             )
-            if test_gpt5_version(model_name)
+            if test_gpt5_version(model)
             else None
         )
 
-        parsing_agent = BaseAgentFactory().create_agent(
-            name="parsing_agent",
-            model_name=model_name,
-            instructions=system_prompt,
-            output_type=response_format,
-            model_settings=model_settings,
-        )
+        agent_kwargs = {
+            "name": "parsing_agent",
+            "instructions": system_prompt,
+            "output_type": response_format,
+        }
+        if model_settings:
+            agent_kwargs["model_settings"] = model_settings
+
+        parsing_agent = BaseAgentFactory(model_name=model).create_agent(**agent_kwargs)
 
         # invoke agent
         result = Runner.run_sync(

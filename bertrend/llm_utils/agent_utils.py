@@ -41,13 +41,7 @@ class BaseAgentFactory:
         api_key: str = None,
         base_url: str = None,
     ):
-        # Determine model name with sensible defaults
-        env_default_model = os.getenv("OPENAI_DEFAULT_MODEL")
-        # If caller provided a model_name, always use it
-        if model_name is not None:
-            self.model_name = model_name
-        else:
-            self.model_name = env_default_model
+        self.model_name = model_name or os.getenv("OPENAI_DEFAULT_MODEL")
         self.api_key = api_key if api_key is not None else os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             logger.error(
@@ -57,6 +51,7 @@ class BaseAgentFactory:
         self.base_url = (
             base_url if base_url is not None else os.getenv("OPENAI_BASE_URL")
         )
+
         if self.base_url == "":  # check empty env var
             self.base_url = None
         self._init_model()
