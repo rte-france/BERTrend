@@ -1,16 +1,18 @@
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
+#  See AUTHORS.txt
+#  SPDX-License-Identifier: MPL-2.0
+#  This file is part of BERTrend.
+
 import asyncio
 import os
 import time
 from dataclasses import dataclass
 from typing import Optional
 
-from agents import RunConfig, Agent, Runner, OpenAIChatCompletionsModel
+from agents import Agent, RunConfig, Runner
 from agents.extensions.models.litellm_model import LitellmModel
 from dotenv import load_dotenv
 from loguru import logger
-from openai import AsyncAzureOpenAI
-
-from bertrend.llm_utils.openai_client import AZURE_API_VERSION
 
 # Load environment variables at module import
 load_dotenv(override=True)
@@ -39,22 +41,17 @@ class BaseAgentFactory:
         api_key: str = None,
         base_url: str = None,
     ):
-        # Determine model name with sensible defaults
-        env_default_model = os.getenv("OPENAI_DEFAULT_MODEL")
-        # If caller provided a model_name, always use it
-        if model_name is not None:
-            self.model_name = model_name
-        else:
-            self.model_name = env_default_model
+        self.model_name = model_name or os.getenv("OPENAI_DEFAULT_MODEL")
         self.api_key = api_key if api_key is not None else os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             logger.error(
                 "WARNING: OPENAI_API_KEY environment variable not found. Please set it before using OpenAI services."
             )
-            raise EnvironmentError(f"OPENAI_API_KEY environment variable not found.")
+            raise EnvironmentError("OPENAI_API_KEY environment variable not found.")
         self.base_url = (
             base_url if base_url is not None else os.getenv("OPENAI_BASE_URL")
         )
+
         if self.base_url == "":  # check empty env var
             self.base_url = None
         self._init_model()
@@ -63,15 +60,6 @@ class BaseAgentFactory:
         if not self.base_url:
             # assume standard openai model
             self.model = self.model_name
-        elif "azure.com" in self.base_url:
-            self.model = OpenAIChatCompletionsModel(
-                model=self.model_name,
-                openai_client=AsyncAzureOpenAI(
-                    api_key=self.api_key,
-                    api_version=AZURE_API_VERSION,
-                    azure_endpoint=self.base_url,
-                ),
-            )
         else:
             # assume openAI compatible model
             self.model = LitellmModel(

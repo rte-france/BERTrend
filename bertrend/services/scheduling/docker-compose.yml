@@ -4,11 +4,12 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: bertrend-scheduler
+    user: "${UID:-1000}:${GID:-1000}"
     ports:
       - "8882:8000"
     volumes:
       # Mount data directory for persistent SQLite database
-      - $HOME/.bertrend/db:/root/.bertrend/db
+      - $HOME/.bertrend/db:$HOME/.bertrend/db
     environment:
       - NO_PROXY=$NO_PROXY # to avoid communication issues
       - no_proxy=$no_proxy # to avoid communication issues
@@ -18,7 +19,8 @@ services:
       # Optional: Log level
       - LOG_LEVEL=DEBUG
       # Optional: Number of worker processes
-      - MAX_WORKERS=50
+      - MAX_WORKERS=100
+      - HOME=$HOME
     restart: always
     logging:
       driver: "json-file"
@@ -26,7 +28,7 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/')"]
+      test: [ "CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/')" ]
       interval: 180s
       timeout: 10s
       retries: 3

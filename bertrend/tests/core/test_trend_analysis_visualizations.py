@@ -1,21 +1,22 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
+from unittest.mock import MagicMock, patch
+
 import pandas as pd
-from unittest.mock import patch, MagicMock
+import pytest
 from plotly import graph_objects as go
 
 from bertrend.trend_analysis.visualizations import (
+    create_sankey_diagram_plotly,
+    create_topic_size_evolution_figure,
+    plot_newly_emerged_topics,
     plot_num_topics,
     plot_size_outliers,
-    plot_topics_for_model,
-    create_topic_size_evolution_figure,
     plot_topic_size_evolution,
-    plot_newly_emerged_topics,
-    create_sankey_diagram_plotly,
+    plot_topics_for_model,
 )
 
 

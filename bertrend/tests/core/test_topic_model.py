@@ -1,13 +1,12 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-import pytest
-import numpy as np
 import tomllib
-
 from unittest.mock import MagicMock
 
+import numpy as np
+import pytest
 from bertopic import BERTopic
 
 from bertrend import BERTOPIC_CONFIG

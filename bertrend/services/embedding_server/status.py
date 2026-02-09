@@ -1,9 +1,10 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
 import sys
+
 import requests
 
 from bertrend.services.embedding_server.config.settings import get_config
@@ -26,5 +27,5 @@ try:
             sys.exit(1)
 
 # If an error occurs, exit with status code 1
-except (requests.exceptions.RequestException, requests.exceptions.ConnectionError) as e:
+except (requests.exceptions.RequestException, requests.exceptions.ConnectionError):
     sys.exit(1)

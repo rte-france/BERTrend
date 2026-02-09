@@ -1,16 +1,17 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
-import os
 import json
-from unittest.mock import patch, MagicMock
+import os
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from bertrend.services.embedding_client import (
-    EmbeddingAPIClient,
     MAX_DOCS_PER_REQUEST_PER_WORKER,
+    EmbeddingAPIClient,
 )
 
 

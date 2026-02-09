@@ -1,16 +1,17 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
 from unittest.mock import patch
 
+import pytest
+
 from bertrend.services.summarizer import (
-    Summarizer,
     DEFAULT_MAX_SENTENCES,
     DEFAULT_MAX_WORDS,
     DEFAULT_SUMMARIZATION_RATIO,
+    Summarizer,
 )
 
 

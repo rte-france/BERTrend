@@ -1,17 +1,18 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
+from unittest.mock import MagicMock, patch
+
 import pandas as pd
-from unittest.mock import patch, MagicMock
+import pytest
 from bertopic import BERTopic
 
 from bertrend.topic_analysis.data_structure import TopicDescription
 from bertrend.topic_analysis.topic_description import (
-    get_topic_description,
     generate_topic_description,
+    get_topic_description,
 )
 
 

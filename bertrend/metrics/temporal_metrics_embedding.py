@@ -45,18 +45,19 @@ metrics.calculate_topic_embedding_stability()
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pandas as pd
-from loguru import logger
-import numpy as np
-from thefuzz import fuzz
-from sklearn.metrics.pairwise import cosine_similarity
-from nltk.stem import PorterStemmer
-from bertopic import BERTopic
-from tqdm import tqdm
 import itertools
-from scipy.sparse import csr_matrix
-from sklearn.preprocessing import normalize
 import re
+
+import numpy as np
+import pandas as pd
+from bertopic import BERTopic
+from loguru import logger
+from nltk.stem import PorterStemmer
+from scipy.sparse import csr_matrix
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.preprocessing import normalize
+from thefuzz import fuzz
+from tqdm import tqdm
 
 from bertrend import OUTPUT_PATH
 

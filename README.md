@@ -10,7 +10,9 @@
 ![GitHub License](https://img.shields.io/github/license/rte-france/BERTrend)
 
 ## News
-2025-11-24: BERTrend has been integrated into the [Netminer 5](https://netminer.gitbook.io/netminer5/module-reference/text/bertopic/bertrend) data analysis tool !
+
+2025-11-24: BERTrend has been integrated into
+the [Netminer 5](https://netminer.gitbook.io/netminer5/module-reference/text/bertopic/bertrend) data analysis tool !
 
 ## Overview
 
@@ -18,38 +20,48 @@
 
 ## Paper
 
-The code in this repository is part of the work described in the paper: 
+The code in this repository is part of the work described in the paper:
 [BERTrend: Neural Topic Modeling for Emerging Trends Detection](./BERTrend%20paper.pdf).
 
 ## Description
 
-BERTrend is a novel framework for detecting and monitoring weak signals in large, evolving text corpora. It uses neural topic modeling, specifically [BERTopic](https://github.com/MaartenGr/BERTopic), in an online learning setting to identify and track topic evolution over time. 
+BERTrend is a novel framework for detecting and monitoring weak signals in large, evolving text corpora. It uses neural
+topic modeling, specifically [BERTopic](https://github.com/MaartenGr/BERTopic), in an online learning setting to
+identify and track topic evolution over time.
 
-BERTrend classifies topics as noise, weak signals, or strong signals based on their popularity trends, using a metric that considers both the number of documents and update frequency. This method allows for real-time monitoring and analysis of emerging trends while filtering out noise.
-
+BERTrend classifies topics as noise, weak signals, or strong signals based on their popularity trends, using a metric
+that considers both the number of documents and update frequency. This method allows for real-time monitoring and
+analysis of emerging trends while filtering out noise.
 
 ## Main Features
 
-The BERTrend repository provides a set of metrics, methods, and visualization tools to support the analysis of dynamic topic modeling in large text corpora. The tools are designed to help users detect, analyze, and visualize emerging topics and trends over time.
+The BERTrend repository provides a set of metrics, methods, and visualization tools to support the analysis of dynamic
+topic modeling in large text corpora. The tools are designed to help users detect, analyze, and visualize emerging
+topics and trends over time.
 
 The code base is illustrated via two main demos:
 
 ### Dynamic Topic Modeling Analysis
 
 - [bertrend/demos/topic_analysis](bertrend/demos/topic_analysis): Focuses on dynamic topic modeling analysis using:
-  - Dedicated metrics, called TEMPTopic:
-    - Stability Evaluation: Measures the stability of topics over time, evaluating how consistent and coherent topics remain.
-    - Volatility Assessment: Analyzes the volatility of topics, identifying how much topics change over different time periods.
-    - Two Perspectives:
-      - Temporal Topic Embedding Stability: Evaluates the stability of topic embeddings over time.
-      - Temporal Topic Representation Stability: Assesses the stability of topic representations over time.
-  - Visualization tools to easily assess the results.
+    - Dedicated metrics, called TEMPTopic:
+        - Stability Evaluation: Measures the stability of topics over time, evaluating how consistent and coherent
+          topics remain.
+        - Volatility Assessment: Analyzes the volatility of topics, identifying how much topics change over different
+          time periods.
+        - Two Perspectives:
+            - Temporal Topic Embedding Stability: Evaluates the stability of topic embeddings over time.
+            - Temporal Topic Representation Stability: Assesses the stability of topic representations over time.
+    - Visualization tools to easily assess the results.
 
-####  Topic Modeling Analysis Demonstrator Video
+#### Topic Modeling Analysis Demonstrator Video
+
 https://github.com/user-attachments/assets/f600f666-a6da-40be-8b07-5041b3bde1dc
 
 #### Demonstrator Features
-- Data management: selection of single/multiple datasets, filter by time, filter by size, split long documents by paragraphs 
+
+- Data management: selection of single/multiple datasets, filter by time, filter by size, split long documents by
+  paragraphs
 - Customization of BERTopic parameters
 - Exploration of topics by source, generate topic summaries using specific sources
 - Generate and customize newsletters by applying LLMs on BERTopic's output topics
@@ -62,10 +74,11 @@ https://github.com/user-attachments/assets/f600f666-a6da-40be-8b07-5041b3bde1dc
 - [bertrend/demos/weak_signals](bertrend/demos/weak_signals): Identifies and analyzes emerging trends and signals
 
 #### Weak Signal Analysis Demonstrator Video
+
 https://github.com/user-attachments/assets/d79368d9-d4e0-4324-8a98-a888f0ab3b65
 
-
 #### Demonstrator Features
+
 - Exploration of signals in real time at any given timestamp
 - Categorization of signals into three different dataframes: noise, weak and strong signals
   (each dataframe contains useful information about the signals)
@@ -76,33 +89,38 @@ https://github.com/user-attachments/assets/d79368d9-d4e0-4324-8a98-a888f0ab3b65
 
 ### Environment Setup (.env and .venv)
 
-BERTrend now supports configuration via a repository-level `.env` file. On import, the package attempts to load environment variables automatically using `python-dotenv`.
+BERTrend now supports configuration via a repository-level `.env` file. On import, the package attempts to load
+environment variables automatically using `python-dotenv`.
 
 Recommended steps:
 
 1. Create and fill your `.env` at the repo root (a template is provided):
-   - Copy `.env` and set your values (do not commit secrets).
-   - Common keys:
-     - `BERTREND_BASE_DIR`: base directory for BERTrend data/models/logs
-     - OpenAI/LLM:
-       - `OPENAI_API_KEY`
-       - `OPENAI_BASE_URL` (optional for OpenAI-compatible providers such as LiteLLM and Azure)
-       - `OPENAI_DEFAULT_MODEL`
-     - Providers (optional): `SEMANTIC_SCHOLAR_API_KEY`, `NEWSCATCHER_API_KEY`, `DBPEDIA_REST_API_URL`
-     - Embedding service security (optional): `BERTREND_SECRET_KEY`, `DEFAULT_RATE_LIMIT`, `DEFAULT_RATE_WINDOW`, `CLIENT_REGISTRY_FILE`
-     - Email (optional): `BERTREND_EMAIL_BACKEND`, `GMAIL_*`, `SMTP_*`, `SENDGRID_API_KEY`
-     - Misc: `CUDA_VISIBLE_DEVICES`
+    - Copy `.env` and set your values (do not commit secrets).
+    - Common keys:
+        - `BERTREND_BASE_DIR`: base directory for BERTrend data/models/logs
+        - OpenAI/LLM:
+            - `OPENAI_API_KEY`
+            - `OPENAI_BASE_URL` (optional for OpenAI-compatible providers such as LiteLLM and Azure)
+            - `OPENAI_DEFAULT_MODEL`
+        - Providers (optional): `SEMANTIC_SCHOLAR_API_KEY`, `NEWSCATCHER_API_KEY`, `DBPEDIA_REST_API_URL`
+        - Embedding service security (optional): `BERTREND_SECRET_KEY`, `DEFAULT_RATE_LIMIT`, `DEFAULT_RATE_WINDOW`,
+          `CLIENT_REGISTRY_FILE`
+        - Email (optional): `BERTREND_EMAIL_BACKEND`, `GMAIL_*`, `SMTP_*`, `SENDGRID_API_KEY`
+        - Misc: `CUDA_VISIBLE_DEVICES`
 2. Use a virtual environment and install dependencies inside it:
    ```bash
    uv venv --python 3.13
    source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
-   uv pip install . # or uv pip install .[apps]
+   uv pip install . 
    uv pip install python-dotenv  # ensures .env is auto-loaded
    ```
 3. Notes
-   - If `python-dotenv` isn’t installed, `.env` won’t be auto-loaded; you can either install it or export variables via your shell/runner.
-   - Scheduled jobs created from the apps use the exact interpreter of your active environment (`sys.executable`), ensuring `.venv/bin/python` is used. Keep your venv path stable on the machine running cron.
-   - Cron entries source your shell profile and pass through any required variables. You can also rely on `.env` for most settings.
+    - If `python-dotenv` isn’t installed, `.env` won’t be auto-loaded; you can either install it or export variables via
+      your shell/runner.
+    - Scheduled jobs created from the apps use the exact interpreter of your active environment (`sys.executable`),
+      ensuring `.venv/bin/python` is used. Keep your venv path stable on the machine running cron.
+    - Cron entries source your shell profile and pass through any required variables. You can also rely on `.env` for
+      most settings.
 
 ### Hardware and Software Requirements
 
@@ -111,20 +129,21 @@ Recommended steps:
 
 ### Docker Installation
 
-BERTrend can be run using Docker, which provides an easy way to run the application without installing dependencies directly on your system.
+BERTrend can be run using Docker, which provides an easy way to run the application without installing dependencies
+directly on your system.
 
 For detailed instructions on using BERTrend with Docker, see the [Docker documentation](./docs/docker.md).
 
 ### Package Installation
 
-- (Recommended): create a new python environment using `uv`: 
+- (Recommended): create a new python environment using `uv`:
 
   `uv venv --python 3.13`
 
 
 - Installation from pypi
 
-  `uv pip install bertrend` 
+  `uv pip install bertrend`
 
 
 - Install using pip or poetry in the BERTrend home directory:
@@ -132,9 +151,6 @@ For detailed instructions on using BERTrend with Docker, see the [Docker documen
   ```bash
   # Basic installation with core dependencies
   uv pip install . 
-
-    # Installation with apps dependencies
-  uv pip install .[apps]
 
   ```
 
@@ -152,12 +168,8 @@ BERTrend's dependencies are organized into logical groups for easier management:
 - **Visualization and UI**: Tools for data visualization and user interfaces
 - **Utilities**: General utility libraries
 
-Optional dependency groups:
-
-- **test**: Dependencies for running tests and measuring code coverage
-- **apps**: Additional dependencies required for BERTrend applications
-
-This organization simplifies installation and maintenance, allowing users to install only the dependencies they need for their specific use case.
+This organization simplifies installation and maintenance, allowing users to install only the dependencies they need for
+their specific use case.
 
 ### Verifying Installation
 
@@ -167,35 +179,43 @@ To verify that your installation is working correctly, you can run the installat
 python -m bertrend.tests.test_installation
 ```
 
-This script will check that all dependencies are installed correctly and provide a summary of the installation status. If any dependencies are missing, the script will provide instructions on how to install them.
+This script will check that all dependencies are installed correctly and provide a summary of the installation status.
+If any dependencies are missing, the script will provide instructions on how to install them.
 
 ### Datasets
 
 #### Dataset Sources
+
 BERTrend can work with various text datasets such as:
+
 - Scientific publications
 - News articles
 - Social media publications
 
 Recommended public datasets:
+
 - New York Times dataset: https://www.kaggle.com/datasets/aryansingh0909/nyt-articles-21m-2000-present
 - Arxiv dataset: https://www.kaggle.com/datasets/Cornell-University/arxiv
 
 For custom dataset creation, please refer to the documentation page about [data providers](./docs/data_provider.md).
 
-For email configuration and newsletter sending (optional), please refer to the [mail configuration guide](./docs/mail_configuration.md).
-
+For email configuration and newsletter sending (optional), please refer to
+the [mail configuration guide](./docs/mail_configuration.md).
 
 In order to use the provided demos, datasets :
+
 - can be stored on the server in: `$BERTREND_BASE_DIR/data/bertrend/`
 - or can be uploaded from the client device on which are displayed the Streamlit apps.
 
 #### Dataset Format
+
 Required columns:
+
 - `text`
 - `timestamp`
 
 Supported formats:
+
 - csv
 - xlsx
 - parquet
@@ -206,94 +226,105 @@ Supported formats:
 ### 1. Dynamic Topic Modeling Analysis
 
 #### Launch the Demonstrator
+
 ```bash
 cd bertrend/demos/topic_analysis
 CUDA_VISIBLE_DEVICES=<gpu_number> streamlit run app.py
 ```
 
 #### Description of Main Pages
+
 - `Parameters`: Include all BERTopic parameters. Choose the embedding model carefully based on your data language.
-The embedding model can run locally (a GPU is recommended); it is also possible to use a remote embedding service.
+  The embedding model can run locally (a GPU is recommended); it is also possible to use a remote embedding service.
 
 We recommend using a remote embedding service (this is now the default config) as it simplifies the computing.
 
-The change of configuration can be done in: [services_default_config.toml](bertrend/config/services_default_config.toml).
+The change of configuration can be done
+in: [services_default_config.toml](bertrend/config/services_default_config.toml).
 
-An example of a very simple implementation to deploy a separate embedding service can be found here: `bertrend/services/embedding_server`
-
+An example of a very simple implementation to deploy a separate embedding service can be found here:
+`bertrend/services/embedding_server`
 
 ![parameters](docs/images/parameters.png)
 
-Please refer to the [BERTopic documentation](https://maartengr.github.io/BERTopic/algorithm/algorithm.html) for parameter details.
+Please refer to the [BERTopic documentation](https://maartengr.github.io/BERTopic/algorithm/algorithm.html) for
+parameter details.
 
 The application is split into several pages:
 
-- `Data loading & model training`: Allows to 
-  - Select a dataset
-  - Select the range of timestamps
-  - Split paragraphs if needed
-  - Train a topic model
+- `Data loading & model training`: Allows to
+    - Select a dataset
+    - Select the range of timestamps
+    - Split paragraphs if needed
+    - Train a topic model
 
 ![data_selection](docs/images/data_selection.png)
 
 - `Topic exploration`
-  - Computes topics over time
-  ![exploration_over_time](./docs/images/explore1.png)
+    - Computes topics over time
+      ![exploration_over_time](./docs/images/explore1.png)
 
-  - Allow selecting sources and generating short descriptions for each theme
-  ![topic_exploration](./docs/images/explore2.png)
+    - Allow selecting sources and generating short descriptions for each theme
+      ![topic_exploration](./docs/images/explore2.png)
 
 - `Topic visualization`: Several visualization types available:
-  - `Overall Results`: Standard information such as inter-topic distance map
-  - `Topics Treemap`: Block view of topics and their relative importance
-  - `Data Map`: Easy topic and data search interface
+    - `Overall Results`: Standard information such as inter-topic distance map
+    - `Topics Treemap`: Block view of topics and their relative importance
+    - `Data Map`: Easy topic and data search interface
 
-  ![data_map](./docs/images/data_map.png)  
+  ![data_map](./docs/images/data_map.png)
 
 - `Temporal Visualization`: Focus on dynamic topic modeling:
-  - 3D visualization of temporal topic evolution
-  - Metrics to assess topic stability over time
-  - Overall topic stability, temporal topic stability, and temporal representation stability
+    - 3D visualization of temporal topic evolution
+    - Metrics to assess topic stability over time
+    - Overall topic stability, temporal topic stability, and temporal representation stability
 
-  ![temptopic_metrics](./docs/images/temptopic_metrics.png)  
+  ![temptopic_metrics](./docs/images/temptopic_metrics.png)
 
 - `Generate Newsletters`
-  - This is an example of an application combining topic analysis and LLMs
-  - Generates newsletters based on prominent topics
-  - Uses LLMs to generate topic descriptions and summarize representative documents
-
+    - This is an example of an application combining topic analysis and LLMs
+    - Generates newsletters based on prominent topics
+    - Uses LLMs to generate topic descriptions and summarize representative documents
 
 ### 2. Weak Signal Analysis
-**Weak signals** refer to early, small indicators of larger, important trends (like disruptive technologies or public health issues).
 
-Identifying weak signals early is critical for decision-making across domains such as politics, healthcare, and innovation
+**Weak signals** refer to early, small indicators of larger, important trends (like disruptive technologies or public
+health issues).
+
+Identifying weak signals early is critical for decision-making across domains such as politics, healthcare, and
+innovation
 
 Key Features of the demonstrator:
+
 - Dynamic Topic Modeling in an online learning setting
 - Popularity-based Signal Classification
-  * based on their popularity trends: noise, weak signals, and strong signals
-  * **new popularity metric** considers both the number of documents within a topic and the **frequency of updates**
-
+    * based on their popularity trends: noise, weak signals, and strong signals
+    * **new popularity metric** considers both the number of documents within a topic and the **frequency of updates**
 
 #### Launch the Weak Signal Analysis Demonstrator
+
 ```bash
 cd bertrend/demos/weak_signals
 CUDA_VISIBLE_DEVICES=<gpu_number> streamlit run app.py
 ```
 
 #### Data Preparation
+
 - Choose from available datasets
-![bertrend_data](docs/images/bertrend_data.png)
+  ![bertrend_data](docs/images/bertrend_data.png)
 - Click on `Embed Documents`
 
 #### Train Model
+
 - Select the `Model Training` tab
 - Choose time granularity (in days)
 - Click `Train Models` to generate topic models per time slice
 - Click `Merge Models` for the aggregated model
 
 #### Results Analysis
+
 Provides various statistics about topics:
+
 - Number of topics detected
 - Topic size evolution
 - Topic popularity evolution
@@ -304,13 +335,13 @@ Provides various statistics about topics:
 - Lists of noise, weak, and strong signals
 
 #### LLM-based signal interpretation
+
 - As topics are hard to interprete by humans, we showcase how it can be
-done using LLMs.
+  done using LLMs.
 - Choose a specific topic and click on the button to generate an interpretation
 - LLM-based in-depth signal analysis is done using predefined templates, for example:
-  - describe what's happened since the last timestamp (summary of main events)
-  - present through a multi-faceted description info about key developments, foreseen changes, potential impact, etc.
-
+    - describe what's happened since the last timestamp (summary of main events)
+    - present through a multi-faceted description info about key developments, foreseen changes, potential impact, etc.
 
 ![llm_interpretation](docs/images/llm_interpretation.png)
 
@@ -323,6 +354,7 @@ Please use the 'Issues' section to report and discuss any problems with BERTrend
 We welcome contributions. For major changes, please open an issue first to discuss your proposal.
 
 To contribute:
+
 1. Fork the repository at https://github.com/rte-france/BERTrend
 2. Sync your fork with the latest development branch
 3. Implement your changes
@@ -338,7 +370,8 @@ See [AUTHORS](./AUTHORS.txt) for the full list of contributors.
 
 Copyright 2023–2025 RTE France RTE: http://www.rte-france.com
 
-This Source Code is subject to the terms of the Mozilla Public License (MPL) v2 also available here: https://www.mozilla.org/en-US/MPL/2.0/
+This Source Code is subject to the terms of the Mozilla Public License (MPL) v2 also available
+here: https://www.mozilla.org/en-US/MPL/2.0/
 
 ## Citation
 

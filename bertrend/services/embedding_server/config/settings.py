@@ -1,11 +1,12 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
 import os
-from pathlib import Path
 import tomllib
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
 
 DEFAULT_CONFIG_FILE = Path(__file__).parent / "default_config.toml"

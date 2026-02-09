@@ -4,13 +4,12 @@
 #  This file is part of BERTrend.
 import os
 from datetime import datetime
-from pathlib import Path
 
-from jinja2 import Template, Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader
 from loguru import logger
 
 from bertrend import OUTPUT_PATH
-from bertrend.trend_analysis.data_structure import TopicSummaryList, SignalAnalysis
+from bertrend.trend_analysis.data_structure import SignalAnalysis, TopicSummaryList
 
 # Global variables for prompts
 SIGNAL_INTRO = {
@@ -293,7 +292,7 @@ def fill_html_template(
         topic_summary_list.topic_summary_by_time_period = (
             sorted_topic_summary_by_time_period
         )
-    except Exception as e:
+    except Exception:
         logger.warning("Cannot sort summaries by date, probably wrong date format")
 
     # Render the template with the provided data

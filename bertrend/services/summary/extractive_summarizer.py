@@ -1,4 +1,4 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
@@ -10,19 +10,19 @@ import numpy as np
 import torch
 from loguru import logger
 from sentence_transformers import SentenceTransformer, util
-from sentence_transformers.models import Transformer, Pooling
+from sentence_transformers.models import Pooling, Transformer
 from torch import Tensor
 
 from bertrend.llm_utils.openai_client import OpenAI_Client
-from bertrend.services.summary.lexrank import degree_centrality_scores
-from bertrend.services.summary.prompts import (
-    FR_SYSTEM_SUMMARY_SENTENCES,
-    EN_SYSTEM_SUMMARY_SENTENCES,
-)
 from bertrend.services.summarizer import (
-    Summarizer,
     DEFAULT_MAX_SENTENCES,
     DEFAULT_SUMMARIZATION_RATIO,
+    Summarizer,
+)
+from bertrend.services.summary.lexrank import degree_centrality_scores
+from bertrend.services.summary.prompts import (
+    EN_SYSTEM_SUMMARY_SENTENCES,
+    FR_SYSTEM_SUMMARY_SENTENCES,
 )
 
 RTE_MODEL_NAME = "models/language_model_rte/lm-distilcamembertbase-rte-saola2_20220826"

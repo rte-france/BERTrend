@@ -1,18 +1,19 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from gensim.models.coherencemodel import CoherenceModel
 
 from bertrend.metrics.topic_metrics import (
+    compute_cluster_metrics,
     get_coherence_value,
     get_diversity_value,
-    compute_cluster_metrics,
-    proportion_unique_words,
     pairwise_jaccard_diversity,
+    proportion_unique_words,
 )
 
 

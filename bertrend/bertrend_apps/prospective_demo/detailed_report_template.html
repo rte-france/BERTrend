@@ -1,0 +1,451 @@
+<!--
+  ~ Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
+  ~ See AUTHORS.txt
+  ~ SPDX-License-Identifier: MPL-2.0
+  ~ This file is part of BERTrend.
+  -->
+{% extends 'newsletter_outlook_template.html' %}
+
+{% macro display_topic_evolution(topic, language) %}
+<!-- Macro to render the topic evolution -->
+{% if topic.topic_evolution %}
+<details style="margin: 15px 0;">
+    <summary
+            style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; cursor: pointer; border-radius: 4px; font-family: Arial, sans-serif; list-style: none; outline: none; user-select: none;">
+        <span class="toggle-arrow"
+              style="display: inline-block; margin-right: 8px; transition: transform 0.2s ease; font-size: 12px; color: #c50000;">▶</span>
+        <span style="font-size: 12px; color: #c50000; font-weight: bold;">
+                {% if language == 'en' %}
+                    Topic Evolution
+                {% else %}
+                    Evolution du sujet
+                {% endif %}
+            </span>
+    </summary>
+
+    <div style="background-color: #fafafa; border: 1px solid #e0e0e0; border-top: none; padding: 15px; margin: 0;">
+        {% for topic_evolution_period in topic.topic_evolution.topic_summary_by_time_period | sort(attribute='date',
+        reverse=True) %}
+        <div style="margin-bottom: 15px; padding: 10px; background-color: aliceblue; border-left: 3px solid steelblue; font-family: Arial, sans-serif;">
+
+            {% if topic_evolution_period.date or topic_evolution_period.title %}
+            <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px;">
+
+                {% if topic_evolution_period.date %}
+                <div style="font-size: 10px; color: steelblue; font-style: italic; font-weight: bold;">
+                    {{ topic_evolution_period.date | e }}
+                </div>
+                {% endif %}
+
+                {% if topic_evolution_period.title %}
+                <h5 style="font-size: 11px; color: steelblue; margin: 0; font-weight: bold;">
+                    {{ topic_evolution_period.title | e }}
+                </h5>
+                {% endif %}
+
+            </div>
+            {% endif %}
+
+            <!-- Period Description -->
+            {% if topic_evolution_period.description %}
+            <div style="font-size: 12px; color: #444; margin-bottom: 8px; line-height: 1.4;">
+                {{ topic_evolution_period.description | e }}
+            </div>
+            {% endif %}
+
+            <!-- Novelty indicator -->
+            {% if topic_evolution_period.novelty %}
+            <div style="font-size: 11px; color: #444; margin-bottom: 3px; font-weight: bold;">
+                {% if language == 'en' %}
+                Novelty
+                {% else %}
+                Nouveauté
+                {% endif %}
+            </div>
+            <div style="font-size: 12px; color: #444; margin-bottom: 8px; line-height: 1.4;">
+                {{ topic_evolution_period.novelty | e }}
+            </div>
+            {% endif %}
+
+            <!-- Key Developments -->
+            {% if topic_evolution_period.key_developments %}
+            <div style="font-size: 11px; color: #444; margin: 8px 0 5px 0; font-weight: bold;">
+                {% if language == 'en' %}
+                Key Developments
+                {% else %}
+                Développements clés
+                {% endif %}
+            </div>
+            <ul style="margin: 0 0 0 0; padding-left: 20px; font-size: 12px; color: #555;">
+                {% for key_development in topic_evolution_period.key_developments %}
+                <li style="margin-bottom: 5px;">{{ key_development | e }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</details>
+{% endif %}
+{% endmacro %}
+
+{% macro display_evolution_scenario(topic, language) %}
+<!-- Macro to render the topic evolution scenario -->
+{% if topic.topic_analysis and topic.topic_analysis.evolution_scenario %}
+<details style="margin: 15px 0;">
+    <summary
+            style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; cursor: pointer; border-radius: 4px; font-family: Arial, sans-serif; list-style: none; outline: none; user-select: none;">
+        <span class="toggle-arrow"
+              style="display: inline-block; margin-right: 8px; transition: transform 0.2s ease; font-size: 12px; color: #c50000;">▶</span>
+        <span style="font-size: 12px; color: #c50000; font-weight: bold;">
+                {% if language == 'en' %}
+                    Evolution Scenarios
+                {% else %}
+                    Scénarios d'évolution
+                {% endif %}
+            </span>
+    </summary>
+
+    <div style="background-color: #fafafa; border: 1px solid #e0e0e0; border-top: none; padding: 15px; margin: 0;">
+        <!-- Optimistic Scenario -->
+        <div style="margin-bottom: 15px; padding: 10px; background-color: #f0f8f0; border-left: 3px solid #4caf50; font-family: Arial, sans-serif;">
+            <h5 style="font-size: 11px; color: #4caf50; margin: 0 0 5px 0; font-weight: bold;">
+                {% if language == 'en' %}
+                Optimistic scenario
+                {% else %}
+                Scénario optimiste
+                {% endif %}
+            </h5>
+            <div style="font-size: 12px; color: #444; margin-bottom: 8px; line-height: 1.4;">
+                {{ topic.topic_analysis.evolution_scenario.optimistic_scenario_description | e }}
+            </div>
+            {% if topic.topic_analysis.evolution_scenario.optimistic_scenario_points %}
+            <div style="font-size: 11px; color: #444; margin: 8px 0 5px 0; font-weight: bold;">
+                {% if language == 'en' %}
+                Key Points
+                {% else %}
+                Points clés
+                {% endif %}
+            </div>
+            <ul style="margin: 0 0 0 0; padding-left: 20px; font-size: 12px; color: #555;">
+                {% for point in topic.topic_analysis.evolution_scenario.optimistic_scenario_points %}
+                <li style="margin-bottom: 5px;">{{ point | e }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+
+        <!-- Pessimistic Scenario -->
+        <div style="margin-bottom: 15px; padding: 10px; background-color: #fff8f0; border-left: 3px solid #ff9800; font-family: Arial, sans-serif;">
+            <h5 style="font-size: 11px; color: #ff9800; margin: 0 0 5px 0; font-weight: bold;">
+                {% if language == 'en' %}
+                Pessimistic scenario
+                {% else %}
+                Scénario pessimiste
+                {% endif %}
+            </h5>
+            <div style="font-size: 12px; color: #444; margin-bottom: 8px; line-height: 1.4;">
+                {{ topic.topic_analysis.evolution_scenario.pessimistic_scenario_description | e }}
+            </div>
+            {% if topic.topic_analysis.evolution_scenario.pessimistic_scenario_points %}
+            <div style="font-size: 11px; color: #444; margin: 8px 0 5px 0; font-weight: bold;">
+                {% if language == 'en' %}
+                Key Points
+                {% else %}
+                Points clés
+                {% endif %}
+            </div>
+            <ul style="margin: 0 0 0 0; padding-left: 20px; font-size: 12px; color: #555;">
+                {% for point in topic.topic_analysis.evolution_scenario.pessimistic_scenario_points %}
+                <li style="margin-bottom: 5px;">{{ point | e }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+    </div>
+</details>
+{% endif %}
+{% endmacro %}
+
+{% macro display_multifactorial_analysis(topic, language) %}
+<!-- Macro to render the multifactorial analysis of the topic -->
+{% if topic.topic_analysis %}
+
+<!-- Potential Implications -->
+{% if topic.topic_analysis.potential_implications %}
+<details style="margin: 15px 0;">
+    <summary
+            style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; cursor: pointer; border-radius: 4px; font-family: Arial, sans-serif; list-style: none; outline: none; user-select: none;">
+        <span class="toggle-arrow"
+              style="display: inline-block; margin-right: 8px; transition: transform 0.2s ease; font-size: 12px; color: #c50000;">▶</span>
+        <span style="font-size: 12px; color: #c50000; font-weight: bold;">
+                    {% if language == 'en' %}
+                        Potential Implications
+                    {% else %}
+                        Implications potentielles
+                    {% endif %}
+                </span>
+    </summary>
+
+    <div style="background-color: #fafafa; border: 1px solid #e0e0e0; border-top: none; padding: 15px; margin: 0;">
+        <!-- Short-term implications -->
+        {% if topic.topic_analysis.potential_implications.short_term_implications %}
+        <div style="margin-bottom: 15px; padding: 10px; background-color: #f5f0e6; border-left: 3px solid #b35c2a; font-family: Arial, sans-serif;">
+            <h5 style="font-size: 11px; color: #b35c2a; margin: 0 0 5px 0; font-weight: bold;">
+                {% if language == 'en' %}
+                Short-term implications
+                {% else %}
+                Implications à court terme
+                {% endif %}
+            </h5>
+            <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #555;">
+                {% for implication in topic.topic_analysis.potential_implications.short_term_implications %}
+                <li style="margin-bottom: 5px;">{{ implication | e }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Long-term implications -->
+        {% if topic.topic_analysis.potential_implications.long_term_implications %}
+        <div style="margin-bottom: 15px; padding: 10px; background-color: #f0f0ff; border-left: 3px solid #6b5b95; font-family: Arial, sans-serif;">
+            <h5 style="font-size: 11px; color: #6b5b95; margin: 0 0 5px 0; font-weight: bold;">
+                {% if language == 'en' %}
+                Long-term implications
+                {% else %}
+                Implications à long terme
+                {% endif %}
+            </h5>
+            <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #555;">
+                {% for implication in topic.topic_analysis.potential_implications.long_term_implications %}
+                <li style="margin-bottom: 5px;">{{ implication | e }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</details>
+{% endif %}
+
+<!-- Topic Interconnections -->
+{% if topic.topic_analysis.topic_interconnexions %}
+<details style="margin: 15px 0;">
+    <summary
+            style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; cursor: pointer; border-radius: 4px; font-family: Arial, sans-serif; list-style: none; outline: none; user-select: none;">
+        <span class="toggle-arrow"
+              style="display: inline-block; margin-right: 8px; transition: transform 0.2s ease; font-size: 12px; color: #c50000;">▶</span>
+        <span style="font-size: 12px; color: #c50000; font-weight: bold;">
+                    {% if language == 'en' %}
+                        Topic Interconnections
+                    {% else %}
+                        Interconnexions du sujet
+                    {% endif %}
+                </span>
+    </summary>
+
+    <div style="background-color: #fafafa; border: 1px solid #e0e0e0; border-top: none; padding: 15px; margin: 0;">
+        <!-- Interconnections -->
+        {% if topic.topic_analysis.topic_interconnexions.interconnexions %}
+        <div style="margin-bottom: 15px; padding: 10px; background-color: #f0fff8; border-left: 3px solid #20b2aa; font-family: Arial, sans-serif;">
+            <div style="font-size: 11px; color: #20b2aa; margin: 0 0 5px 0; font-weight: bold;">
+                {% if language == 'en' %}
+                Interconnections
+                {% else %}
+                Interconnexions
+                {% endif %}
+            </div>
+            <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #555;">
+                {% for interconnection in topic.topic_analysis.topic_interconnexions.interconnexions %}
+                <li style="margin-bottom: 5px;">{{ interconnection | e }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Ripple Effects -->
+        {% if topic.topic_analysis.topic_interconnexions.ripple_effects %}
+        <div style="margin-bottom: 15px; padding: 10px; background-color: #faf0ff; border-left: 3px solid #9966cc; font-family: Arial, sans-serif;">
+            <div style="font-size: 11px; color: #9966cc; margin: 0 0 5px 0; font-weight: bold;">
+                {% if language == 'en' %}
+                Ripple Effects
+                {% else %}
+                Effets de propagation
+                {% endif %}
+            </div>
+            <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #555;">
+                {% for effect in topic.topic_analysis.topic_interconnexions.ripple_effects %}
+                <li style="margin-bottom: 5px;">{{ effect | e }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</details>
+{% endif %}
+
+<!-- Drivers and Inhibitors -->
+{% if topic.topic_analysis.drivers_inhibitors %}
+<details style="margin: 15px 0;">
+    <summary
+            style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; cursor: pointer; border-radius: 4px; font-family: Arial, sans-serif; list-style: none; outline: none; user-select: none;">
+        <span class="toggle-arrow"
+              style="display: inline-block; margin-right: 8px; transition: transform 0.2s ease; font-size: 12px; color: #c50000;">▶</span>
+        <span style="font-size: 12px; color: #c50000; font-weight: bold;">
+                    {% if language == 'en' %}
+                        Drivers and Inhibitors
+                    {% else %}
+                        Moteurs et inhibiteurs
+                    {% endif %}
+                </span>
+    </summary>
+
+    <div style="background-color: #fafafa; border: 1px solid #e0e0e0; border-top: none; padding: 15px; margin: 0;">
+        <!-- Drivers -->
+        {% if topic.topic_analysis.drivers_inhibitors.drivers %}
+        <div style="margin-bottom: 15px; padding: 10px; background-color: #f0fff0; border-left: 3px solid #32cd32; font-family: Arial, sans-serif;">
+            <div style="font-size: 11px; color: #32cd32; margin: 0 0 5px 0; font-weight: bold;">
+                {% if language == 'en' %}
+                Drivers
+                {% else %}
+                Moteurs
+                {% endif %}
+            </div>
+            <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #555;">
+                {% for driver in topic.topic_analysis.drivers_inhibitors.drivers %}
+                <li style="margin-bottom: 5px;">{{ driver | e }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Inhibitors -->
+        {% if topic.topic_analysis.drivers_inhibitors.inhibitors %}
+        <div style="margin-bottom: 15px; padding: 10px; background-color: #fff0f0; border-left: 3px solid #dc143c; font-family: Arial, sans-serif;">
+            <div style="font-size: 11px; color: #dc143c; margin: 0 0 5px 0; font-weight: bold;">
+                {% if language == 'en' %}
+                Inhibitors
+                {% else %}
+                Inhibiteurs
+                {% endif %}
+            </div>
+            <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #555;">
+                {% for inhibitor in topic.topic_analysis.drivers_inhibitors.inhibitors %}
+                <li style="margin-bottom: 5px;">{{ inhibitor | e }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</details>
+{% endif %}
+{% endif %}
+{% endmacro %}
+
+{% block detailed_topic_analysis scoped %}
+{{ super() }} <!-- mandatory to get variable values -->
+{% if topic.topic_evolution or topic.topic_analysis %}
+<table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
+    <tr>
+        <td>
+            <!-- Main detailed analysis toggle -->
+            <details style="margin: 15px 0;">
+                <summary
+                        style="background-color: #f0f0f0; border: 1px solid #ddd; padding: 10px; cursor: pointer; border-radius: 4px; font-family: Arial, sans-serif; list-style: none; outline: none; user-select: none;">
+                    <span class="toggle-arrow"
+                          style="display: inline-block; margin-right: 8px; transition: transform 0.2s ease; font-size: 10px;">▶</span>
+                    <span style="font-weight: bold;">
+                                {% if language == 'en' %}
+                                    Detailed Analysis
+                                {% else %}
+                                    Analyse Détaillée
+                                {% endif %}
+                            </span>
+                    <span style="float: right; font-size: 11px; color: #666;">
+                                {% if language == 'en' %}
+                                    Click to expand
+                                {% else %}
+                                    Cliquer pour développer
+                                {% endif %}
+                            </span>
+                </summary>
+
+                <!-- Analysis Content -->
+                <div style="background-color: #fafafa; border: 1px solid #e0e0e0; border-top: none; padding: 15px; margin: 0 0 15px 0;">
+                    <!-- Display detailed analysis -->
+                    {{ display_topic_evolution(topic, language) }}
+                    {{ display_evolution_scenario(topic, language) }}
+                    {{ display_multifactorial_analysis(topic, language) }}
+                </div>
+            </details>
+        </td>
+    </tr>
+</table>
+{% endif %}
+{% endblock %}
+
+<style>
+    /* Enhanced styles for toggle functionality */
+    details {
+        margin: 15px 0;
+    }
+
+    /* Style summary elements */
+    details > summary {
+        list-style: none;
+        outline: none;
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+        transition: background-color 0.2s ease;
+    }
+
+    /* Hide webkit default arrow */
+    details > summary::-webkit-details-marker {
+        display: none;
+    }
+
+    /* Remove Firefox default arrow */
+    details > summary::marker {
+        content: '';
+    }
+
+    /* Hover effect for summaries */
+    details > summary:hover {
+        background-color: #e9ecef !important;
+    }
+
+    /* Rotate arrow when opened */
+    details[open] > summary .toggle-arrow {
+        transform: rotate(90deg);
+    }
+
+    /* Smooth transition for arrows */
+    .toggle-arrow {
+        display: inline-block;
+        transition: transform 0.2s ease;
+    }
+
+    /* Content area styling */
+    details > div {
+        animation: slideDown 0.2s ease-out;
+    }
+
+    /* Slide down animation */
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            max-height: 0;
+        }
+        to {
+            opacity: 1;
+            max-height: 1000px;
+        }
+    }
+
+    /* Email client compatibility styles */
+    @media screen and (-webkit-min-device-pixel-ratio: 0) {
+        details summary {
+            display: block;
+        }
+    }
+</style>

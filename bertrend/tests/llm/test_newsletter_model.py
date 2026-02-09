@@ -1,18 +1,19 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-import pytest
 from datetime import date
+
+import pytest
 from pydantic import ValidationError
 
 from bertrend.llm_utils.newsletter_model import (
-    Article,
-    Topic,
+    NOISE_TOPIC_TYPE,
     STRONG_TOPIC_TYPE,
     WEAK_TOPIC_TYPE,
-    NOISE_TOPIC_TYPE,
+    Article,
     Newsletter,
+    Topic,
 )
 
 

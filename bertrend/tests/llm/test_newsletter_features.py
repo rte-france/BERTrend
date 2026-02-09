@@ -1,30 +1,31 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
-import pandas as pd
-from datetime import datetime, date
-from pathlib import Path
-from unittest.mock import Mock, patch, mock_open
 import tempfile
+from datetime import date, datetime
+from pathlib import Path
+from unittest.mock import Mock, mock_open, patch
+
+import pandas as pd
+import pytest
 
 from bertrend.llm_utils.newsletter_features import (
-    generate_newsletter,
+    DEFAULT_SUMMARY_MODE,
     DEFAULT_TOP_N_DOCS,
     DEFAULT_TOP_N_DOCS_MODE,
-    DEFAULT_SUMMARY_MODE,
     DEFAULT_TOP_N_TOPICS,
-    render_newsletter_md,
-    render_newsletter_html,
+    generate_newsletter,
     render_newsletter,
+    render_newsletter_html,
+    render_newsletter_md,
 )
 from bertrend.llm_utils.newsletter_model import (
+    STRONG_TOPIC_TYPE,
+    Article,
     Newsletter,
     Topic,
-    Article,
-    STRONG_TOPIC_TYPE,
 )
 
 

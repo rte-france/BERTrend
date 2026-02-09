@@ -1,20 +1,21 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import pytest
+
+from bertrend.services.summarizer import DEFAULT_MAX_SENTENCES
 from bertrend.services.summary.chatgpt_summarizer import (
     GPTSummarizer,
     keep_first_n_words,
 )
 from bertrend.services.summary.prompts import (
-    FR_SYSTEM_SUMMARY_SENTENCES,
     EN_SYSTEM_SUMMARY_SENTENCES,
+    FR_SYSTEM_SUMMARY_SENTENCES,
 )
-from bertrend.services.summarizer import DEFAULT_MAX_SENTENCES
 
 
 @pytest.fixture

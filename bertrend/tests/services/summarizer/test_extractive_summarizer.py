@@ -1,16 +1,17 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-import pytest
-from unittest.mock import patch, MagicMock
-import torch
+from unittest.mock import MagicMock, patch
+
 import numpy as np
+import pytest
+import torch
 
 from bertrend.services.summary.extractive_summarizer import (
-    ExtractiveSummarizer,
     EnhancedExtractiveSummarizer,
+    ExtractiveSummarizer,
     _summarize_based_on_cos_scores,
     summarize_embeddings,
 )

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
@@ -9,16 +9,15 @@ Test script to verify the multi-worker fix.
 This script simulates what happens when uvicorn forks worker processes.
 """
 
-import os
-import sys
 import multiprocessing
+import os
 
 
 def helper_test_import_in_worker():
     """Test that importing bertrend_apps works in a forked worker process."""
     try:
         # Import bertrend_apps which triggers SCHEDULER_UTILS initialization
-        from bertrend_apps import SCHEDULER_UTILS
+        from bertrend.bertrend_apps import SCHEDULER_UTILS
 
         print(
             f"[Worker {os.getpid()}] Successfully imported SCHEDULER_UTILS: {type(SCHEDULER_UTILS).__name__}"

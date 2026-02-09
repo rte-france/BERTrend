@@ -1,20 +1,21 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
 from pydantic import ValidationError
 
 from bertrend.article_scoring.article_scoring import (
-    QualityLevel,
-    CriteriaScores,
-    WeightConfig,
     ArticleScore,
+    CriteriaScores,
+    QualityLevel,
+    WeightConfig,
 )
-from bertrend.article_scoring.scoring_agent import score_articles
 from bertrend.article_scoring.prompts import ARTICLE_SCORING_PROMPT
+from bertrend.article_scoring.scoring_agent import score_articles
 
 
 class TestQualityLevel:
