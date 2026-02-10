@@ -15,6 +15,9 @@ from bertrend.bertrend_apps.data_provider.arxiv_provider import ArxivProvider
 from bertrend.bertrend_apps.data_provider.atom_feed_provider import ATOMFeedProvider
 from bertrend.bertrend_apps.data_provider.bing_news_provider import BingNewsProvider
 from bertrend.bertrend_apps.data_provider.google_news_provider import GoogleNewsProvider
+from bertrend.bertrend_apps.data_provider.deep_research_provider import (
+    DeepResearchProvider,
+)
 from bertrend.bertrend_apps.data_provider.newscatcher_provider import (
     NewsCatcherProvider,
 )
@@ -27,6 +30,7 @@ PROVIDERS = {
     "google": GoogleNewsProvider,
     "bing": BingNewsProvider,
     "newscatcher": NewsCatcherProvider,
+    "deep_research": DeepResearchProvider,
 }
 
 
