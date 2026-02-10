@@ -9,18 +9,17 @@ services:
       - "8882:8000"
     volumes:
       # Mount data directory for persistent SQLite database
-      - $HOME/.bertrend/db:$HOME/.bertrend/db
+      # Host path uses $HOME, container path uses /home/user
+      - ${HOME}/.bertrend/db:/home/user/.bertrend/db
     environment:
       - NO_PROXY=$NO_PROXY # to avoid communication issues
       - no_proxy=$no_proxy # to avoid communication issues
       # Application settings
       - TZ=Europe/Paris
       - PYTHONUNBUFFERED=1
-      # Optional: Log level
       - LOG_LEVEL=DEBUG
-      # Optional: Number of worker processes
       - MAX_WORKERS=100
-      - HOME=$HOME
+      - HOME=/home/user  # Generic home path in container
     restart: always
     logging:
       driver: "json-file"
@@ -35,7 +34,6 @@ services:
       start_period: 10s
     networks:
       - scheduler-network
-    # Resource limits (adjust based on your needs)
     deploy:
       resources:
         limits:
