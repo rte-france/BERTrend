@@ -66,7 +66,7 @@ def test_summarize_batch(summarizer):
 
         # Check that the correct parameters were passed
         mock_generate.assert_any_call(
-            article_text=texts[0],
+            texts[0],
             max_sentences=DEFAULT_MAX_SENTENCES,
             max_words=DEFAULT_MAX_WORDS,
             max_length_ratio=DEFAULT_SUMMARIZATION_RATIO,
@@ -98,7 +98,7 @@ def test_summarize_batch_with_custom_params(summarizer):
 
         # Check that the custom parameters were passed to generate_summary
         mock_generate.assert_called_once_with(
-            article_text=texts[0],
+            texts[0],
             max_sentences=5,
             max_words=100,
             max_length_ratio=0.3,
