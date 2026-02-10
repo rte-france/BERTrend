@@ -23,9 +23,7 @@ class MockResponse:
 
     def raise_for_status(self):
         if self.status_code >= 400:
-            raise requests.HTTPError(
-                f"{self.status_code} Error", response=self
-            )
+            raise requests.HTTPError(f"{self.status_code} Error", response=self)
 
 
 @pytest.fixture
@@ -134,7 +132,12 @@ def test_summarize_batch(mock_post, client):
 def test_summarize_with_all_params(mock_post, client):
     """Test summarize with all optional parameters."""
     mock_post.return_value = MockResponse(
-        {"summaries": ["S."], "summarizer_type": "llm", "language": "en", "processing_time_ms": 1.0}
+        {
+            "summaries": ["S."],
+            "summarizer_type": "llm",
+            "language": "en",
+            "processing_time_ms": 1.0,
+        }
     )
 
     client.summarize(
@@ -158,7 +161,12 @@ def test_summarize_with_all_params(mock_post, client):
 def test_summarize_without_max_words(mock_post, client):
     """Test that max_words is omitted from payload when None."""
     mock_post.return_value = MockResponse(
-        {"summaries": ["S."], "summarizer_type": "llm", "language": "fr", "processing_time_ms": 1.0}
+        {
+            "summaries": ["S."],
+            "summarizer_type": "llm",
+            "language": "fr",
+            "processing_time_ms": 1.0,
+        }
     )
 
     client.summarize("Text.")
