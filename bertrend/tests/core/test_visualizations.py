@@ -218,7 +218,7 @@ def test_plot_topics_over_time(sample_topics_over_time, mock_topic_model):
 def test_plot_docs_repartition_over_time(sample_df):
     """Test the plot_docs_repartition_over_time function."""
     # Call the function with test data
-    fig = plot_docs_repartition_over_time(df=sample_df, freq="M")
+    fig = plot_docs_repartition_over_time(df=sample_df, freq="ME")
 
     # Check that the result is a Figure
     assert isinstance(fig, go.Figure)
@@ -228,7 +228,7 @@ def test_plot_remaining_docs_repartition_over_time(sample_df, sample_remaining_d
     """Test the plot_remaining_docs_repartition_over_time function."""
     # Call the function with test data
     fig = plot_remaining_docs_repartition_over_time(
-        df_base=sample_df, df_remaining=sample_remaining_df, freq="M"
+        df_base=sample_df, df_remaining=sample_remaining_df, freq="ME"
     )
 
     # Check that the result is a Figure
