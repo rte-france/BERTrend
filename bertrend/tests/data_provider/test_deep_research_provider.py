@@ -33,11 +33,14 @@ def _make_report(**overrides) -> ResearchReport:
 def _make_plan(sub_queries: list[str] = None) -> ResearchPlan:
     """Helper to build a ResearchPlan."""
     return ResearchPlan(
-        sub_queries=sub_queries or ["Sub-question 1?", "Sub-question 2?", "Sub-question 3?"]
+        sub_queries=sub_queries
+        or ["Sub-question 1?", "Sub-question 2?", "Sub-question 3?"]
     )
 
 
-def _make_sub_result(sub_query: str = "Q?", findings: str = "Some findings.") -> SubQueryResult:
+def _make_sub_result(
+    sub_query: str = "Q?", findings: str = "Some findings."
+) -> SubQueryResult:
     """Helper to build a SubQueryResult."""
     return SubQueryResult(
         sub_query=sub_query,
@@ -132,7 +135,10 @@ class TestSynthesizeStep:
         mock_run_sync.return_value = _make_runner_result(report)
 
         provider = DeepResearchProvider()
-        findings = [_make_sub_result("Q1?", "Finding 1"), _make_sub_result("Q2?", "Finding 2")]
+        findings = [
+            _make_sub_result("Q1?", "Finding 1"),
+            _make_sub_result("Q2?", "Finding 2"),
+        ]
         result = provider._synthesize("test topic", findings, language="fr")
 
         assert result.title == "Test Report"

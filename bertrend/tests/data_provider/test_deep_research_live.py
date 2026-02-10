@@ -22,7 +22,9 @@ from loguru import logger
 logger.remove()
 logger.add(sys.stderr, level="INFO", format="{time:HH:mm:ss} | {level:<8} | {message}")
 
-from bertrend.bertrend_apps.data_provider.deep_research_provider import DeepResearchProvider
+from bertrend.bertrend_apps.data_provider.deep_research_provider import (
+    DeepResearchProvider,
+)
 
 QUERY = "RTE France raccordement parcs éoliens offshore en mer du Nord"
 MODEL = "gpt-4.1-mini"
@@ -61,7 +63,9 @@ def main():
 
     print("\n" + "=" * 70)
     if not articles:
-        print("ERROR: No articles returned. Check your OPENAI_API_KEY and model access.")
+        print(
+            "ERROR: No articles returned. Check your OPENAI_API_KEY and model access."
+        )
         sys.exit(1)
 
     for a in articles:

@@ -125,7 +125,9 @@ class DeepResearchProvider(DataProvider):
     # Step 1: PLAN
     # ------------------------------------------------------------------
 
-    def _plan(self, query: str, after: str, before: str, language: str = None) -> list[str]:
+    def _plan(
+        self, query: str, after: str, before: str, language: str = None
+    ) -> list[str]:
         """Break the research query into targeted sub-questions."""
         agent = Agent(
             name="research_planner",
@@ -173,9 +175,7 @@ class DeepResearchProvider(DataProvider):
         self, query: str, findings: list[SubQueryResult], language: str = None
     ) -> ResearchReport:
         """Combine all sub-query findings into a single coherent report."""
-        language_instruction = (
-            f"Write the report in {language}." if language else ""
-        )
+        language_instruction = f"Write the report in {language}." if language else ""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         agent = Agent(
@@ -281,18 +281,14 @@ class DeepResearchProvider(DataProvider):
         # Step 2: RESEARCH each sub-question
         findings: list[SubQueryResult] = []
         for j, sq in enumerate(sub_queries, 1):
-            logger.info(
-                f"[RESEARCH {j}/{len(sub_queries)}] Searching: \"{sq}\""
-            )
+            logger.info(f'[RESEARCH {j}/{len(sub_queries)}] Searching: "{sq}"')
             try:
                 sub_result = self._research_sub_query(sq, after, before)
                 findings.append(sub_result)
                 n_sources = len(sub_result.source_urls)
                 logger.info(f"  → Found {n_sources} source(s)")
             except Exception as e:
-                logger.warning(
-                    f"  → Sub-query {j} failed: {e} (skipping)"
-                )
+                logger.warning(f"  → Sub-query {j} failed: {e} (skipping)")
                 continue
 
         if not findings:
