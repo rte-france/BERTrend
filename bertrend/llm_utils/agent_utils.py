@@ -68,7 +68,9 @@ class BaseAgentFactory:
 
     def create_agent(self, **kwargs) -> Agent:
         # Keep the Agent API surface minimal for tests; additional settings can be provided via kwargs
-        return Agent(model=self.model, **kwargs)
+        if "model" not in kwargs:
+            kwargs["model"] = self.model
+        return Agent(**kwargs)
 
 
 @dataclass

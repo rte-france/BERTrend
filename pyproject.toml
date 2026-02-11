@@ -1,6 +1,6 @@
 [project]
 name = "bertrend"
-version = "0.4.1"
+version = "0.4.2"
 description = "BERTrend analyses topic evolution over time using state-of-the-art transformer models: topic modelling and LLM"
 license = "LICENSE.md"
 readme = "README.md"
@@ -86,6 +86,7 @@ dependencies = [
     "streamlit-folium>=0.26.1",
     "folium>=0.20.0",
     "geopy>=2.4.1",
+    "duckduckgo_search>=8.1.1",
 ]
 
 [project.urls]
