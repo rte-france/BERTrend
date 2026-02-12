@@ -17,7 +17,7 @@ def test_default_config():
     """Test that default config loads correctly."""
     config = get_config()
     assert config.host == "0.0.0.0"
-    assert config.port == 6465
+    assert config.port == 8885
     assert config.number_workers == 1
 
 
