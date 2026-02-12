@@ -1,3 +1,9 @@
+## v0.4.1 - 2026-02-12
+
+### Features
+
+- Added a universal summarization service with FastAPI-based server and client implementation.
+
 ## v0.4.0 - 2026-02-09
 
 ### Features
