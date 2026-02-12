@@ -30,3 +30,7 @@ model = "$OPENAI_DEFAULT_MODEL"
 temperature = 0.1
 max_output_tokens = 2048
 system_prompt = "You are a helpful assistant, skilled in detailing topic evolution over time for the detection of emerging trends and signals."
+
+# Summary service parameters
+[summary_service]
+url = "$SUMMARY_SERVICE_URL"

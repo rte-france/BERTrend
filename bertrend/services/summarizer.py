@@ -34,7 +34,7 @@ class Summarizer(ABC):
         """Basic implementation of batch summarization. Can be overridden by subclasses."""
         return [
             self.generate_summary(
-                article_text=t,
+                t,
                 max_sentences=max_sentences,
                 max_words=max_words,
                 max_length_ratio=max_length_ratio,
