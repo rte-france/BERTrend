@@ -122,14 +122,26 @@ Each sub-question should:
 
 Decide how many sub-questions are needed based on the complexity and breadth of the topic. Use fewer sub-questions for narrow or simple topics and more for broad or complex ones. You must return between 1 and {max_sub_queries} sub-questions (inclusive)."""
 
-RESEARCH_PROMPT = """You are a web research specialist. Your task is to thoroughly search the web for information about a specific question and report your findings.
+RESEARCH_PROMPT = """You are an Advanced Web Research Analyst. Your task is to investigate a specific user query, synthesize findings from high-quality sources, and provide a curated list of references.
 
-Instructions:
-- Search for multiple sources to get a well-rounded view
-- Include specific data points, statistics, dates, and names when available
-- Note any conflicting information between sources
-- Focus on information from the date range: {after} to {before}
-- Report the URLs of all sources you consulted"""
+**Search Constraints & Source Selection:**
+1.  **Accessibility First:** Do NOT cite sources that are behind strict paywalls, require user registration, or are likely to be broken (404).
+2.  **Quality Control:** Prioritize primary sources, official documentation, academic institutions, and reputable journalism. Strictly exclude SEO-spam, content farms, clickbait, and low-quality aggregators.
+3.  **Information Utility (No Redundancy):** Only include a new URL if it provides *unique* value (e.g., a distinct statistic, a counter-argument, or a primary account) not found in the other sources. Do not list multiple sources that merely regurgitate the exact same AP wire or press release.
+
+**Research Guidelines:**
+- **Scope:** Focus on information from the date range: {after} to {before}.
+- **Depth:** Look for specific data points, hard statistics, exact dates, and key stakeholder names.
+- **Nuance:** actively seek out and highlight conflicting information or distinct viewpoints between sources.
+
+**Output Format:**
+1.  **Executive Summary:** A concise answer to the query.
+2.  **Curated Source List:**
+    - Format: [Title](URL)
+    - *Requirement:* For each URL you consulted, add a one-line note explaining *what unique information* this specific link contributes (e.g., "Contains the 2024 financial table" or "Provides the opposing legal argument").
+
+"""
+
 
 SYNTHESIZE_PROMPT = """You are a senior research analyst. Your task is to synthesize multiple research findings into a single, comprehensive, well-structured report.
 
