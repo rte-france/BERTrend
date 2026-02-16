@@ -34,12 +34,12 @@ def _make_plan(sub_queries: list[str] = None) -> ResearchPlan:
     """Helper to build a ResearchPlan."""
     return ResearchPlan(
         sub_queries=sub_queries
-                    or ["Sub-question 1?", "Sub-question 2?", "Sub-question 3?"]
+        or ["Sub-question 1?", "Sub-question 2?", "Sub-question 3?"]
     )
 
 
 def _make_sub_result(
-        sub_query: str = "Q?", findings: str = "Some findings."
+    sub_query: str = "Q?", findings: str = "Some findings."
 ) -> SubQueryResult:
     """Helper to build a SubQueryResult."""
     return SubQueryResult(
@@ -74,9 +74,7 @@ class TestDeepResearchProviderInit:
     @patch(f"{MODULE}.BaseAgentFactory")
     def test_init_custom(self, mock_factory):
         """Verify custom params."""
-        provider = DeepResearchProvider(
-            model="gpt-4o", num_sub_queries=3
-        )
+        provider = DeepResearchProvider(model="gpt-4o", num_sub_queries=3)
         assert provider.model == "gpt-4o"
         assert provider.num_sub_queries == 3
         mock_factory.assert_called_once_with(model_name="gpt-4o")
@@ -204,7 +202,7 @@ class TestGetArticles:
     @patch(f"{MODULE}.Runner.run_sync")
     @patch(f"{MODULE}.BaseAgentFactory")
     def test_get_articles_returns_individual_articles(
-            self, mock_factory, mock_run_sync, _mock_sleep
+        self, mock_factory, mock_run_sync, _mock_sleep
     ):
         """Verify individual articles from sub-queries are returned with their URLs."""
         plan = _make_plan(["Q1?"])
@@ -236,7 +234,7 @@ class TestGetArticles:
     @patch(f"{MODULE}.Runner.run_sync")
     @patch(f"{MODULE}.BaseAgentFactory")
     def test_get_articles_respects_max_results(
-            self, mock_factory, mock_run_sync, _mock_sleep
+        self, mock_factory, mock_run_sync, _mock_sleep
     ):
         """Verify max_results limits the number of returned articles."""
         plan = _make_plan(["Q1?"])
@@ -264,7 +262,7 @@ class TestGetArticles:
     @patch(f"{MODULE}.Runner.run_sync")
     @patch(f"{MODULE}.BaseAgentFactory")
     def test_get_articles_deduplicates_urls(
-            self, mock_factory, mock_run_sync, _mock_sleep
+        self, mock_factory, mock_run_sync, _mock_sleep
     ):
         """Verify duplicate URLs across sub-queries are deduplicated."""
         plan = _make_plan(["Q1?", "Q2?"])
@@ -299,9 +297,7 @@ class TestGetArticles:
     @patch("bertrend.bertrend_apps.data_provider.utils.time.sleep")
     @patch(f"{MODULE}.Runner.run_sync")
     @patch(f"{MODULE}.BaseAgentFactory")
-    def test_get_articles_plan_failure(
-            self, mock_factory, mock_run_sync, _mock_sleep
-    ):
+    def test_get_articles_plan_failure(self, mock_factory, mock_run_sync, _mock_sleep):
         """If the plan step fails, get_articles returns empty list."""
         mock_run_sync.side_effect = RuntimeError("Plan failed")
 
@@ -316,7 +312,7 @@ class TestGetArticles:
     @patch(f"{MODULE}.Runner.run_sync")
     @patch(f"{MODULE}.BaseAgentFactory")
     def test_get_articles_partial_research_failure(
-            self, mock_factory, mock_run_sync, _mock_sleep
+        self, mock_factory, mock_run_sync, _mock_sleep
     ):
         """If some sub-queries fail, synthesis still runs with available findings."""
         plan = _make_plan(["Q1?", "Q2?", "Q3?"])
@@ -345,7 +341,7 @@ class TestGetArticles:
     @patch(f"{MODULE}.Runner.run_sync")
     @patch(f"{MODULE}.BaseAgentFactory")
     def test_get_articles_all_research_fails(
-            self, mock_factory, mock_run_sync, _mock_sleep
+        self, mock_factory, mock_run_sync, _mock_sleep
     ):
         """If ALL sub-queries fail, pipeline returns None (no article)."""
         plan = _make_plan(["Q1?", "Q2?"])
