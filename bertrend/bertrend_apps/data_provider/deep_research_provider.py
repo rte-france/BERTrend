@@ -9,8 +9,8 @@ import time
 from datetime import datetime
 
 from agents import Runner, function_tool
+from ddgs import DDGS
 from dotenv import load_dotenv
-from duckduckgo_search import DDGS
 from loguru import logger
 from pydantic import BaseModel, Field
 
@@ -29,43 +29,69 @@ DEFAULT_SEARCH_DELAY = 3.0  # seconds between DuckDuckGo requests to avoid rate 
 # Custom web search (to ensure it works both with openAI and
 # and openAI compatible (ex. LiteLLM) environments)
 # ----------------------------------------------------------------------------
-@function_tool
-def news_search(query: str, max_results: int = 10, timelimit: str = None) -> list[dict]:
-    """Search for recent news articles.
+def _make_news_search_tool(
+    collected_articles: list[dict],
+    language_code: str = "us-en",
+):
+    """Create a news_search function tool that also records every article found.
 
-    Args:
-        query: The search query string.
-        max_results: Maximum number of results to return.
-        timelimit: Time limit for results (e.g., 'd' for day, 'w' for week, 'm' for month).
-
-    Returns:
-        List of article dicts with title, url, date, source, body
+    Parameters
+    ----------
+    collected_articles : list[dict]
+        Mutable list where every raw article dict returned by DuckDuckGo
+        will be appended, so that no URL is lost even if the LLM agent
+        omits it from its structured output.
     """
-    try:
-        time.sleep(DEFAULT_SEARCH_DELAY)
-        with DDGS() as ddgs:
-            kwargs = {"keywords": query, "max_results": max_results}
-            if timelimit:
-                kwargs["timelimit"] = timelimit
-            news_results = list(ddgs.news(**kwargs))
 
-        if not news_results:
+    @function_tool
+    def news_search(
+        query: str,
+        max_results: int = 10,
+        timelimit: str = None,
+    ) -> list[dict]:
+        """Search for recent news articles.
+
+        Args:
+            query: The search query string.
+            max_results: Maximum number of results to return.
+            timelimit: Time limit for results (e.g., 'd' for day, 'w' for week, 'm' for month).
+
+        Returns:
+            List of article dicts with title, url, date, source, body
+        """
+        try:
+            time.sleep(DEFAULT_SEARCH_DELAY)
+            with DDGS() as ddgs:
+                kwargs = {"query": query, "max_results": max_results}
+                kwargs["region"] = language_code
+
+                if timelimit:
+                    kwargs["timelimit"] = timelimit
+                news_results = list(ddgs.news(**kwargs))
+
+            if not news_results:
+                return []
+
+            articles = [
+                {
+                    "title": article.get("title", "No title"),
+                    "url": article.get("url", ""),
+                    "date": article.get("date", ""),
+                    "source": article.get("source", ""),
+                    "body": article.get("body", ""),
+                }
+                for article in news_results
+            ]
+
+            # Record every article so the aggregation step never loses URLs, avoiding duplicates
+            collected_articles.extend(articles)
+
+            return articles
+        except Exception as e:
+            logger.error(f"News search error: {str(e)}")
             return []
 
-        # Return structured data instead of formatted text
-        return [
-            {
-                "title": article.get("title", "No title"),
-                "url": article.get("url", ""),
-                "date": article.get("date", ""),
-                "source": article.get("source", ""),
-                "body": article.get("body", ""),
-            }
-            for article in news_results
-        ]
-    except Exception as e:
-        logger.error(f"News search error: {str(e)}")
-        return []
+    return news_search
 
 
 # ---------------------------------------------------------------------------
@@ -92,21 +118,6 @@ class SubQueryResult(BaseModel):
         default_factory=list,
         description="URLs of sources consulted for this sub-query",
     )
-
-
-class ResearchReport(BaseModel):
-    """Output of the final synthesis step."""
-
-    title: str = Field(description="A clear, descriptive title for the research report")
-    text: str = Field(
-        description="The full synthesized research report with structured sections"
-    )
-    summary: str = Field(description="A concise 2-3 sentence summary of key findings")
-    source_urls: list[str] = Field(
-        default_factory=list,
-        description="All source URLs consulted across all sub-queries",
-    )
-    timestamp: str = Field(description="The current date in YYYY-MM-DD HH:MM:SS format")
 
 
 # ---------------------------------------------------------------------------
@@ -143,31 +154,17 @@ RESEARCH_PROMPT = """You are an Advanced Web Research Analyst. Your task is to i
 """
 
 
-SYNTHESIZE_PROMPT = """You are a senior research analyst. Your task is to synthesize multiple research findings into a single, comprehensive, well-structured report.
-
-Instructions:
-- Combine all sub-query findings into a coherent narrative
-- Organize by themes, not by sub-query
-- Include specific data points and statistics from the findings
-- Note areas of consensus and any conflicting information
-- Write in a professional, analytical tone
-- Structure the report with clear sections
-- The timestamp should be: {timestamp}
-{language_instruction}"""
-
-
 class DeepResearchProvider(DataProvider):
     """Data provider that uses an agent-based approach to perform
     multi-step deep web research and return individual news articles
-    with their URLs, as well as a synthesized research report.
+    with their URLs.
 
-    The research process follows three steps:
+    The research process follows two steps:
     1. PLAN — Break the query into targeted sub-questions
     2. RESEARCH — Search the web for each sub-question independently (in parallel)
-    3. SYNTHESIZE — Combine all findings into a coherent report
 
-    Each individual article discovered during research is returned as a
-    separate entry, preserving all source URLs.
+    URLs are deduplicated across all sub-queries and each unique URL is
+    returned as a separate article entry.
     """
 
     def __init__(
@@ -214,13 +211,21 @@ class DeepResearchProvider(DataProvider):
     # ------------------------------------------------------------------
 
     def _research_sub_query(
-        self, sub_query: str, after: str, before: str
+        self,
+        sub_query: str,
+        after: str,
+        before: str,
+        collected_articles: list[dict] | None = None,
+        language_code: str = "us-en",
     ) -> SubQueryResult:
         """Search the web for a single sub-question and return findings."""
+        if collected_articles is None:
+            collected_articles = []
+        tool = _make_news_search_tool(collected_articles, language_code)
         agent = self._factory.create_agent(
             name="web_researcher",
             instructions=RESEARCH_PROMPT.format(after=after, before=before),
-            tools=[news_search],
+            tools=[tool],
             output_type=SubQueryResult,
         )
 
@@ -230,13 +235,21 @@ class DeepResearchProvider(DataProvider):
         return result.final_output
 
     async def _research_sub_query_async(
-        self, sub_query: str, after: str, before: str
+        self,
+        sub_query: str,
+        after: str,
+        before: str,
+        collected_articles: list[dict] | None = None,
+        language_code: str = "us-en",
     ) -> SubQueryResult:
         """Async version of _research_sub_query for parallel execution."""
+        if collected_articles is None:
+            collected_articles = []
+        tool = _make_news_search_tool(collected_articles, language_code)
         agent = self._factory.create_agent(
             name="web_researcher",
             instructions=RESEARCH_PROMPT.format(after=after, before=before),
-            tools=[news_search],
+            tools=[tool],
             output_type=SubQueryResult,
         )
 
@@ -246,11 +259,21 @@ class DeepResearchProvider(DataProvider):
         return result.final_output
 
     async def _research_all_async(
-        self, sub_queries: list[str], after: str, before: str
+        self,
+        sub_queries: list[str],
+        after: str,
+        before: str,
+        collected_articles: list[dict] | None = None,
+        language_code: str = "us-en",
     ) -> list[SubQueryResult]:
         """Research all sub-queries concurrently and return successful results."""
+        if collected_articles is None:
+            collected_articles = []
         tasks = [
-            self._research_sub_query_async(sq, after, before) for sq in sub_queries
+            self._research_sub_query_async(
+                sq, after, before, collected_articles, language_code
+            )
+            for sq in sub_queries
         ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -268,40 +291,6 @@ class DeepResearchProvider(DataProvider):
         return findings
 
     # ------------------------------------------------------------------
-    # Step 3: SYNTHESIZE all findings
-    # ------------------------------------------------------------------
-
-    def _synthesize(
-        self, query: str, findings: list[SubQueryResult], language: str = None
-    ) -> ResearchReport:
-        """Combine all sub-query findings into a single coherent report."""
-        language_instruction = f"Write the report in {language}." if language else ""
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        agent = self._factory.create_agent(
-            name="research_synthesizer",
-            instructions=SYNTHESIZE_PROMPT.format(
-                timestamp=timestamp,
-                language_instruction=language_instruction,
-            ),
-            output_type=ResearchReport,
-        )
-
-        # Build the input with all findings
-        findings_text = f"Original research topic: {query}\n\n"
-        for i, f in enumerate(findings, 1):
-            findings_text += f"--- Sub-query {i}: {f.sub_query} ---\n"
-            findings_text += f"{f.findings}\n"
-            if f.source_urls:
-                findings_text += f"Sources: {', '.join(f.source_urls)}\n"
-            findings_text += "\n"
-
-        result = Runner.run_sync(
-            agent, input=findings_text, run_config=run_config_no_tracing
-        )
-        return result.final_output
-
-    # ------------------------------------------------------------------
     # Main entry point (DataProvider interface)
     # ------------------------------------------------------------------
 
@@ -316,14 +305,12 @@ class DeepResearchProvider(DataProvider):
     ) -> list[dict]:
         """Perform multi-step deep web research and return individual articles.
 
-        The process follows three steps:
+        The process follows two steps:
         1. PLAN — Break the query into targeted sub-questions
         2. RESEARCH — Search the web for each sub-question (in parallel)
-        3. SYNTHESIZE — Combine all findings into a coherent report
 
-        Each individual article discovered during research is returned as a
-        separate entry. The synthesized report is also included as the first
-        entry in the returned list.
+        URLs are deduplicated across all sub-queries and each unique URL is
+        returned as a separate article entry.
 
         Parameters
         ----------
@@ -336,13 +323,13 @@ class DeepResearchProvider(DataProvider):
         max_results : int
             Maximum number of articles to return.
         language : str, optional
-            Language hint for the report output.
+            Language hint (unused, kept for interface compatibility).
 
         Returns
         -------
         list[dict]
             A list of article dicts with keys: title, text, summary, url,
-            link, source_urls, timestamp.
+            link, timestamp.
         """
         logger.info(
             f"DeepResearchProvider: starting multi-step research for '{query}' "
@@ -371,11 +358,12 @@ class DeepResearchProvider(DataProvider):
     def _run_research_pipeline(
         self, query: str, after: str, before: str, language: str = None
     ) -> list[dict] | None:
-        """Execute the full PLAN → RESEARCH → SYNTHESIZE pipeline.
+        """Execute the full PLAN → RESEARCH → AGGREGATE pipeline.
 
-        Returns a list of article dicts: one synthesized report followed by
-        individual articles discovered during research.
+        Returns a list of article dicts with deduplicated URLs from all
+        sub-query findings.
         """
+        language_code = "fr-fr" if language == "fr" else "us-en"
 
         # Step 1: PLAN
         logger.info("[PLAN] Breaking query into sub-questions...")
@@ -394,11 +382,20 @@ class DeepResearchProvider(DataProvider):
             except RuntimeError:
                 pass
 
+        # collected_articles accumulates every raw article dict returned by
+        # the news_search tool, so that no URL is lost even if the LLM agent
+        # omits it from its structured SubQueryResult.source_urls.
+        collected_articles: list[dict] = []
+
         if use_async:
             logger.info(
                 f"[RESEARCH] Searching {len(sub_queries)} sub-queries in parallel..."
             )
-            findings = asyncio.run(self._research_all_async(sub_queries, after, before))
+            findings = asyncio.run(
+                self._research_all_async(
+                    sub_queries, after, before, collected_articles, language_code
+                )
+            )
         else:
             logger.info(
                 f"[RESEARCH] Searching {len(sub_queries)} sub-queries sequentially..."
@@ -407,7 +404,9 @@ class DeepResearchProvider(DataProvider):
             for j, sq in enumerate(sub_queries, 1):
                 logger.info(f'[RESEARCH {j}/{len(sub_queries)}] Searching: "{sq}"')
                 try:
-                    sub_result = self._research_sub_query(sq, after, before)
+                    sub_result = self._research_sub_query(
+                        sq, after, before, collected_articles, language_code
+                    )
                     findings.append(sub_result)
                     n_sources = len(sub_result.source_urls)
                     logger.info(f"  → Found {n_sources} source(s)")
@@ -415,36 +414,75 @@ class DeepResearchProvider(DataProvider):
                     logger.warning(f"  → Sub-query {j} failed: {e} (skipping)")
                     continue
 
-        if not findings:
+        if not findings and not collected_articles:
             logger.error("DeepResearchProvider: all sub-queries failed, no findings")
             return None
 
-        # Step 3: SYNTHESIZE
+        # Step 3: AGGREGATE deduplicated URLs
         logger.info(
-            f"[SYNTHESIZE] Combining {len(findings)} sub-query results into final report..."
+            f"[AGGREGATE] Deduplicating URLs from {len(findings)} sub-query results "
+            f"and {len(collected_articles)} raw search result(s)..."
         )
-        report = self._synthesize(query, findings, language)
+        return self._aggregate_articles(findings, collected_articles)
 
-        # Build the result list: synthesized report + individual articles
-        return self._build_articles(report, findings)
+    def _parse_entry(self, entry: dict) -> dict | None:
+        """Not used — aggregation is handled by _aggregate_articles."""
+        return entry
 
-    def _build_articles(
-        self, report: ResearchReport, findings: list[SubQueryResult]
+    def _aggregate_articles(
+        self,
+        findings: list[SubQueryResult],
+        collected_articles: list[dict] | None = None,
     ) -> list[dict]:
-        """Build a list of article dicts from the report and individual findings.
+        """Aggregate and deduplicate URLs from all sub-query findings and
+        raw search results.
 
-        The synthesized report is the first entry, followed by individual
-        articles (one per unique source URL found across all sub-queries).
+        Each unique URL becomes a separate article entry. The raw
+        ``collected_articles`` (captured directly from the news_search tool)
+        are the primary source of truth so that no URL is lost even when the
+        LLM agent omits it from its structured output.
+
+        Parameters
+        ----------
+        findings : list[SubQueryResult]
+            Results from all sub-query research steps.
+        collected_articles : list[dict] | None
+            Raw article dicts captured directly from the news_search tool.
+
+        Returns
+        -------
+        list[dict]
+            A list of article dicts with keys: title, text, summary, url,
+            link, timestamp.
         """
         articles = []
+        seen_urls: set[str] = set()
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Add the synthesized report as the first article
-        report_article = self._parse_entry(report)
-        if report_article is not None:
-            articles.append(report_article)
+        # First, add every article captured directly from the search tool
+        # (this is the authoritative source — no URL can be lost here).
+        for raw in collected_articles or []:
+            url = raw.get("url", "")
+            if url and url not in seen_urls:
+                seen_urls.add(url)
+                # title = raw.get("title", "")
+                # body = raw.get("body", "")
+                text, title = self._get_text(url=url)
+                if text:
+                    articles.append(
+                        {
+                            "title": title,
+                            "text": text,
+                            "summary": text[:200] if text else "",
+                            "url": url,
+                            "link": url,
+                            "timestamp": timestamp,
+                        }
+                    )
 
-        # Collect individual articles from sub-query findings
-        seen_urls = set()
+        # Then, add any URLs from the agent's structured output that the
+        # search tool might not have returned (e.g. URLs the agent found
+        # in page content).
         for finding in findings:
             for url in finding.source_urls:
                 if url and url not in seen_urls:
@@ -456,41 +494,8 @@ class DeepResearchProvider(DataProvider):
                             "summary": finding.findings[:200],
                             "url": url,
                             "link": url,
-                            "source_urls": finding.source_urls,
-                            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "timestamp": timestamp,
                         }
                     )
 
         return articles
-
-    def _parse_entry(self, entry: ResearchReport) -> dict | None:
-        """Convert a ResearchReport to the standard article dict format.
-
-        Parameters
-        ----------
-        entry : ResearchReport
-            The structured research report from the agent.
-
-        Returns
-        -------
-        dict | None
-            Article dict with keys: title, text, summary, url, link,
-            source_urls, timestamp.
-            Returns None if the entry is invalid.
-        """
-        try:
-            primary_url = entry.source_urls[0] if entry.source_urls else ""
-            timestamp = entry.timestamp or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-            return {
-                "title": entry.title,
-                "text": entry.text,
-                "summary": entry.summary,
-                "url": primary_url,
-                "link": primary_url,
-                "source_urls": entry.source_urls,
-                "timestamp": timestamp,
-            }
-        except Exception as e:
-            logger.error(f"DeepResearchProvider: error parsing report: {e}")
-            return None
