@@ -12,7 +12,7 @@ class ScrapeRequest(BaseModel):
     keywords: str = Field(..., description="Keywords for data search engine.")
     provider: str = Field(
         default="google",
-        description="source for data [arxiv, atom, rss, google, bing, newscatcher]",
+        description="source for data [arxiv, atom, rss, google, bing, newscatcher, deep_research]",
     )
     after: Optional[str] = Field(
         default=None, description="date after which to consider news [YYYY-MM-DD]"
@@ -41,7 +41,7 @@ class AutoScrapeRequest(BaseModel):
     max_results: int = Field(default=50)
     provider: str = Field(
         default="google",
-        description="source for news [arxiv, atom, rss, google, bing, newscatcher]",
+        description="source for news [arxiv, atom, rss, google, bing, newscatcher, deep_research]",
     )
     save_path: Optional[Path] = None
     language: Optional[str] = None
