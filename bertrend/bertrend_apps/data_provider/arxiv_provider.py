@@ -27,8 +27,6 @@ NUM_RETRIES = 10
 query = "cat:cs.AI"
 max_results = float("inf")
 
-### Parameters Semantic Scholar ###
-SEMANTIC_SCHOLAR_API_KEY = os.getenv("SEMANTIC_SCHOLAR_API_KEY")
 
 PAPERS_PER_REQUEST = 500  # should not be more than 500
 SEMANTIC_SCHOLAR_FIELDS = "title,abstract,citationCount,publicationDate,url"
@@ -130,14 +128,15 @@ class ArxivProvider(DataProvider):
     @wait(1)
     def _request_semantic_scholar_chunk(self, chunk: list[dict]):
         """Get information from semantic scholar API per batch of articles IDs"""
-        if not SEMANTIC_SCHOLAR_API_KEY:
+        api_key = os.getenv("SEMANTIC_SCHOLAR_API_KEY")
+        if not api_key:
             raise ValueError("SEMANTIC_SCHOLAR_API_KEY environment variable is not set")
         ids_list = ["URL:" + entry["id"] for entry in chunk]
         with requests.post(
             "https://api.semanticscholar.org/graph/v1/paper/batch",
             params={"fields": SEMANTIC_SCHOLAR_FIELDS},
             json={"ids": ids_list},
-            headers={"x-api-key": SEMANTIC_SCHOLAR_API_KEY},
+            headers={"x-api-key": api_key},
         ) as response:
             return [item for item in response.json() if item is not None]
 
