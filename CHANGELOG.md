@@ -1,3 +1,26 @@
+## v0.4.3 - 2026-02-16
+
+### Features
+
+- Using the last version of `BERTopic`
+
+### Chore
+
+- Updated GitHub Actions to use `uv` for environment management and testing.
+- Upgraded dependencies in `pyproject.toml`.
+
+## v0.4.2 - 2026-02-16
+
+### Features
+
+- Added `DeepResearchProvider`: uses an LLM agent to search for relevant news articles; reformulates and split the user
+  query into sub-requests
+
+### Tests
+
+- Added a comprehensive test suite for `bertrend_apps.data_provider` (Arxiv, RSS/ATOM, Google News, Bing News,
+  NewsCatcher, shared utils, and base provider).
+
 ## v0.4.1 - 2026-02-12
 
 ### Features
