@@ -398,7 +398,9 @@ class TestAggregateArticles:
 
     @patch(f"{MODULE}.BaseAgentFactory")
     @patch.object(DeepResearchProvider, "_get_text")
-    def test_aggregate_articles_format_from_collected(self, mock_get_text, mock_factory):
+    def test_aggregate_articles_format_from_collected(
+        self, mock_get_text, mock_factory
+    ):
         """Verify article format when using collected_articles (primary source)."""
         mock_get_text.return_value = ("Extracted Content", "Extracted Title")
         provider = DeepResearchProvider(parallel_research=False)
@@ -450,12 +452,18 @@ class TestAggregateArticles:
 
     @patch(f"{MODULE}.BaseAgentFactory")
     @patch.object(DeepResearchProvider, "_get_text")
-    def test_aggregate_articles_collected_takes_priority(self, mock_get_text, mock_factory):
+    def test_aggregate_articles_collected_takes_priority(
+        self, mock_get_text, mock_factory
+    ):
         """Collected articles (from tool) take priority over agent source_urls."""
         mock_get_text.return_value = ("Tool Extracted Content", "Tool Extracted Title")
         provider = DeepResearchProvider(parallel_research=False)
         collected = [
-            {"title": "Tool Title", "url": "https://shared.com/1", "body": "Tool body."},
+            {
+                "title": "Tool Title",
+                "url": "https://shared.com/1",
+                "body": "Tool body.",
+            },
         ]
         findings = [
             SubQueryResult(
