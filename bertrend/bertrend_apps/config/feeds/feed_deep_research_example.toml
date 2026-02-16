@@ -1,0 +1,9 @@
+[data-feed]
+id = "feed_deep_research_example"
+query = "artificial intelligence energy grid"
+provider = "deep_research"
+max_results = 3
+number_of_days = 7
+feed_dir_path = "feed_deep_research"
+language = "en"
+update_frequency = "0 6 * * 1"

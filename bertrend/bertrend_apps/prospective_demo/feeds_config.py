@@ -13,6 +13,13 @@ import toml
 from loguru import logger
 
 from bertrend.article_scoring.article_scoring import QualityLevel
+from bertrend.bertrend_apps import SCHEDULER_UTILS
+from bertrend.bertrend_apps.data_provider import URL_PATTERN
+from bertrend.bertrend_apps.prospective_demo import CONFIG_FEEDS_BASE_PATH
+from bertrend.bertrend_apps.prospective_demo.feeds_common import (
+    read_user_feeds,
+)
+from bertrend.bertrend_apps.prospective_demo.i18n import translate
 from bertrend.config.parameters import LANGUAGES
 from bertrend.demos.demos_utils.icons import (
     ADD_ICON,
@@ -25,20 +32,13 @@ from bertrend.demos.demos_utils.icons import (
     WARNING_ICON,
 )
 from bertrend.demos.streamlit_components.clickable_df_component import clickable_df
-from bertrend.bertrend_apps import SCHEDULER_UTILS
-from bertrend.bertrend_apps.data_provider import URL_PATTERN
-from bertrend.bertrend_apps.prospective_demo import CONFIG_FEEDS_BASE_PATH
-from bertrend.bertrend_apps.prospective_demo.feeds_common import (
-    read_user_feeds,
-)
-from bertrend.bertrend_apps.prospective_demo.i18n import translate
 
 # Default feed configs
 DEFAULT_CRONTAB_EXPRESSION = "1 0 * * 1"
 DEFAULT_MAX_RESULTS = 25
 DEFAULT_MAX_RESULTS_ARXIV = 1000
 DEFAULT_NUMBER_OF_DAYS = 7
-FEED_SOURCES = ["google", "atom", "rss", "arxiv"]
+FEED_SOURCES = ["google", "atom", "rss", "arxiv", "deep_research"]
 
 
 def generate_atom_crontab_expression(hours="0,6,12,18"):
@@ -80,7 +80,7 @@ def edit_feed_monitoring(config: dict | None = None):
         default=provider_default,
         help=translate("feed_source_help"),
     )
-    if provider == "google" or provider == "arxiv":
+    if provider == "google" or provider == "arxiv" or provider == "deep_research":
         query = st.text_input(
             translate("feed_query_label") + " :red[*]",
             value="" if not config else config.get("query", ""),
@@ -108,7 +108,7 @@ def edit_feed_monitoring(config: dict | None = None):
         st.session_state.update_frequency = new_freq
         st.write(display_crontab_description(st.session_state.update_frequency))
 
-        if provider == "google":
+        if provider == "google" or provider == "deep_research":
             if "evaluate_articles_quality" not in st.session_state:
                 st.session_state.evaluate_articles_quality = (
                     False
@@ -185,7 +185,7 @@ def edit_feed_monitoring(config: dict | None = None):
             )
         if not config.get("number_of_days"):
             config["number_of_days"] = DEFAULT_NUMBER_OF_DAYS
-        if provider == "google" or provider == "arxiv":
+        if provider == "google" or provider == "arxiv" or provider == "deep_research":
             config["language"] = "fr" if language == "French" else "en"
             config["update_frequency"] = (
                 st.session_state.update_frequency

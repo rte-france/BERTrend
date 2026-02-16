@@ -14,6 +14,9 @@ from bertrend.bertrend_apps.common.date_utils import daterange
 from bertrend.bertrend_apps.data_provider.arxiv_provider import ArxivProvider
 from bertrend.bertrend_apps.data_provider.atom_feed_provider import ATOMFeedProvider
 from bertrend.bertrend_apps.data_provider.bing_news_provider import BingNewsProvider
+from bertrend.bertrend_apps.data_provider.deep_research_provider import (
+    DeepResearchProvider,
+)
 from bertrend.bertrend_apps.data_provider.google_news_provider import GoogleNewsProvider
 from bertrend.bertrend_apps.data_provider.newscatcher_provider import (
     NewsCatcherProvider,
@@ -27,6 +30,7 @@ PROVIDERS = {
     "google": GoogleNewsProvider,
     "bing": BingNewsProvider,
     "newscatcher": NewsCatcherProvider,
+    "deep_research": DeepResearchProvider,
 }
 
 
@@ -145,8 +149,11 @@ def scrape_feed_from_config(
 
     # Generate a query file
     with tempfile.NamedTemporaryFile() as query_file:
-        if (
-            provider == "arxiv" or provider == "atom" or provider == "rss"
+        if provider in (
+            "arxiv",
+            "atom",
+            "rss",
+            "deep_research",
         ):  # already returns batches
             scrape(
                 keywords=keywords,
