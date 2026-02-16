@@ -397,8 +397,10 @@ class TestAggregateArticles:
         }
 
     @patch(f"{MODULE}.BaseAgentFactory")
-    def test_aggregate_articles_format_from_collected(self, mock_factory):
+    @patch.object(DeepResearchProvider, "_get_text")
+    def test_aggregate_articles_format_from_collected(self, mock_get_text, mock_factory):
         """Verify article format when using collected_articles (primary source)."""
+        mock_get_text.return_value = ("Extracted Content", "Extracted Title")
         provider = DeepResearchProvider(parallel_research=False)
         collected = [
             {
@@ -414,9 +416,9 @@ class TestAggregateArticles:
 
         assert len(articles) == 1
         article = articles[0]
-        assert article["title"] == "News Title"
-        assert article["text"] == "Some detailed findings here."
-        assert article["summary"] == "Some detailed findings here."
+        assert article["title"] == "Extracted Title"
+        assert article["text"] == "Extracted Content"
+        assert article["summary"] == "Extracted Content"
         assert article["url"] == "https://example.com/1"
         assert article["link"] == "https://example.com/1"
         assert "timestamp" in article
@@ -447,8 +449,10 @@ class TestAggregateArticles:
         assert "source_urls" not in article
 
     @patch(f"{MODULE}.BaseAgentFactory")
-    def test_aggregate_articles_collected_takes_priority(self, mock_factory):
+    @patch.object(DeepResearchProvider, "_get_text")
+    def test_aggregate_articles_collected_takes_priority(self, mock_get_text, mock_factory):
         """Collected articles (from tool) take priority over agent source_urls."""
+        mock_get_text.return_value = ("Tool Extracted Content", "Tool Extracted Title")
         provider = DeepResearchProvider(parallel_research=False)
         collected = [
             {"title": "Tool Title", "url": "https://shared.com/1", "body": "Tool body."},
@@ -466,7 +470,7 @@ class TestAggregateArticles:
         # shared URL uses tool data; extra URL uses agent data
         assert len(articles) == 2
         by_url = {a["url"]: a for a in articles}
-        assert by_url["https://shared.com/1"]["title"] == "Tool Title"
+        assert by_url["https://shared.com/1"]["title"] == "Tool Extracted Title"
         assert by_url["https://extra.com/2"]["title"] == "Q1?"
 
     @patch(f"{MODULE}.BaseAgentFactory")
