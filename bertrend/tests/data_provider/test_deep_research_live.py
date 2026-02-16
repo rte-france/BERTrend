@@ -32,13 +32,11 @@ AFTER = "2025-06-01"
 BEFORE = "2026-02-10"
 LANGUAGE = "fr"
 NUM_SUB_QUERIES = 4
-SEARCH_CONTEXT_SIZE = "high"
 
 
 def main():
     provider = DeepResearchProvider(
         model=MODEL,
-        search_context_size=SEARCH_CONTEXT_SIZE,
         num_sub_queries=NUM_SUB_QUERIES,
     )
 
@@ -47,7 +45,6 @@ def main():
     print("=" * 70)
     print(f"Model:       {MODEL}")
     print(f"Sub-queries: {NUM_SUB_QUERIES}")
-    print(f"Context:     {SEARCH_CONTEXT_SIZE}")
     print(f"Query:       {QUERY}")
     print(f"Date range:  {AFTER} → {BEFORE}")
     print(f"Language:    {LANGUAGE}")
