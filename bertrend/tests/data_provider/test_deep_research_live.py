@@ -31,20 +31,20 @@ MODEL = "gpt-4.1-mini"
 AFTER = "2025-06-01"
 BEFORE = "2026-02-10"
 LANGUAGE = "fr"
-NUM_SUB_QUERIES = 4
+MAX_SUB_QUERIES = 4
 
 
 def main():
     provider = DeepResearchProvider(
         model=MODEL,
-        num_sub_queries=NUM_SUB_QUERIES,
+        max_sub_queries=MAX_SUB_QUERIES,
     )
 
     print("\n" + "=" * 70)
     print("DEEP RESEARCH PROVIDER — LIVE TEST")
     print("=" * 70)
     print(f"Model:       {MODEL}")
-    print(f"Sub-queries: {NUM_SUB_QUERIES}")
+    print(f"Max sub-queries: {MAX_SUB_QUERIES}")
     print(f"Query:       {QUERY}")
     print(f"Date range:  {AFTER} → {BEFORE}")
     print(f"Language:    {LANGUAGE}")

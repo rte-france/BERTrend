@@ -65,18 +65,18 @@ class TestDeepResearchProviderInit:
     @patch(f"{MODULE}.BaseAgentFactory")
     @patch(f"{MODULE}.DEFAULT_MODEL", "gpt-4.1-mini")
     def test_init_default(self, mock_factory):
-        """Verify default model and num_sub_queries."""
+        """Verify default model and max_sub_queries."""
         provider = DeepResearchProvider(parallel_research=False)
         assert provider.model == "gpt-4.1-mini"
-        assert provider.num_sub_queries == 5
+        assert provider.max_sub_queries == 5
         mock_factory.assert_called_once_with(model_name="gpt-4.1-mini")
 
     @patch(f"{MODULE}.BaseAgentFactory")
     def test_init_custom(self, mock_factory):
         """Verify custom params."""
-        provider = DeepResearchProvider(model="gpt-4o", num_sub_queries=3)
+        provider = DeepResearchProvider(model="gpt-4o", max_sub_queries=3)
         assert provider.model == "gpt-4o"
-        assert provider.num_sub_queries == 3
+        assert provider.max_sub_queries == 3
         mock_factory.assert_called_once_with(model_name="gpt-4o")
 
     @patch(f"{MODULE}.BaseAgentFactory")
@@ -99,7 +99,7 @@ class TestPlanStep:
         plan = _make_plan(["Q1?", "Q2?"])
         mock_run_sync.return_value = _make_runner_result(plan)
 
-        provider = DeepResearchProvider(num_sub_queries=2, parallel_research=False)
+        provider = DeepResearchProvider(max_sub_queries=2, parallel_research=False)
         result = provider._plan("test topic", "2025-01-01", "2025-01-31")
 
         assert result == ["Q1?", "Q2?"]
@@ -112,7 +112,7 @@ class TestPlanStep:
         plan = _make_plan(["Q1?"])
         mock_run_sync.return_value = _make_runner_result(plan)
 
-        provider = DeepResearchProvider(num_sub_queries=1, parallel_research=False)
+        provider = DeepResearchProvider(max_sub_queries=1, parallel_research=False)
         provider._plan("topic", "2025-01-01", "2025-01-31", language="fr")
 
         call_kwargs = mock_run_sync.call_args
@@ -183,7 +183,7 @@ class TestGetArticles:
             _make_runner_result(report),
         ]
 
-        provider = DeepResearchProvider(num_sub_queries=2, parallel_research=False)
+        provider = DeepResearchProvider(max_sub_queries=2, parallel_research=False)
         articles = provider.get_articles(
             query="test", after="2025-01-01", before="2025-01-31", max_results=10
         )
@@ -219,7 +219,7 @@ class TestGetArticles:
             _make_runner_result(report),
         ]
 
-        provider = DeepResearchProvider(num_sub_queries=1, parallel_research=False)
+        provider = DeepResearchProvider(max_sub_queries=1, parallel_research=False)
         articles = provider.get_articles(
             query="test", after="2025-01-01", before="2025-01-31", max_results=10
         )
@@ -251,7 +251,7 @@ class TestGetArticles:
             _make_runner_result(report),
         ]
 
-        provider = DeepResearchProvider(num_sub_queries=1, parallel_research=False)
+        provider = DeepResearchProvider(max_sub_queries=1, parallel_research=False)
         articles = provider.get_articles(
             query="test", after="2025-01-01", before="2025-01-31", max_results=2
         )
@@ -285,7 +285,7 @@ class TestGetArticles:
             _make_runner_result(report),
         ]
 
-        provider = DeepResearchProvider(num_sub_queries=2, parallel_research=False)
+        provider = DeepResearchProvider(max_sub_queries=2, parallel_research=False)
         articles = provider.get_articles(
             query="test", after="2025-01-01", before="2025-01-31", max_results=20
         )
@@ -329,7 +329,7 @@ class TestGetArticles:
             _make_runner_result(report),
         ]
 
-        provider = DeepResearchProvider(num_sub_queries=3, parallel_research=False)
+        provider = DeepResearchProvider(max_sub_queries=3, parallel_research=False)
         articles = provider.get_articles(
             query="test", after="2025-01-01", before="2025-01-31", max_results=10
         )
@@ -352,7 +352,7 @@ class TestGetArticles:
             RuntimeError("Q2 failed"),
         ]
 
-        provider = DeepResearchProvider(num_sub_queries=2, parallel_research=False)
+        provider = DeepResearchProvider(max_sub_queries=2, parallel_research=False)
         articles = provider.get_articles(
             query="test", after="2025-01-01", before="2025-01-31", max_results=1
         )
