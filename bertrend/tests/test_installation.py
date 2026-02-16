@@ -37,7 +37,6 @@ def test_nlp_dependencies():
         import lxml_html_clean
         import markdown
         import nltk
-        import sentencepiece
         import thefuzz
         import tldextract
         import tokenizers
@@ -65,8 +64,6 @@ def test_visualization_dependencies():
         import datamapplot
         import plotly
         import plotly_resampler
-        import pylabeladjust
-        import pyqtree
         import seaborn
         import streamlit
 
@@ -78,15 +75,12 @@ def test_visualization_dependencies():
 def test_utility_dependencies():
     """Test that utility dependencies are installed correctly."""
     try:
-        import black
         import cron_descriptor
-        import dask
         import dateparser
         import dill
         import joblib
         import jsonlines
         import loguru
-        import opentelemetry
         import requests
         import tqdm
 

@@ -96,5 +96,4 @@ The BERTrend project is organized into two main packages and several supporting 
       `bertrend/__init__.py`).
     - You can manually set `CUDA_VISIBLE_DEVICES` in your `.env` file.
 - **Dependencies**:
-    - Some dependencies have specific version requirements (e.g., `bertopic==0.16.2`, `dask==2024.12.0`) to ensure
-      stability. Refer to `pyproject.toml` for details.
+    - Some dependencies have specific version requirements to ensure stability. Refer to `pyproject.toml` for details.
