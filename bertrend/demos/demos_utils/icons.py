@@ -1,4 +1,4 @@
-#  Copyright (c) 2024, RTE (https://www.rte-france.com)
+#  Copyright (c) 2024-2026, RTE (https://www.rte-france.com)
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
@@ -40,6 +40,12 @@ PERSON_REMOVE_ICON = ":material/person_remove:"
 POPULARITY_ICON = ":material/thumbs_up_down:"
 SIGNAL_EVOLUTION_ICON = ":material/signal_cellular_alt:"
 CYCLE_ICON = ":material/cycle:"
+SEARCH_ICON = ":material/search:"
+REFRESH_ICON = ":material/refresh:"
+DASHBOARD_ICON = ":material/dashboard:"
+INVENTORY_ICON = ":material/inventory_2:"
+REPLY_ICON = ":material/reply:"
+ERROR_OUTLINE_ICON = ":material/error_outline:"
 
 JSON_ICON = "🧾"
 PARQUET_ICON = "📦️"

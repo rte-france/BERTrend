@@ -25,6 +25,18 @@ import streamlit as st
 from bertrend.bertrend_apps.services.queue_management.rabbitmq_config import (
     RabbitMQConfig,
 )
+from bertrend.demos.demos_utils.icons import (
+    COMPUTER_ICON,
+    DASHBOARD_ICON,
+    ERROR_ICON,
+    ERROR_OUTLINE_ICON,
+    INFO_ICON,
+    INVENTORY_ICON,
+    REFRESH_ICON,
+    REPLY_ICON,
+    SEARCH_ICON,
+    SETTINGS_ICON,
+)
 
 
 # ---------- Helpers: Management API client ----------
@@ -63,6 +75,17 @@ class RabbitMQAdminClient:
 
 
 # ---------- UI Logic & formatters ----------
+
+
+def queue_icon(queue_name: str) -> str:
+    """Returns an icon based on queue name"""
+    return (
+        ERROR_OUTLINE_ICON
+        if "failed" in queue_name
+        else REPLY_ICON
+        if "response" in queue_name
+        else INVENTORY_ICON
+    )
 
 
 def _decode_message_payload(msg: Dict[str, Any]) -> Tuple[str, Any]:
@@ -190,7 +213,7 @@ cfg = RabbitMQConfig()
 admin_url_default = f"http://{cfg.host}:15672"
 
 with st.sidebar:
-    st.title("⚙️ Settings")
+    st.title(f"{SETTINGS_ICON} Settings")
 
     with st.expander("Connection Details", expanded=False):
         mgmt_url = st.text_input(
@@ -220,7 +243,7 @@ with st.sidebar:
     refresh_rate = c2.select_slider(
         "Refresh (s)", options=[5, 10, 30, 60, 120], value=30
     )
-    force_refresh = c3.button("🔄", help="Force refresh the queue data")
+    force_refresh = c3.button(REFRESH_ICON, help="Force refresh the queue data")
 
     if auto_refresh:
         st.caption(f"Refreshing every {refresh_rate}s...")
@@ -261,11 +284,11 @@ except Exception as e:
 
 st.title("📬 BERTrend Queue Monitor")
 if error_msg:
-    st.error(f"Connection Error: {error_msg}")
+    st.error(f"Connection Error: {error_msg}", icon=ERROR_ICON)
     st.stop()
 
 # 1. Global Overview Row
-st.markdown("### 📊 System Overview")
+st.markdown(f"### {DASHBOARD_ICON} System Overview")
 kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 kpi1.metric(
     "Total Backlog", global_stats["total"], help="Total messages in all selected queues"
@@ -283,9 +306,9 @@ st.divider()
 
 # 2. Queue Tabs
 if not selected_queues:
-    st.info("Select queues in the sidebar to begin monitoring.")
+    st.info("Select queues in the sidebar to begin monitoring.", icon=INFO_ICON)
 else:
-    tabs = st.tabs([f"📦 {q}" for q in selected_queues])
+    tabs = st.tabs([f"{queue_icon(q)} {q}" for q in selected_queues])
 
     for tab, qname in zip(tabs, selected_queues):
         info = queue_data.get(qname, {})
@@ -340,10 +363,10 @@ else:
                 )
                 msgs = client.peek_messages(qname, count=fetch_count)
             except Exception as e:
-                st.error(f"Failed to peek: {e}")
+                st.error(f"Failed to peek: {e}", icon=ERROR_ICON)
 
             if not msgs:
-                st.info("Queue is empty or messages are not available.", icon="ℹ️")
+                st.info("Queue is empty or messages are not available.", icon=INFO_ICON)
             else:
                 # Decode all first for filtering/sorting/collecting filter values
                 decoded_msgs = []
@@ -477,7 +500,7 @@ else:
                     )
 
                 # Filtering inputs
-                with st.expander("🔍 Filters", expanded=False):
+                with st.expander("Filters", expanded=True, icon=SEARCH_ICON):
                     fc1, fc2, fc3 = st.columns(3)
 
                     # Options for selectboxes (sorted for better UX)
@@ -538,6 +561,8 @@ else:
                         info_tags.append(d["endpoint"])
                     if d["user"]:
                         info_tags.append(f"User: {d['user']}")
+                    if d["model_id"]:
+                        info_tags.append(f"Model: {d['model_id']}")
 
                     info_str = f" | {' | '.join(info_tags)}" if info_tags else ""
                     label = f"#{idx + 1} | {fmt} | CID: {corr_id}{info_str} | {msg_size} bytes"
