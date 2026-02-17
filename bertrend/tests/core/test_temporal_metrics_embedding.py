@@ -548,8 +548,9 @@ def test_calculate_overall_topic_stability(temp_topic_instance):
 
 
 def test_find_similar_topic_pairs(temp_topic_instance):
-    """Test the find_similar_topic_pairs method."""
-    # Create a mock final_df with the necessary columns and data
+    """Test the find_similar_topic_pairs method with actual cosine similarity."""
+    # Use nearly identical embeddings for topics 0 and 1 so they are similar,
+    # and a very different embedding for topic 2
     temp_topic_instance.final_df = pd.DataFrame(
         {
             "Topic": [0, 0, 1, 1, 2, 2],
@@ -562,35 +563,492 @@ def test_find_similar_topic_pairs(temp_topic_instance):
                 "2023-02",
             ],
             "Embedding": [
-                np.array([0.1, 0.2, 0.3]),
-                np.array([0.15, 0.25, 0.35]),
-                np.array([0.2, 0.3, 0.4]),
-                np.array([0.25, 0.35, 0.45]),
-                np.array([0.3, 0.4, 0.5]),
-                np.array([0.35, 0.45, 0.55]),
+                np.array([1.0, 0.0, 0.0]),
+                np.array([1.0, 0.0, 0.0]),
+                np.array([1.0, 0.01, 0.0]),
+                np.array([1.0, 0.01, 0.0]),
+                np.array([0.0, 0.0, 1.0]),
+                np.array([0.0, 0.0, 1.0]),
             ],
         }
     )
 
-    # Create a mock result to return from the method
-    mock_result = [[(0, 1, "2023-01")], [(1, 2, "2023-02")]]
+    # Topics 0 and 1 should be similar at both timestamps
+    result = temp_topic_instance.find_similar_topic_pairs(similarity_threshold=0.99)
+    assert len(result) > 0
+    # Check format
+    for pair_list in result:
+        assert isinstance(pair_list, list)
+        for pair in pair_list:
+            assert isinstance(pair, tuple)
+            assert len(pair) == 3
 
-    # Mock the method to return our mock result
-    with patch.object(
-        temp_topic_instance, "find_similar_topic_pairs", return_value=mock_result
+    # With a very high threshold, topic 2 should not match 0 or 1
+    topic_pairs_flat = [pair for sublist in result for pair in sublist]
+    for pair in topic_pairs_flat:
+        assert 2 not in (pair[0], pair[1])
+
+    # With threshold=0.0, all pairs should be found
+    result_all = temp_topic_instance.find_similar_topic_pairs(similarity_threshold=0.0)
+    assert len(result_all) > 0
+
+
+def test_find_similar_topic_pairs_no_common_timestamps(temp_topic_instance):
+    """Test find_similar_topic_pairs when topics have no common timestamps."""
+    temp_topic_instance.final_df = pd.DataFrame(
+        {
+            "Topic": [0, 1],
+            "Timestamp": ["2023-01", "2023-02"],
+            "Embedding": [np.array([1.0, 0.0]), np.array([1.0, 0.0])],
+        }
+    )
+    result = temp_topic_instance.find_similar_topic_pairs(similarity_threshold=0.5)
+    assert result == []
+
+
+# --- Init validation tests ---
+
+
+def test_init_invalid_topic_model(sample_data):
+    """Test that TypeError is raised for invalid topic_model."""
+    with pytest.raises(TypeError, match="topic_model must be an instance of BERTopic"):
+        TempTopic(
+            topic_model="not_a_model",
+            docs=sample_data["docs"],
+            embeddings=sample_data["embeddings"],
+            word_embeddings=sample_data["word_embeddings"],
+            token_strings=sample_data["token_strings"],
+            timestamps=sample_data["timestamps"],
+            topics=sample_data["topics"],
+        )
+
+
+def test_init_invalid_docs(mock_bertopic, sample_data):
+    """Test that TypeError is raised for invalid docs."""
+    with pytest.raises(TypeError, match="docs must be a list of strings"):
+        TempTopic(
+            topic_model=mock_bertopic,
+            docs="not_a_list",
+            embeddings=sample_data["embeddings"],
+            word_embeddings=sample_data["word_embeddings"],
+            token_strings=sample_data["token_strings"],
+            timestamps=sample_data["timestamps"],
+            topics=sample_data["topics"],
+        )
+
+
+def test_init_invalid_timestamps(mock_bertopic, sample_data):
+    """Test that TypeError is raised for invalid timestamps."""
+    with pytest.raises(TypeError, match="timestamps must be a list"):
+        TempTopic(
+            topic_model=mock_bertopic,
+            docs=sample_data["docs"],
+            embeddings=sample_data["embeddings"],
+            word_embeddings=sample_data["word_embeddings"],
+            token_strings=sample_data["token_strings"],
+            timestamps="not_a_list",
+            topics=sample_data["topics"],
+        )
+
+
+def test_init_invalid_topics(mock_bertopic, sample_data):
+    """Test that TypeError is raised for invalid topics."""
+    with pytest.raises(TypeError, match="topics, if provided, must be a list"):
+        TempTopic(
+            topic_model=mock_bertopic,
+            docs=sample_data["docs"],
+            embeddings=sample_data["embeddings"],
+            word_embeddings=sample_data["word_embeddings"],
+            token_strings=sample_data["token_strings"],
+            timestamps=sample_data["timestamps"],
+            topics=["not", "integers"],
+        )
+
+
+def test_init_mismatched_lengths(mock_bertopic, sample_data):
+    """Test that ValueError is raised for mismatched lengths."""
+    with pytest.raises(ValueError, match="Lengths of docs and timestamps"):
+        TempTopic(
+            topic_model=mock_bertopic,
+            docs=sample_data["docs"],
+            embeddings=sample_data["embeddings"],
+            word_embeddings=sample_data["word_embeddings"],
+            token_strings=sample_data["token_strings"],
+            timestamps=["2023-01"],  # Wrong length
+        )
+
+
+def test_init_mismatched_lengths_with_topics(mock_bertopic, sample_data):
+    """Test that ValueError is raised when docs, timestamps, and topics have different lengths."""
+    with pytest.raises(
+        ValueError, match="Lengths of docs, timestamps, and topics must all be the same"
     ):
-        # Call the method
-        result = temp_topic_instance.find_similar_topic_pairs(similarity_threshold=0.9)
+        TempTopic(
+            topic_model=mock_bertopic,
+            docs=sample_data["docs"],
+            embeddings=sample_data["embeddings"],
+            word_embeddings=sample_data["word_embeddings"],
+            token_strings=sample_data["token_strings"],
+            timestamps=sample_data["timestamps"],
+            topics=[0, 1],  # Wrong length
+        )
 
-        # Check that the result is our mock result
-        assert result == mock_result
 
-        # Check the format of the result
-        for pair_list in result:
-            assert isinstance(pair_list, list)
-            for pair in pair_list:
-                assert isinstance(pair, tuple)
-                assert len(pair) == 3
-                assert isinstance(pair[0], int)
-                assert isinstance(pair[1], int)
-                assert isinstance(pair[2], str)
+def test_init_topics_from_model(mock_bertopic, sample_data):
+    """Test that topics are taken from the model when not provided."""
+    mock_bertopic.topics_ = [0, 0, 1, 1, 2, 2]
+    with patch("bertrend.metrics.temporal_metrics_embedding.logger"):
+        temp_topic = TempTopic(
+            topic_model=mock_bertopic,
+            docs=sample_data["docs"],
+            embeddings=sample_data["embeddings"],
+            word_embeddings=sample_data["word_embeddings"],
+            token_strings=sample_data["token_strings"],
+            timestamps=sample_data["timestamps"],
+        )
+        assert temp_topic.topics == [0, 0, 1, 1, 2, 2]
+
+
+def test_init_evolution_and_global_tuning(mock_bertopic, sample_data):
+    """Test custom evolution_tuning and global_tuning parameters."""
+    with patch("bertrend.metrics.temporal_metrics_embedding.logger"):
+        temp_topic = TempTopic(
+            topic_model=mock_bertopic,
+            docs=sample_data["docs"],
+            embeddings=sample_data["embeddings"],
+            word_embeddings=sample_data["word_embeddings"],
+            token_strings=sample_data["token_strings"],
+            timestamps=sample_data["timestamps"],
+            topics=sample_data["topics"],
+            evolution_tuning=False,
+            global_tuning=True,
+        )
+        assert temp_topic.evolution_tuning is False
+        assert temp_topic.global_tuning is True
+
+
+# --- _fuzzy_match_and_embed tests ---
+
+
+def test_fuzzy_match_and_embed_exact_match(temp_topic_instance):
+    """Test _fuzzy_match_and_embed with an exact match."""
+    token_strings = [["hello", "world", "foo", "bar"]]
+    token_embeddings = [np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6], [0.7, 0.8]])]
+
+    matched, embedding = temp_topic_instance._fuzzy_match_and_embed(
+        phrase="hello world",
+        token_strings=token_strings,
+        token_embeddings=token_embeddings,
+        topic_id=0,
+        timestamp="2023-01",
+        window_size=2,
+    )
+    assert matched == "hello world"
+    np.testing.assert_array_almost_equal(
+        embedding, np.mean([[0.1, 0.2], [0.3, 0.4]], axis=0)
+    )
+
+
+def test_fuzzy_match_and_embed_no_match(temp_topic_instance):
+    """Test _fuzzy_match_and_embed when no good match is found."""
+    token_strings = [["completely", "different", "tokens"]]
+    token_embeddings = [np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]])]
+
+    matched, embedding = temp_topic_instance._fuzzy_match_and_embed(
+        phrase="xyz abc",
+        token_strings=token_strings,
+        token_embeddings=token_embeddings,
+        topic_id=0,
+        timestamp="2023-01",
+        window_size=2,
+    )
+    assert matched is None
+    assert embedding is None
+
+
+def test_fuzzy_match_and_embed_single_token(temp_topic_instance):
+    """Test _fuzzy_match_and_embed with a single token phrase."""
+    token_strings = [["alpha", "beta", "gamma"]]
+    token_embeddings = [np.array([[1.0, 0.0], [0.0, 1.0], [0.5, 0.5]])]
+
+    matched, embedding = temp_topic_instance._fuzzy_match_and_embed(
+        phrase="beta",
+        token_strings=token_strings,
+        token_embeddings=token_embeddings,
+        topic_id=0,
+        timestamp="2023-01",
+        window_size=1,
+    )
+    assert matched == "beta"
+    np.testing.assert_array_almost_equal(embedding, [0.0, 1.0])
+
+
+def test_fuzzy_match_and_embed_multiple_docs(temp_topic_instance):
+    """Test _fuzzy_match_and_embed across multiple documents."""
+    token_strings = [
+        ["unrelated", "stuff"],
+        ["the", "target", "phrase", "here"],
+    ]
+    token_embeddings = [
+        np.array([[0.1, 0.1], [0.2, 0.2]]),
+        np.array([[0.3, 0.3], [0.4, 0.4], [0.5, 0.5], [0.6, 0.6]]),
+    ]
+
+    matched, embedding = temp_topic_instance._fuzzy_match_and_embed(
+        phrase="target phrase",
+        token_strings=token_strings,
+        token_embeddings=token_embeddings,
+        topic_id=0,
+        timestamp="2023-01",
+        window_size=2,
+    )
+    assert matched == "target phrase"
+    np.testing.assert_array_almost_equal(
+        embedding, np.mean([[0.4, 0.4], [0.5, 0.5]], axis=0)
+    )
+
+
+# --- _log_failed_match tests ---
+
+
+def test_log_failed_match(temp_topic_instance, tmp_path):
+    """Test that _log_failed_match writes to the debug file."""
+    debug_file = tmp_path / "debug.txt"
+    temp_topic_instance.debug_file = debug_file
+    open(debug_file, "w").close()
+
+    temp_topic_instance._log_failed_match(
+        phrase="test phrase",
+        token_strings=[["some", "tokens"]],
+        topic_id=5,
+        timestamp="2023-06",
+        best_match="some tokens",
+        best_score=50,
+    )
+
+    content = debug_file.read_text()
+    assert "Failed match for Topic 5 at Timestamp 2023-06" in content
+    assert "test phrase" in content
+    assert "some tokens" in content
+    assert "score 50" in content
+
+
+# --- _aggressive_text_preprocessing additional tests ---
+
+
+def test_aggressive_text_preprocessing_french_prefixes(temp_topic_instance):
+    """Test preprocessing of French prefixes like l', d'."""
+    result = temp_topic_instance._aggressive_text_preprocessing("l'homme d'affaires")
+    assert "l'" not in result
+    assert "d'" not in result
+    assert "homme" in result
+    assert "affaires" in result
+
+
+def test_aggressive_text_preprocessing_hyphens(temp_topic_instance):
+    """Test preprocessing of hyphens."""
+    result = temp_topic_instance._aggressive_text_preprocessing("well-known fact")
+    # Hyphen at word boundary replaced with space
+    assert "-" not in result or "well" in result
+
+
+def test_aggressive_text_preprocessing_superscripts(temp_topic_instance):
+    """Test preprocessing of superscript characters."""
+    result = temp_topic_instance._aggressive_text_preprocessing("x² = 4")
+    # Superscripts should be normalized
+    assert "²" not in result
+
+
+def test_aggressive_text_preprocessing_camel_case(temp_topic_instance):
+    """Test that camelCase words are split."""
+    result = temp_topic_instance._aggressive_text_preprocessing("camelCase wordHere")
+    assert "camel" in result
+    assert "case" in result
+    assert "word" in result
+    assert "here" in result
+
+
+def test_aggressive_text_preprocessing_all_caps_not_split(temp_topic_instance):
+    """Test that fully capitalized words are NOT split."""
+    result = temp_topic_instance._aggressive_text_preprocessing("NASA is great")
+    # NASA should remain as one token (lowercased)
+    assert "nasa" in result
+
+
+# --- calculate_temporal_representation_stability edge cases ---
+
+
+def test_temporal_representation_stability_window_size_validation(
+    temp_topic_instance,
+):
+    """Test that window_size < 2 raises ValueError."""
+    temp_topic_instance.final_df = pd.DataFrame({"Topic": [], "Timestamp": []})
+    temp_topic_instance.representation_embeddings_df = pd.DataFrame(
+        {"Topic ID": [], "Timestamp": []}
+    )
+    with pytest.raises(ValueError, match="window_size must be 2 or above"):
+        temp_topic_instance.calculate_temporal_representation_stability(window_size=1)
+
+
+def test_temporal_representation_stability_single_timestamp_topic(
+    temp_topic_instance,
+):
+    """Test that topics appearing at only one timestamp get a 0.0 score."""
+    temp_topic_instance.final_df = pd.DataFrame(
+        {
+            "Topic": [0, 1, 1],
+            "Timestamp": ["2023-01", "2023-01", "2023-02"],
+            "Embedding": [
+                np.array([0.1, 0.2]),
+                np.array([0.3, 0.4]),
+                np.array([0.5, 0.6]),
+            ],
+        }
+    )
+    temp_topic_instance.representation_embeddings_df = pd.DataFrame(
+        {
+            "Topic ID": [0, 1, 1],
+            "Timestamp": ["2023-01", "2023-01", "2023-02"],
+            "Representation": ["w1", "w2", "w3"],
+            "Representation Embeddings": [
+                [np.array([0.1, 0.2])],
+                [np.array([0.3, 0.4])],
+                [np.array([0.5, 0.6])],
+            ],
+        }
+    )
+
+    df, avg = temp_topic_instance.calculate_temporal_representation_stability(
+        window_size=2, k=1
+    )
+    # Topic 0 should have a 0.0 entry (single timestamp)
+    topic_0_scores = df[df["Topic ID"] == 0]
+    assert len(topic_0_scores) == 1
+    assert topic_0_scores.iloc[0]["Representation Stability Score"] == 0.0
+
+
+def test_temporal_representation_stability_empty_embeddings(temp_topic_instance):
+    """Test that empty start embeddings cause the window to be skipped, but valid windows still work."""
+    temp_topic_instance.final_df = pd.DataFrame(
+        {
+            "Topic": [0, 0, 0],
+            "Timestamp": ["2023-01", "2023-02", "2023-03"],
+            "Embedding": [
+                np.array([0.1, 0.2]),
+                np.array([0.3, 0.4]),
+                np.array([0.5, 0.6]),
+            ],
+        }
+    )
+    temp_topic_instance.representation_embeddings_df = pd.DataFrame(
+        {
+            "Topic ID": [0, 0, 0],
+            "Timestamp": ["2023-01", "2023-02", "2023-03"],
+            "Representation": ["w1", "w2", "w3"],
+            "Representation Embeddings": [
+                [],  # Empty embeddings - this window will be skipped
+                [np.array([0.3, 0.4])],
+                [np.array([0.5, 0.6])],
+            ],
+        }
+    )
+
+    df, avg = temp_topic_instance.calculate_temporal_representation_stability(
+        window_size=2, k=1
+    )
+    # The first window (2023-01 to 2023-02) is skipped due to empty start embeddings
+    # but the second window (2023-02 to 2023-03) should still produce a score
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) >= 1
+
+
+# --- calculate_topic_embedding_stability edge cases ---
+
+
+def test_topic_embedding_stability_single_timestamp(temp_topic_instance):
+    """Test topic with only one timestamp gets 0.0 score."""
+    temp_topic_instance.final_df = pd.DataFrame(
+        {
+            "Topic": [0, 1, 1],
+            "Timestamp": ["2023-01", "2023-01", "2023-02"],
+            "Embedding": [
+                np.array([0.1, 0.2]),
+                np.array([0.3, 0.4]),
+                np.array([0.5, 0.6]),
+            ],
+        }
+    )
+
+    df, avg = temp_topic_instance.calculate_topic_embedding_stability(window_size=2)
+    topic_0_scores = df[df["Topic ID"] == 0]
+    assert len(topic_0_scores) == 1
+    assert topic_0_scores.iloc[0]["Topic Stability Score"] == 0.0
+
+
+def test_topic_embedding_stability_larger_window(temp_topic_instance):
+    """Test with window_size=3."""
+    temp_topic_instance.final_df = pd.DataFrame(
+        {
+            "Topic": [0, 0, 0],
+            "Timestamp": ["2023-01", "2023-02", "2023-03"],
+            "Embedding": [
+                np.array([1.0, 0.0, 0.0]),
+                np.array([0.9, 0.1, 0.0]),
+                np.array([0.8, 0.2, 0.0]),
+            ],
+        }
+    )
+
+    df, avg = temp_topic_instance.calculate_topic_embedding_stability(window_size=3)
+    # With window_size=3 and 3 timestamps, we get 1 window
+    assert len(df) == 1
+    assert 0 <= avg <= 1
+
+
+# --- _calculate_representation_embeddings tests ---
+
+
+def test_calculate_representation_embeddings(temp_topic_instance):
+    """Test _calculate_representation_embeddings populates the dataframe."""
+    temp_topic_instance.final_df = pd.DataFrame(
+        {
+            "Topic": [0],
+            "Timestamp": ["2023-01"],
+            "Words": "hello, world",
+            "Token_Strings": [[["hello", "world", "extra"]]],
+            "Token_Embeddings": [[np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]])]],
+            "Embedding": [np.array([0.1, 0.2])],
+            "Document_Embeddings": [[np.array([0.1, 0.2])]],
+        }
+    )
+    # Set embeddings so zero-embedding fallback has correct shape
+    temp_topic_instance.embeddings = [np.array([0.1, 0.2])]
+
+    temp_topic_instance._calculate_representation_embeddings()
+
+    assert temp_topic_instance.representation_embeddings_df is not None
+    assert len(temp_topic_instance.representation_embeddings_df) == 1
+    assert "Topic ID" in temp_topic_instance.representation_embeddings_df.columns
+
+
+def test_calculate_representation_embeddings_no_match(temp_topic_instance):
+    """Test _calculate_representation_embeddings when no phrases match."""
+    temp_topic_instance.final_df = pd.DataFrame(
+        {
+            "Topic": [0],
+            "Timestamp": ["2023-01"],
+            "Words": "xyz, abc",
+            "Token_Strings": [[["completely", "different"]]],
+            "Token_Embeddings": [[np.array([[0.1, 0.2], [0.3, 0.4]])]],
+            "Embedding": [np.array([0.1, 0.2])],
+            "Document_Embeddings": [[np.array([0.1, 0.2])]],
+        }
+    )
+    temp_topic_instance.embeddings = [np.array([0.1, 0.2])]
+
+    temp_topic_instance._calculate_representation_embeddings()
+
+    # Should fall back to zero embedding
+    row = temp_topic_instance.representation_embeddings_df.iloc[0]
+    assert row["Representation"] == ""
+    np.testing.assert_array_equal(row["Representation Embeddings"][0], np.zeros(2))

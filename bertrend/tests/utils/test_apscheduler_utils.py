@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 from bertrend.bertrend_apps.common.apscheduler_utils import (
     APSchedulerUtils,
@@ -50,6 +51,16 @@ class TestHelperFunctions:
         mock_session.request.assert_called_once()
         call_kwargs = mock_session.request.call_args[1]
         assert call_kwargs["json"] == data
+
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._get_session")
+    def test_request_raises_exception(self, mock_get_session):
+        """Test HTTP request raises and propagates request exceptions."""
+        mock_session = MagicMock()
+        mock_session.request.side_effect = requests.exceptions.RequestException("boom")
+        mock_get_session.return_value.__enter__.return_value = mock_session
+
+        with pytest.raises(requests.exceptions.RequestException, match="boom"):
+            _request("GET", "/test")
 
     def test_job_id_from_string_deterministic(self):
         """Test that job_id generation is deterministic."""
@@ -197,6 +208,34 @@ class TestAPSchedulerUtils:
         assert call_args["match_all"] is False
 
     @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
+    def test_find_jobs_description_success(self, mock_request):
+        """Test finding job descriptions successfully."""
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {
+            "matches_found": 1,
+            "jobs": [{"job_id": "job1", "job_name": "Test"}],
+        }
+        mock_request.return_value = mock_response
+
+        patterns = {"user": "testuser"}
+        result = APSchedulerUtils.find_jobs_description(patterns)
+
+        assert result == [{"job_id": "job1", "job_name": "Test"}]
+
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
+    def test_find_jobs_description_no_matches(self, mock_request):
+        """Test finding job descriptions when no matches exist."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"matches_found": 0, "jobs": []}
+        mock_request.return_value = mock_response
+
+        result = APSchedulerUtils.find_jobs_description({"user": "testuser"})
+
+        assert result == []
+
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_remove_jobs_success(self, mock_request):
         """Test successfully removing jobs."""
         mock_response = MagicMock()
@@ -292,6 +331,24 @@ class TestAPSchedulerUtils:
 
         assert result is False
 
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
+    def test_add_job_to_crontab_failure_with_text_detail(self, mock_request):
+        """Test adding a job when error details are not JSON."""
+        mock_job_response = MagicMock()
+        mock_job_response.status_code = 400
+        mock_job_response.text = "Bad request"
+        mock_job_response.json.side_effect = ValueError("invalid json")
+
+        mock_request.return_value = mock_job_response
+
+        scheduler = APSchedulerUtils()
+        result = scheduler.add_job_to_crontab(
+            schedule="invalid",
+            command="/test",
+        )
+
+        assert result is False
+
     @patch("bertrend.bertrend_apps.common.apscheduler_utils.load_toml_config")
     @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_schedule_scrapping(self, mock_request, mock_load_config):
@@ -315,6 +372,22 @@ class TestAPSchedulerUtils:
 
         # Verify job creation was called
         assert mock_request.call_count == 1
+
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.load_toml_config")
+    def test_schedule_scrapping_removes_feed_prefix(self, mock_load_config):
+        """Test scheduling uses feed id without prefix."""
+        mock_load_config.return_value = {
+            "data-feed": {"update_frequency": "0 2 * * *", "id": "feed_abc"}
+        }
+
+        scheduler = APSchedulerUtils()
+        feed_cfg = Path("/path/to/feed.toml")
+        with patch.object(scheduler, "add_job_to_crontab") as mock_add:
+            scheduler.schedule_scrapping(feed_cfg, user="testuser")
+
+        assert mock_add.call_count == 1
+        command_kwargs = mock_add.call_args.kwargs["command_kwargs"]
+        assert command_kwargs["json_data"]["model_id"] == "abc"
 
     @patch("bertrend.bertrend_apps.common.apscheduler_utils.load_toml_config")
     @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
@@ -483,6 +556,22 @@ class TestAPSchedulerUtils:
         mock_remove.assert_called_once()
 
     @patch("bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
+    @patch(
+        "bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.remove_jobs"
+    )
+    def test_remove_scheduled_report_generation_for_user(self, mock_remove, mock_find):
+        """Test removing report generation job for a user."""
+        mock_find.return_value = ["job1"]
+
+        scheduler = APSchedulerUtils()
+        result = scheduler.remove_scheduled_report_generation_for_user(
+            "test_model", "testuser"
+        )
+
+        assert result is True
+        mock_remove.assert_called_once_with(["job1"])
+
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
     @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_check_if_scrapping_active(self, mock_request, mock_find):
         """Test checking if scraping is active."""
@@ -532,6 +621,16 @@ class TestAPSchedulerUtils:
         assert result is True
 
     @patch("bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
+    def test_check_if_learning_active_error(self, mock_find):
+        """Test checking if learning is active when lookup fails."""
+        mock_find.side_effect = Exception("boom")
+
+        scheduler = APSchedulerUtils()
+        result = scheduler.check_if_learning_active_for_user("test_model", "testuser")
+
+        assert result is False
+
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs")
     @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_check_if_report_generation_active(self, mock_request, mock_find):
         """Test checking if report generation is active."""
@@ -564,3 +663,39 @@ class TestAPSchedulerUtils:
         )
 
         assert result is False
+
+    @patch(
+        "bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs_description"
+    )
+    def test_get_next_scrapping_none(self, mock_find):
+        """Test getting next scrapping date when no jobs exist."""
+        mock_find.return_value = []
+
+        scheduler = APSchedulerUtils()
+        result = scheduler.get_next_scrapping("test_feed", user="testuser")
+
+        assert result is None
+
+    @patch(
+        "bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs_description"
+    )
+    def test_get_next_scrapping_parses_datetime(self, mock_find):
+        """Test getting next scrapping date parses ISO timestamp."""
+        mock_find.return_value = [{"next_run_time": "2025-01-01T10:00:00"}]
+
+        scheduler = APSchedulerUtils()
+        result = scheduler.get_next_scrapping("test_feed", user="testuser")
+
+        assert result.isoformat() == "2025-01-01T10:00:00"
+
+    @patch(
+        "bertrend.bertrend_apps.common.apscheduler_utils.APSchedulerUtils.find_jobs_description"
+    )
+    def test_get_next_learning_parses_datetime(self, mock_find):
+        """Test getting next learning date parses ISO timestamp."""
+        mock_find.return_value = [{"next_run_time": "2025-02-02T11:30:00"}]
+
+        scheduler = APSchedulerUtils()
+        result = scheduler.get_next_learning("test_model", user="testuser")
+
+        assert result.isoformat() == "2025-02-02T11:30:00"
