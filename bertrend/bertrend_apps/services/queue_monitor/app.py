@@ -26,7 +26,6 @@ from bertrend.bertrend_apps.services.queue_management.rabbitmq_config import (
     RabbitMQConfig,
 )
 from bertrend.demos.demos_utils.icons import (
-    COMPUTER_ICON,
     DASHBOARD_ICON,
     ERROR_ICON,
     ERROR_OUTLINE_ICON,
