@@ -27,6 +27,7 @@ min_samples = 5
 metric = "euclidean"
 cluster_selection_method = "eom"
 prediction_data = true
+cluster_selection_persistence = 0.0
 
 # CountVectorizer: https://scikit-learn.org/1.5/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
 [vectorizer_model]

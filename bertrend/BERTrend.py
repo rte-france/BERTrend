@@ -782,6 +782,13 @@ class BERTrend:
         # Unserialize BERTrend object (using dill as an improvement of pickle for complex objects)
         with open(models_path / BERTREND_FILE, "rb") as f:
             bertrend = dill.load(f)
+
+        # Ensure compatibility with older HDBSCAN versions: cluster_selection_persistence attribute
+        if getattr(bertrend, "last_topic_model", None) is not None and not hasattr(
+            bertrend.last_topic_model.hdbscan_model, "cluster_selection_persistence"
+        ):
+            bertrend.last_topic_model.hdbscan_model.cluster_selection_persistence = 0.0
+
         return bertrend
 
     @classmethod
