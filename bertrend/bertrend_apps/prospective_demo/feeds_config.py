@@ -342,6 +342,13 @@ def handle_delete(row_dict: dict):
             SCHEDULER_UTILS.remove_scheduled_training_for_user(
                 model_id=feed_id, user=st.session_state.username
             )
+            # Also remove report generation if it was scheduled
+            if SCHEDULER_UTILS.check_if_report_generation_active_for_user(
+                model_id=feed_id, user=st.session_state.username
+            ):
+                SCHEDULER_UTILS.remove_scheduled_report_generation_for_user(
+                    model_id=feed_id, user=st.session_state.username
+                )
             time.sleep(0.2)
             st.rerun()
     with col2:
