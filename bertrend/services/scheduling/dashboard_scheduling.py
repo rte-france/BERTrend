@@ -103,7 +103,6 @@ async def main_page():
     ui.colors(primary="#0052a1")
     dashboard = JobDashboard()
 
-    # --- LOGIC ---
     def update_display():
         f_users = user_filter.value
         f_models = model_filter.value
@@ -139,7 +138,7 @@ async def main_page():
         # 1. Update Chart Dashboard
         with chart_container:
             chart_options = {
-                "chart": {"type": "timeline", "height": 350, "zoomType": "x"},
+                "chart": {"type": "timeline", "height": 400, "zoomType": "x"},
                 "title": {
                     "text": "Job Schedule Timeline",
                     "style": {"fontSize": "14px"},
@@ -155,6 +154,11 @@ async def main_page():
                                 "name": f"/{j['endpoint']}",
                                 "label": f"{j['user']} | {j['model_id']}",
                                 "color": j["color"],
+                                "dataLabels": {
+                                    "style": {
+                                        "fontSize": "10px",
+                                    }
+                                },
                             }
                             for j in dashboard.filtered_jobs
                             if j["time"]
@@ -189,7 +193,7 @@ async def main_page():
                 for job in dashboard.filtered_jobs:
                     custom_color_name = f"c_{job['color'].lstrip('#')}"
                     ui.timeline_entry(
-                        f"Model: {job['model_id']}",
+                        f"Model: {job['model_id']}  |  (Job ID: {job['job_id']})",
                         title=f"/{job['endpoint']} ({job['user']})",
                         subtitle=job["time"],
                         color=custom_color_name,
