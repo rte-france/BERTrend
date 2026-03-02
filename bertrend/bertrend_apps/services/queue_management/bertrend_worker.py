@@ -19,13 +19,17 @@ import aio_pika
 import pandas as pd
 from loguru import logger
 
+from bertrend import load_toml_config
 from bertrend.bertrend_apps.data_provider.data_provider_utils import (
     auto_scrape,
     generate_query_file,
     scrape,
     scrape_feed_from_config,
 )
-from bertrend.bertrend_apps.newsletters.newsletter_generation import process_newsletter
+from bertrend.bertrend_apps.newsletters.newsletter_generation import (
+    NEWSLETTER_SECTION,
+    process_newsletter,
+)
 from bertrend.bertrend_apps.prospective_demo.automated_report_generation import (
     generate_automated_report,
 )
@@ -51,6 +55,7 @@ from bertrend.bertrend_apps.services.queue_management.queue_manager import Queue
 from bertrend.bertrend_apps.services.queue_management.rabbitmq_config import (
     RabbitMQConfig,
 )
+from bertrend.bertrend_apps.services.utils.logging_utils import get_file_logger
 
 
 # Wrapper functions to match the core logic with the request models
@@ -81,7 +86,14 @@ async def handle_auto_scrape(req: AutoScrapeRequest):
 
 
 async def handle_scrape_feed(req: ScrapeFeedRequest):
-    return await asyncio.to_thread(scrape_feed_from_config, req.feed_cfg)
+    # Create a unique log file for this call
+    user = "" if not req.user else req.user
+    model_id = "" if not req.model_id else req.model_id
+    logger_id = get_file_logger(id="scrape_feed", user_name=user, model_id=model_id)
+    result = await asyncio.to_thread(scrape_feed_from_config, req.feed_cfg)
+    # Remove the logger to prevent writing to this file for other calls
+    logger.remove(logger_id)
+    return result
 
 
 async def handle_generate_query_file(req: GenerateQueryFileRequest):
@@ -96,34 +108,64 @@ async def handle_generate_query_file(req: GenerateQueryFileRequest):
 
 
 async def handle_train_new(req: TrainNewModelRequest):
-    return await asyncio.to_thread(
+    # Create a unique log file for this call
+    logger_id = get_file_logger(
+        id="train_new_model", user_name=req.user, model_id=req.model_id
+    )
+    result = await asyncio.to_thread(
         train_new_model, model_id=req.model_id, user_name=req.user
     )
+    # Remove the logger to prevent writing to this file for other calls
+    logger.remove(logger_id)
+    return result
 
 
 async def handle_regenerate(req: RegenerateRequest):
-    return await asyncio.to_thread(
+    # Create a unique log file for this call
+    logger_id = get_file_logger(
+        id="regenerate", user_name=req.user, model_id=req.model_id
+    )
+    result = await asyncio.to_thread(
         regenerate_models,
         model_id=req.model_id,
         user=req.user,
         with_analysis=req.with_analysis,
         since=pd.Timestamp(req.since) if req.since else None,
     )
+    # Remove the logger to prevent writing to this file for other calls
+    logger.remove(logger_id)
+    return result
 
 
 async def handle_generate_report(req: GenerateReportRequest):
-    return await asyncio.to_thread(
+    # Create a unique log file for this call
+    logger_id = get_file_logger(
+        id="generate_report", user_name=req.user, model_id=req.model_id
+    )
+    result = await asyncio.to_thread(
         generate_automated_report,
         user=req.user,
         model_id=req.model_id,
         reference_date=req.reference_date,
     )
+    # Remove the logger to prevent writing to this file for other calls
+    logger.remove(logger_id)
+    return result
 
 
 async def handle_generate_newsletters(req: NewsletterRequest):
-    return await asyncio.to_thread(
+    config = load_toml_config(req.newsletter_toml_path)
+    model_id = config.get(NEWSLETTER_SECTION).get("id")
+    # Create a unique log file for this call
+    logger_id = get_file_logger(
+        id="generate_newsletters", user_name="", model_id=model_id
+    )
+    result = await asyncio.to_thread(
         process_newsletter, req.newsletter_toml_path, req.data_feed_toml_path
     )
+    # Remove the logger to prevent writing to this file for other calls
+    logger.remove(logger_id)
+    return result
 
 
 # Mapping of endpoints to their handler functions and request models
