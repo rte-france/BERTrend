@@ -29,6 +29,6 @@ def get_file_logger(id: str, user_name: str = "", model_id: str = "") -> int:
         level="DEBUG",
         format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
         colorize=True,
-        retention="60 days",  # Remove automatically logs after x days
+        retention="90 days",  # Remove automatically logs after x days
     )
     return logger_id
