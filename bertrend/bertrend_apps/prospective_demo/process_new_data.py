@@ -14,14 +14,6 @@ from loguru import logger
 from bertrend import FEED_BASE_PATH, load_toml_config
 from bertrend.BERTopicModel import BERTopicModel
 from bertrend.BERTrend import BERTrend, train_new_data
-from bertrend.services.embedding_service import EmbeddingService
-from bertrend.trend_analysis.weak_signals import analyze_signal
-from bertrend.utils.data_loading import (
-    TEXT_COLUMN,
-    group_by_days,
-    load_data,
-    split_data,
-)
 from bertrend.bertrend_apps.prospective_demo import (
     LLM_TOPIC_DESCRIPTION_COLUMN,
     LLM_TOPIC_TITLE_COLUMN,
@@ -36,6 +28,14 @@ from bertrend.bertrend_apps.prospective_demo import (
 )
 from bertrend.bertrend_apps.prospective_demo.llm_utils import (
     generate_bertrend_topic_description,
+)
+from bertrend.services.embedding_service import EmbeddingService
+from bertrend.trend_analysis.weak_signals import analyze_signal
+from bertrend.utils.data_loading import (
+    TEXT_COLUMN,
+    group_by_days,
+    load_data,
+    split_data,
 )
 
 DEFAULT_TOP_K = 5
@@ -319,14 +319,16 @@ def train_new_model_for_period(
             df.to_parquet(output_path)
             logger.success(f"{df_name} saved to: {output_path}")
 
-            # Obtain detailed LLM-based interpretion for signals
-            generate_llm_interpretation(
-                bertrend,
-                reference_timestamp=reference_timestamp,
-                df=df,
-                df_name=df_name,
-                output_path=interpretation_path,
-            )
+            # Do not generate LLM interpretation for NOISE
+            if df_name != NOISE:
+                # Obtain detailed LLM-based interpretion for signals
+                generate_llm_interpretation(
+                    bertrend,
+                    reference_timestamp=reference_timestamp,
+                    df=df,
+                    df_name=df_name,
+                    output_path=interpretation_path,
+                )
 
 
 def regenerate_models(
