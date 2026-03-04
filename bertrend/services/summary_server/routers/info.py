@@ -4,6 +4,7 @@
 #  This file is part of BERTrend.
 
 from fastapi import APIRouter
+from starlette.responses import RedirectResponse
 
 from bertrend.services.summary_server.models import SummarizerInfo
 from bertrend.services.summary_server.routers.summarize import (
@@ -17,6 +18,12 @@ router = APIRouter()
 @router.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@router.get("/", summary="Redirect to API documentation")
+def root():
+    """Redirect root path to /docs"""
+    return RedirectResponse(url="/docs")
 
 
 @router.get("/summarizers", response_model=list[SummarizerInfo])

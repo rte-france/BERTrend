@@ -3,10 +3,12 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import hmac
+import os
 
 import streamlit as st
 
-from bertrend.demos.demos_utils.icons import UNHAPPY_ICON
+from bertrend.bertrend_apps.prospective_demo.i18n import translate
+from bertrend.demos.demos_utils.icons import EMAIL_ICON, UNHAPPY_ICON
 
 
 def login_form():
@@ -38,6 +40,11 @@ def logout():
         del st.session_state["username"]
 
 
+def show_contact_info():
+    contact = os.getenv("BERTREND_CONTACT_EMAIL", "contact@bertrend.com")
+    st.link_button(translate("contact_msg"), f"mailto:{contact}", icon=EMAIL_ICON)
+
+
 def check_password() -> str | None:
     """Returns the user name if the user had a correct password, otherwise None."""
 
@@ -49,4 +56,6 @@ def check_password() -> str | None:
     login_form()
     if "password_correct" in st.session_state:
         st.error(f"{UNHAPPY_ICON} User not known or password incorrect")
+
+    show_contact_info()
     return None

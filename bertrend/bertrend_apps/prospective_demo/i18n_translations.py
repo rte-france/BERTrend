@@ -3,10 +3,14 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 TRANSLATIONS = {
+    "contact_msg": {
+        "en": "Questions, new account or bug reports? Contact us !",
+        "fr": "Des questions, un nouveau compte ou des rapports de bugs ? Contactez-nous !",
+    },
     # App.py translations
     "app_title": {
-        "fr": "BERTrend - Démo Veille & Analyse",
-        "en": "BERTrend - Monitoring & Analysis Demo",
+        "fr": "BERTrend - IA pour la Veille (Analyses & Tendances)",
+        "en": "BERTrend - AI for Monitoring, Analysis & Trends",
     },
     "check_data_button_label": {"fr": "Vérifier les données", "en": "Check data"},
     "tab_monitoring": {"fr": "Veilles", "en": "Monitoring"},
