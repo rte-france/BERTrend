@@ -322,6 +322,9 @@ def train_new_model_for_period(
             # Do not generate LLM interpretation for NOISE
             if df_name != NOISE:
                 # Obtain detailed LLM-based interpretion for signals
+                logger.info(
+                    f"user: {user_name}, model_id: {model_id}, reference_timestamp: {reference_timestamp} | Generating LLM interpretation for {df_name}"
+                )
                 generate_llm_interpretation(
                     bertrend,
                     reference_timestamp=reference_timestamp,
