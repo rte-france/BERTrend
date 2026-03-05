@@ -236,7 +236,7 @@ def train_new_model_for_period(
     reference_timestamp: pd.Timestamp,
 ):
     logger.info(
-        f"Training BERTrend model with new data - user: {user_name}, model_id: {model_id}, reference_timestamp: {reference_timestamp}..."
+        f"[U:{user_name}|M:{model_id}|TS:{reference_timestamp}] Training BERTrend model with new data..."
     )
     # Initialization of embedding service
     # TODO: customize service (lang, etc)
@@ -317,13 +317,15 @@ def train_new_model_for_period(
 
             output_path = interpretation_path / f"{df_name}.parquet"
             df.to_parquet(output_path)
-            logger.success(f"{df_name} saved to: {output_path}")
+            logger.success(
+                f"[U:{user_name}|M:{model_id}|TS:{reference_timestamp}] {df_name} saved to: {output_path}"
+            )
 
             # Do not generate LLM interpretation for NOISE
             if df_name != NOISE:
                 # Obtain detailed LLM-based interpretion for signals
                 logger.info(
-                    f"user: {user_name}, model_id: {model_id}, reference_timestamp: {reference_timestamp} | Generating LLM interpretation for {df_name}"
+                    f"[U:{user_name}|M:{model_id}|TS:{reference_timestamp}] Generating LLM interpretation for {df_name}"
                 )
                 generate_llm_interpretation(
                     bertrend,
@@ -340,8 +342,7 @@ def regenerate_models(
     """Regenerate from scratch (method retrospective) the models associated with the specified model identifier
     for the specified user."""
     logger.info(
-        f"Regenerating models for user '{user}' about '{model_id}', "
-        f"with analysis: {with_analysis}..."
+        f"[U:{user}|M:{model_id}] Regenerating models, with analysis: {with_analysis}..."
     )
     # Get relevant model info from config
     model_config = get_model_config(model_id=model_id, user=user)
@@ -351,12 +352,14 @@ def regenerate_models(
 
     # Load model config
     df = load_all_data(model_id=model_id, user=user, language_code=language_code)
-    logger.info(f"Size of dataset: {len(df)}")
+    logger.info(f"[U:{user}|M:{model_id}] Size of dataset: {len(df)}")
 
     if since:
         # Keep only the most recent data
         df = df[df["timestamp"] >= since]
-        logger.info(f"Size of dataset (after date {since}): {len(df)}")
+        logger.info(
+            f"[U:{user}|M:{model_id}] Size of dataset (after date {since}): {len(df)}"
+        )
 
     # Split data by paragraphs
     if split_by_paragraph:
@@ -397,7 +400,7 @@ def regenerate_models(
         bertrend.save_model(models_path=bertrend_models_path)
 
         logger.success(
-            f"Regenerated models for '{model_id}' from scratch. BERTrend model was built using {len(bertrend.doc_groups)} models/time periods."
+            f"[U:{user}|M:{model_id}] Regenerated models from scratch. BERTrend model was built using {len(bertrend.doc_groups)} models/time periods."
         )
 
     else:  # with analysis
@@ -410,7 +413,7 @@ def regenerate_models(
             )
 
         logger.success(
-            f"Regenerated models for '{model_id}' from scratch with LLM-based analysis. BERTrend model was built using {len(grouped_data)} models/time periods."
+            f"[U:{user}|M:{model_id}] Regenerated models from scratch with LLM-based analysis. BERTrend model was built using {len(grouped_data)} models/time periods."
         )
 
 
@@ -424,7 +427,7 @@ def train_new_model(
     Returns:
         dict with keys: status, message, and optionally error details
     """
-    logger.info(f'Processing new data for user "{user_name}" about "{model_id}"...')
+    logger.info(f"[U:{user_name}|M:{model_id}] Processing new data...")
 
     # Get relevant model info from config
     model_config = get_model_config(model_id=model_id, user=user_name)
@@ -432,7 +435,9 @@ def train_new_model(
     language_code = model_config["language"]
     split_by_paragraph = model_config.get("split_by_paragraph", True)
 
-    logger.info(f"Splitting data by paragraphs: {split_by_paragraph}")
+    logger.info(
+        f"[U:{user_name}|M:{model_id}] Splitting data by paragraphs: {split_by_paragraph}"
+    )
 
     # Load data for last period
     new_data = load_all_data(
@@ -442,7 +447,7 @@ def train_new_model(
     if new_data is None or new_data.empty:
         return {
             "status": "no_data",
-            "message": f"No new data found for model '{model_id}'",
+            "message": f"[U:{user_name}|M:{model_id}] No new data found.",
         }
 
     # Filter data according to granularity
@@ -468,7 +473,7 @@ def train_new_model(
 
     return {
         "status": "success",
-        "message": f"Successfully trained new model for user '{user_name}' and model '{model_id}'",
+        "message": f"[U:{user_name}|M:{model_id}|TS:{reference_timestamp}] Successfully trained new model",
     }
 
 
