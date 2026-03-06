@@ -3,6 +3,10 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 TRANSLATIONS = {
+    "project_info_msg": {
+        "fr": "BERTrend est un projet open-source développé par RTE. Visitez notre github pour plus d'informations: https://github.com/rte-france/BERTrend",
+        "en": "BERTrend is an open-source project developed by RTE. Visit our github for more information: https://github.com/rte-france/BERTrend",
+    },
     "contact_msg": {
         "en": "Questions, new account or bug reports? Contact us !",
         "fr": "Des questions, un nouveau compte ou des rapports de bugs ? Contactez-nous !",

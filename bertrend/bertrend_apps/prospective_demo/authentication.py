@@ -13,6 +13,7 @@ from bertrend.demos.demos_utils.icons import EMAIL_ICON, UNHAPPY_ICON
 
 def login_form():
     """Form with widgets to collect user information"""
+    st.header("")
     with st.form("Credentials"):
         st.text_input("Username", key="username")
         st.text_input("Password", type="password", key="password")
@@ -45,6 +46,11 @@ def show_contact_info():
     st.link_button(translate("contact_msg"), f"mailto:{contact}", icon=EMAIL_ICON)
 
 
+def show_project_info():
+    st.write("")
+    st.markdown(translate("project_info_msg"))
+
+
 def check_password() -> str | None:
     """Returns the user name if the user had a correct password, otherwise None."""
 
@@ -58,4 +64,6 @@ def check_password() -> str | None:
         st.error(f"{UNHAPPY_ICON} User not known or password incorrect")
 
     show_contact_info()
+
+    show_project_info()
     return None
