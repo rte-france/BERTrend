@@ -39,7 +39,7 @@ The BERTrend repository provides a set of metrics, methods, and visualization to
 topic modeling in large text corpora. The tools are designed to help users detect, analyze, and visualize emerging
 topics and trends over time.
 
-The code base is illustrated via two main demos:
+The code base is illustrated via three main demos:
 
 ### Dynamic Topic Modeling Analysis
 
@@ -84,6 +84,24 @@ https://github.com/user-attachments/assets/d79368d9-d4e0-4324-8a98-a888f0ab3b65
   (each dataframe contains useful information about the signals)
 - Interpretation of these signals using LLMs
 - Inspection of the topic merging process using Sankey diagram
+
+### Prospective Analysis
+
+- [bertrend/bertrend_apps/prospective_demo](bertrend/bertrend_apps/prospective_demo): A comprehensive "Prospective
+  Analysis Demo" application for monitoring, analysis, and trend detection in real time (works with live data).
+
+#### Prospective Analysis Demonstrator Video
+
+(Coming soon)
+
+#### Demonstrator Features
+
+- Data flow configuration and collection status monitoring
+- Model status and monitoring by information source
+- Real-time signal analysis and trend exploration
+- Detailed topic analysis and interpretation
+- Automated report and newsletter generation
+- Comparative analysis between different periods
 
 ## Installation
 
