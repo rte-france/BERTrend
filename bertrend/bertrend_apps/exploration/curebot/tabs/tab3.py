@@ -45,7 +45,7 @@ def show() -> None:
             st.button(
                 "Éditer",
                 on_click=edit_newsletter,
-                disabled=not "newsletter_text" in st.session_state,
+                disabled="newsletter_text" not in st.session_state,
             )
 
         # Show newsletter download button
@@ -65,7 +65,7 @@ def show() -> None:
                 file_name="newsletters.html",
                 mime="text/html",
                 data=data,
-                disabled=not "newsletter_text" in st.session_state,
+                disabled="newsletter_text" not in st.session_state,
             )
 
         # Show newsletter

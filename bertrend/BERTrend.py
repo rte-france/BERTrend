@@ -364,7 +364,7 @@ class BERTrend:
         # Check if both timestamps exist in topic models
         if new_model is None or self.last_topic_model is None:
             raise ValueError(
-                f"At least one topic model is not valid. You must fit the BERTrend model before merging models."
+                "At least one topic model is not valid. You must fit the BERTrend model before merging models."
             )
 
         # Get default BERTrend config if argument is not provided

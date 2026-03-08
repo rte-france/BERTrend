@@ -31,7 +31,7 @@ def show() -> None:
         except Exception as e:
             logger.error(e)
             st.error(
-                f"Erreur lors du chargement des données. Vérifiez que vos données respectent le format Curebot attendu."
+                "Erreur lors du chargement des données. Vérifiez que vos données respectent le format Curebot attendu."
             )
 
     # If data is loaded

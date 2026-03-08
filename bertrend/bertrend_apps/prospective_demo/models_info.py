@@ -13,6 +13,16 @@ import toml
 from loguru import logger
 
 from bertrend import load_toml_config
+from bertrend.bertrend_apps import SCHEDULER_UTILS
+from bertrend.bertrend_apps.prospective_demo import (
+    DEFAULT_ANALYSIS_CFG,
+    get_model_cfg_path,
+    get_user_models_path,
+)
+from bertrend.bertrend_apps.prospective_demo.i18n import translate
+from bertrend.bertrend_apps.prospective_demo.perf_utils import get_least_used_gpu
+from bertrend.bertrend_apps.prospective_demo.process_new_data import regenerate_models
+from bertrend.bertrend_apps.prospective_demo.utils import is_valid_email
 from bertrend.config.parameters import LANGUAGES
 from bertrend.demos.demos_utils.icons import (
     DELETE_ICON,
@@ -28,16 +38,6 @@ from bertrend.demos.streamlit_components.clickable_df_component import clickable
 from bertrend.demos.streamlit_components.input_with_pills_component import (
     input_with_pills,
 )
-from bertrend.bertrend_apps import SCHEDULER_UTILS
-from bertrend.bertrend_apps.prospective_demo import (
-    DEFAULT_ANALYSIS_CFG,
-    get_model_cfg_path,
-    get_user_models_path,
-)
-from bertrend.bertrend_apps.prospective_demo.i18n import translate
-from bertrend.bertrend_apps.prospective_demo.perf_utils import get_least_used_gpu
-from bertrend.bertrend_apps.prospective_demo.process_new_data import regenerate_models
-from bertrend.bertrend_apps.prospective_demo.utils import is_valid_email
 
 
 @st.cache_data(ttl=60)
@@ -300,6 +300,17 @@ def save_model_config(model_id: str, config: dict):
     with open(model_cfg_path, "w") as toml_file:
         toml.dump(config, toml_file)
     logger.debug(f"Saved model analysis config {config} to {model_cfg_path}")
+
+
+def delete_model_config(model_id: str):
+    model_cfg_path = get_model_cfg_path(
+        user_name=st.session_state.username, model_id=model_id
+    )
+    if os.path.exists(model_cfg_path):
+        os.remove(model_cfg_path)
+        logger.info(f"Model config {model_id} removed")
+    else:
+        logger.warning(f"Model config {model_id} not found")
 
 
 @st.dialog(translate("dialog_confirmation"))
