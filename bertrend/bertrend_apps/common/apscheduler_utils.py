@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
@@ -293,11 +294,15 @@ class APSchedulerUtils(SchedulerUtils):
 
     def remove_scrapping_for_user(self, feed_id: str, user: str | None = None):
         """Removes from the scheduler service the job matching the provided feed_id"""
+        # NB. user and model_id are escaped in case they contain special characters that can be interpreted in the regex search
         try:
             job_ids = self.find_jobs(
                 patterns={
                     "url": ".*/scrape-feed.*",
-                    "json_data": {"user": user, "model_id": feed_id},
+                    "json_data": {
+                        "user": re.escape(user),
+                        "model_id": re.escape(feed_id),
+                    },
                 }
             )
             self.remove_jobs(job_ids)
@@ -308,11 +313,15 @@ class APSchedulerUtils(SchedulerUtils):
 
     def remove_scheduled_training_for_user(self, model_id: str, user: str):
         """Removes from the crontab the training job matching the provided model_id"""
+        # NB. user and model_id are escaped in case they contain special characters that can be interpreted in the regex search
         try:
             job_ids = self.find_jobs(
                 patterns={
                     "url": ".*/train-new-model.*",
-                    "json_data": {"user": user, "model_id": model_id},
+                    "json_data": {
+                        "user": re.escape(user),
+                        "model_id": re.escape(model_id),
+                    },
                 }
             )
             self.remove_jobs(job_ids)
@@ -325,11 +334,15 @@ class APSchedulerUtils(SchedulerUtils):
         self, model_id: str, user: str
     ) -> bool:
         """Removes from the crontab the report generation job matching the provided model_id"""
+        # NB. user and model_id are escaped in case they contain special characters that can be interpreted in the regex search
         try:
             job_ids = self.find_jobs(
                 patterns={
                     "url": ".*/generate-report.*",
-                    "json_data": {"user": user, "model_id": model_id},
+                    "json_data": {
+                        "user": re.escape(user),
+                        "model_id": re.escape(model_id),
+                    },
                 }
             )
             self.remove_jobs(job_ids)
@@ -342,11 +355,15 @@ class APSchedulerUtils(SchedulerUtils):
         self, feed_id: str, user: str | None = None
     ) -> bool:
         """Checks if a given scrapping feed is active (registered with the service)."""
+        # NB. user and model_id are escaped in case they contain special characters that can be interpreted in the regex search
         try:
             job_ids = self.find_jobs(
                 patterns={
                     "url": ".*/scrape-feed.*",
-                    "json_data": {"user": user, "model_id": feed_id},
+                    "json_data": {
+                        "user": re.escape(user),
+                        "model_id": re.escape(feed_id),
+                    },
                 }
             )
             return len(job_ids) > 0
@@ -358,11 +375,15 @@ class APSchedulerUtils(SchedulerUtils):
 
     def check_if_learning_active_for_user(self, model_id: str, user: str) -> bool:
         """Checks if a given scrapping feed is active (registered in the crontab"""
+        # NB. user and model_id are escaped in case they contain special characters that can be interpreted in the regex search
         try:
             job_ids = self.find_jobs(
                 patterns={
                     "url": ".*/train-new-model.*",
-                    "json_data": {"user": user, "model_id": model_id},
+                    "json_data": {
+                        "user": re.escape(user),
+                        "model_id": re.escape(model_id),
+                    },
                 }
             )
             return len(job_ids) > 0
@@ -376,11 +397,15 @@ class APSchedulerUtils(SchedulerUtils):
         self, model_id: str, user: str
     ) -> bool:
         """Checks if automated report generation is active (registered in the crontab)"""
+        # NB. user and model_id are escaped in case they contain special characters that can be interpreted in the regex search
         try:
             job_ids = self.find_jobs(
                 patterns={
                     "url": ".*/generate-report.*",
-                    "json_data": {"user": user, "model_id": model_id},
+                    "json_data": {
+                        "user": re.escape(user),
+                        "model_id": re.escape(model_id),
+                    },
                 }
             )
             return len(job_ids) > 0
@@ -394,11 +419,15 @@ class APSchedulerUtils(SchedulerUtils):
         self, feed_id: str, user: str | None = None
     ) -> datetime | None:
         """Return the next scrapping date for the given feed_id and user"""
+        # NB. user and model_id are escaped in case they contain special characters that can be interpreted in the regex search
         try:
             jobs = self.find_jobs_description(
                 patterns={
                     "url": ".*/scrape-feed.*",
-                    "json_data": {"user": user, "model_id": feed_id},
+                    "json_data": {
+                        "user": re.escape(user),
+                        "model_id": re.escape(feed_id),
+                    },
                 }
             )
             if len(jobs) == 0:
@@ -414,11 +443,15 @@ class APSchedulerUtils(SchedulerUtils):
         self, model_id: str, user: str | None = None
     ) -> datetime | None:
         """Return the next scrapping date for the given feed_id and user"""
+        # NB. user and model_id are escaped in case they contain special characters that can be interpreted in the regex search
         try:
             jobs = self.find_jobs_description(
                 patterns={
                     "url": ".*/train-new-model.*",
-                    "json_data": {"user": user, "model_id": model_id},
+                    "json_data": {
+                        "user": re.escape(user),
+                        "model_id": re.escape(model_id),
+                    },
                 }
             )
             if len(jobs) == 0:
