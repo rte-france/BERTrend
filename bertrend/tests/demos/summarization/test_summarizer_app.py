@@ -5,7 +5,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from bertrend.demos.summarization.summarizer_app import (
     DEFAULT_TEXT,

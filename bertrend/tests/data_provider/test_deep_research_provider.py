@@ -3,9 +3,8 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
-import pytest
 
 from bertrend.bertrend_apps.data_provider.deep_research_provider import (
     DeepResearchProvider,

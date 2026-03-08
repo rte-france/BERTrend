@@ -7,7 +7,7 @@ import os
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from openai import OpenAI, Stream
+from openai import Stream
 from pydantic import BaseModel
 
 from bertrend.llm_utils.agent_utils import run_config_no_tracing

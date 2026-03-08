@@ -3,7 +3,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 

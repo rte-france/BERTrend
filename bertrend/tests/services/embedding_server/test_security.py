@@ -5,11 +5,10 @@
 
 import json
 import os
-import tempfile
 import time
 from collections import deque
 from datetime import timedelta
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import jwt
 import pytest
