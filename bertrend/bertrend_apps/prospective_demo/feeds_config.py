@@ -20,6 +20,7 @@ from bertrend.bertrend_apps.prospective_demo.feeds_common import (
     read_user_feeds,
 )
 from bertrend.bertrend_apps.prospective_demo.i18n import translate
+from bertrend.bertrend_apps.prospective_demo.models_info import delete_model_config
 from bertrend.config.parameters import LANGUAGES
 from bertrend.demos.demos_utils.icons import (
     ADD_ICON,
@@ -337,7 +338,6 @@ def handle_delete(row_dict: dict):
                 feed_id=feed_id, user=st.session_state.username
             )
             delete_feed_config(feed_id)
-            logger.info(f"Flux {feed_id} supprimé !")
             # Remove from crontab associated training
             SCHEDULER_UTILS.remove_scheduled_training_for_user(
                 model_id=feed_id, user=st.session_state.username
@@ -349,6 +349,8 @@ def handle_delete(row_dict: dict):
                 SCHEDULER_UTILS.remove_scheduled_report_generation_for_user(
                     model_id=feed_id, user=st.session_state.username
                 )
+            delete_model_config(feed_id)
+            logger.info(f"Flux {feed_id} supprimé !")
             time.sleep(0.2)
             st.rerun()
     with col2:
