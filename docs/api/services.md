@@ -1,5 +1,13 @@
 # Services & Infrastructure API Reference
 
+## Service Documentation Pages
+
+- `docs/services/article_scoring_service.md`
+- `docs/services/summary_service.md`
+- `docs/services/embedding_service.md`
+- `docs/services/scheduler_configuration.md`
+- `docs/services/bertrend_api_service.md`
+
 ## FastAPI Service Layer
 
 **Location:** `bertrend/bertrend_apps/services/bertrend/`

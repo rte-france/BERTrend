@@ -364,6 +364,11 @@ Provides various statistics about topics:
 
 ![llm_interpretation](docs/images/llm_interpretation.png)
 
+## Article Scoring Service
+
+For service setup and API details, see:
+[`docs/services/article_scoring_service.md`](docs/services/article_scoring_service.md).
+
 ## Support
 
 Please use the 'Issues' section to report and discuss any problems with BERTrend.
