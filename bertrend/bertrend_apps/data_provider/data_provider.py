@@ -2,7 +2,6 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-import asyncio
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -10,6 +9,7 @@ from pathlib import Path
 import jsonlines
 import langdetect
 import pandas as pd
+import requests
 from dateutil import parser
 from goose3 import Goose
 from joblib import Parallel, delayed
@@ -17,12 +17,11 @@ from loguru import logger
 from newspaper import Article
 
 from bertrend.article_scoring.article_scoring import QualityLevel
-from bertrend.article_scoring.scoring_agent import score_articles
-from bertrend.utils.data_loading import TEXT_COLUMN
 from bertrend.bertrend_apps.data_provider.utils import (
     decode_google_news_url,
     wait_if_seen_url,
 )
+from bertrend.utils.data_loading import TEXT_COLUMN
 
 # Ensures to write with +rw for both user and groups
 os.umask(0o002)
@@ -85,27 +84,53 @@ class DataProvider(ABC):
 
     @staticmethod
     def evaluate_quality(
-        articles: list[dict], minimum_quality_level: QualityLevel
+        articles: list[dict], minimum_quality_level: QualityLevel = QualityLevel.AVERAGE
     ) -> list[dict]:
         texts = [article[TEXT_COLUMN] for article in articles]
+        article_scoring_service_url = os.getenv("ARTICLE_SCORING_SERVICE_URL")
 
-        # Evaluate quality of articles using a LLM agent
-        results = asyncio.run(score_articles(texts))
+        if not article_scoring_service_url:
+            logger.warning(
+                "ARTICLE_SCORING_SERVICE_URL is not set; skipping article quality filtering."
+            )
+            return articles
 
-        # Filter out articles with quality < minimum_quality
+        try:
+            response = requests.post(
+                f"{article_scoring_service_url.rstrip('/')}/score",
+                json={"articles": texts},
+                timeout=300,
+            )
+            response.raise_for_status()
+            payload = response.json()
+            results = payload.get("results", [])
+        except requests.RequestException as exc:
+            logger.warning(
+                f"Article scoring service unavailable at {article_scoring_service_url}: {exc}. "
+                "Skipping article quality filtering."
+            )
+            return articles
+
+        if len(results) != len(texts):
+            logger.warning(
+                "Article scoring service returned an unexpected number of results; "
+                "skipping article quality filtering."
+            )
+            return articles
+
+        # Filter out articles with quality < minimum_quality_level
         filtered_articles = [
             {
                 **article,
-                "quality_metrics": results[i].output.model_dump(),
-                "overall_quality": results[i].output.quality_level.name,
+                "quality_metrics": results[i]["quality_metrics"],
+                "overall_quality": results[i]["overall_quality"],
             }
-            # 1. Ensure output is NOT None before proceeding
             for i, article in enumerate(articles)
-            if results[i].output is not None
-            # 2. Then, check the quality level
-            and results[i].output.quality_level >= minimum_quality_level
+            if results[i].get("overall_quality") in QualityLevel.__members__
+            and QualityLevel[results[i]["overall_quality"]] >= minimum_quality_level
+            and not results[i].get("error")
         ]
-        assert len(results) == len(texts)
+
         logger.info(
             f"Filtered out {len(articles) - len(filtered_articles)} articles with quality < {minimum_quality_level.name}"
         )

@@ -6,6 +6,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 from bertrend.article_scoring.article_scoring import QualityLevel
 from bertrend.bertrend_apps.data_provider.data_provider import DataProvider
@@ -80,29 +81,56 @@ def test_get_text(mock_goose, provider):
     assert title == "Goose title"
 
 
-@patch("bertrend.bertrend_apps.data_provider.data_provider.asyncio.run")
-def test_evaluate_quality(mock_asyncio_run, provider):
+@patch.dict(
+    "os.environ", {"ARTICLE_SCORING_SERVICE_URL": "http://localhost:8887"}, clear=False
+)
+@patch("bertrend.bertrend_apps.data_provider.data_provider.requests.post")
+def test_evaluate_quality(mock_requests_post, provider):
     articles = [
         {"text": "high quality content", "id": 1},
         {"text": "low quality", "id": 2},
     ]
 
-    # Mock score_articles result
-    mock_result_high = MagicMock()
-    mock_result_high.output.quality_level = QualityLevel.EXCELLENT
-    mock_result_high.output.model_dump.return_value = {"score": 0.9}
-
-    mock_result_low = MagicMock()
-    mock_result_low.output.quality_level = QualityLevel.POOR
-    mock_result_low.output.model_dump.return_value = {"score": 0.1}
-
-    mock_asyncio_run.return_value = [mock_result_high, mock_result_low]
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "results": [
+            {
+                "article_index": 0,
+                "quality_metrics": {"score": 0.9},
+                "overall_quality": "EXCELLENT",
+                "error": None,
+            },
+            {
+                "article_index": 1,
+                "quality_metrics": {"score": 0.1},
+                "overall_quality": "POOR",
+                "error": None,
+            },
+        ]
+    }
+    mock_requests_post.return_value = mock_response
 
     filtered = provider.evaluate_quality(articles, QualityLevel.AVERAGE)
 
     assert len(filtered) == 1
     assert filtered[0]["id"] == 1
     assert filtered[0]["overall_quality"] == "EXCELLENT"
+
+
+@patch.dict(
+    "os.environ", {"ARTICLE_SCORING_SERVICE_URL": "http://localhost:8887"}, clear=False
+)
+@patch("bertrend.bertrend_apps.data_provider.data_provider.requests.post")
+def test_evaluate_quality_service_unavailable(mock_requests_post, provider):
+    articles = [
+        {"text": "high quality content", "id": 1},
+        {"text": "low quality", "id": 2},
+    ]
+    mock_requests_post.side_effect = requests.ConnectionError("service unavailable")
+
+    filtered = provider.evaluate_quality(articles, QualityLevel.AVERAGE)
+
+    assert filtered == articles
 
 
 def test_process_entries(provider):
