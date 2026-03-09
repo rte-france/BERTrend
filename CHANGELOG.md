@@ -1,3 +1,50 @@
+## v0.4.8 - 2026-03-09
+
+### Features
+
+- Integrated **Article Scoring & Quality Assessment Service** with the demo application. This service provides
+  multi-criteria quality scores (Depth, Originality, Relevance) to filter out low-quality noise.
+
+## v0.4.7 - 2026-03-08
+
+### Fixes
+
+- Resolved issue where `analysis.toml` configuration was not removed when the feed was deleted.
+- Fixed `model_id` search by escaping special characters.
+- Fixed port conflicts and improved code cleaning.
+- Improved noise data handling by skipping LLM-based analysis for such data.
+
+### Docs
+
+- Added detailed output documentation for `process_new_data.py`.
+- Updated `README.md` with project information and a "lines of code" badge.
+
+### Chore
+
+- Harmonized log formats and added more detailed logging.
+
+## v0.4.6 - 2026-03-02
+
+### Features
+
+- Added unique file-based logging for asynchronous handlers.
+
+### Fixes
+
+- Added workaround for HDBScan `cluster_selection_persistence` attribute missing in older model versions.
+
+## v0.4.5 - 2026-02-27
+
+### Fixes
+
+- Fixed scheduling reports: removed scheduled report generation when training is canceled.
+
+## v0.4.4 - 2026-02-27
+
+### Features
+
+- Introduced a new **Scheduling Dashboard**.
+
 ## v0.4.3 - 2026-02-16
 
 ### Features
