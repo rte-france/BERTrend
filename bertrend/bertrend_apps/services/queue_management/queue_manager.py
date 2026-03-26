@@ -73,6 +73,7 @@ class QueueManager:
                 # Dead letter exchange for failed messages
                 "x-dead-letter-exchange": "bertrend_dlx",
                 "x-dead-letter-routing-key": "failed",
+                "x-delivery-limit": self.config.max_retries,  # ← enforce max retries
             },
         )
 

@@ -36,5 +36,5 @@ class RabbitMQConfig:
     prefetch_count: int = int(os.getenv("RABBITMQ_PREFETCH_COUNT", 1))
 
     # Retry configuration
-    max_retries: int = int(os.getenv("RABBITMQ_MAX_RETRIES", 3))
+    max_retries: int = int(os.getenv("RABBITMQ_MAX_RETRIES", 2))
     retry_delay: int = int(os.getenv("RABBITMQ_RETRY_DELAY", 5000))  # milliseconds

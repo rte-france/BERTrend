@@ -60,6 +60,18 @@ class RabbitMQAdminClient:
         r.raise_for_status()
         return r.json()
 
+    def get_consumers(self) -> List[Dict[str, Any]]:
+        url = f"{self.base_url}/api/consumers/{self._vhost_path()}"
+        r = self._session.get(url, timeout=5)
+        r.raise_for_status()
+        return r.json()
+
+    def get_channels(self) -> List[Dict[str, Any]]:
+        url = f"{self.base_url}/api/channels"
+        r = self._session.get(url, timeout=5)
+        r.raise_for_status()
+        return r.json()
+
     def peek_messages(self, name: str, count: int = 10) -> List[Dict[str, Any]]:
         url = f"{self.base_url}/api/queues/{self._vhost_path()}/{quote(name, safe='')}/get"
         payload = {
@@ -324,6 +336,108 @@ else:
             with c4:
                 # Config Grid
                 render_queue_config_grid(info)
+
+            st.divider()
+
+            # B. Unacknowledged Messages Details
+            unacked_count = info.get("messages_unacknowledged", 0)
+            with st.expander(
+                f"Unacknowledged Messages ({unacked_count})",
+                expanded=unacked_count > 0,
+            ):
+                if unacked_count == 0:
+                    st.info("No unacknowledged messages in this queue.", icon=INFO_ICON)
+                else:
+                    try:
+                        all_consumers = client.get_consumers()
+                        all_channels = client.get_channels()
+
+                        # Filter consumers for this queue
+                        queue_consumers = [
+                            c
+                            for c in all_consumers
+                            if c.get("queue", {}).get("name") == qname
+                        ]
+
+                        # Build a map of channel_name -> channel details
+                        channel_map = {ch.get("name"): ch for ch in all_channels}
+
+                        if not queue_consumers:
+                            st.warning(
+                                "Unacknowledged messages exist but no active consumers found. "
+                                "Messages may be held by a disconnected consumer."
+                            )
+                        else:
+                            st.caption(
+                                f"{len(queue_consumers)} consumer(s) holding unacknowledged messages:"
+                            )
+                            for cons in queue_consumers:
+                                ch_name = cons.get("channel_details", {}).get(
+                                    "name", ""
+                                )
+                                ch = channel_map.get(ch_name, {})
+                                ch_unacked = ch.get("messages_unacknowledged", 0)
+                                consumer_tag = cons.get("consumer_tag", "unknown")
+                                peer_host = cons.get("channel_details", {}).get(
+                                    "peer_host", "?"
+                                )
+                                peer_port = cons.get("channel_details", {}).get(
+                                    "peer_port", ""
+                                )
+                                prefetch = cons.get("prefetch_count", 0)
+                                ack_required = cons.get("ack_required", True)
+
+                                with st.container(border=True):
+                                    cc1, cc2, cc3, cc4 = st.columns(4)
+                                    cc1.metric("Unacked (channel)", ch_unacked)
+                                    cc2.markdown(f"**Consumer Tag**\n`{consumer_tag}`")
+                                    cc3.markdown(
+                                        f"**Client**\n`{peer_host}:{peer_port}`"
+                                    )
+                                    cc4.markdown(
+                                        f"**Prefetch / Ack required**\n`{prefetch}` / `{ack_required}`"
+                                    )
+
+                                    # Channel-level stats
+                                    ch_stats = ch.get("message_stats", {})
+                                    ack_rate = (
+                                        ch_stats.get("ack_details", {}).get("rate", 0.0)
+                                        if ch_stats
+                                        else 0.0
+                                    )
+                                    deliver_rate = (
+                                        ch_stats.get("deliver_details", {}).get(
+                                            "rate", 0.0
+                                        )
+                                        if ch_stats
+                                        else 0.0
+                                    )
+                                    total_acked = (
+                                        ch_stats.get("ack", 0) if ch_stats else 0
+                                    )
+                                    total_delivered = (
+                                        ch_stats.get("deliver", 0) if ch_stats else 0
+                                    )
+
+                                    sc1, sc2, sc3, sc4 = st.columns(4)
+                                    sc1.metric("Ack Rate", f"{ack_rate:.2f}/s")
+                                    sc2.metric("Deliver Rate", f"{deliver_rate:.2f}/s")
+                                    sc3.metric("Total Acked", total_acked)
+                                    sc4.metric("Total Delivered", total_delivered)
+
+                                    # Connection info
+                                    conn = ch.get("connection_details", {})
+                                    if conn:
+                                        st.caption(
+                                            f"Connection: `{conn.get('name', ch_name)}` "
+                                            f"— state: `{ch.get('state', '?')}`"
+                                        )
+
+                    except Exception as e:
+                        st.error(
+                            f"Failed to fetch consumer/channel details: {e}",
+                            icon=ERROR_ICON,
+                        )
 
             st.divider()
 
