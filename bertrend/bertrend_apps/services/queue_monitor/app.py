@@ -660,6 +660,7 @@ else:
                     obj = d["obj"]
 
                     props = m.get("properties", {})
+                    headers = props.get("headers") or {}
                     corr_id = props.get("correlation_id", "No-ID")
                     msg_size = (
                         m.get("payload_bytes", 0)
@@ -676,6 +677,9 @@ else:
                         info_tags.append(f"User: {d['user']}")
                     if d["model_id"]:
                         info_tags.append(f"Model: {d['model_id']}")
+                    retry_count = headers.get("x-retry-count")
+                    if retry_count is not None:
+                        info_tags.append(f"Retry: {retry_count}")
 
                     info_str = f" | {' | '.join(info_tags)}" if info_tags else ""
                     label = f"#{idx + 1} | {fmt} | CID: {corr_id}{info_str} | {msg_size} bytes"
@@ -730,6 +734,10 @@ else:
                                         {
                                             "Key": "App ID",
                                             "Val": str(props.get("app_id") or ""),
+                                        },
+                                        {
+                                            "Key": "x-retry-count",
+                                            "Val": str(headers.get("x-retry-count")) if headers.get("x-retry-count") is not None else "",
                                         },
                                     ]
                                 ).dropna()
