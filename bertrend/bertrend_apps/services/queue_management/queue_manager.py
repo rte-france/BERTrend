@@ -159,6 +159,55 @@ class QueueManager:
 
         await queue.consume(callback, no_ack=False)
 
+    async def republish_with_retry(
+        self,
+        original_message: aio_pika.abc.AbstractIncomingMessage,
+        retry_count: int,
+    ) -> bool:
+        """Republish a failed message with an incremented x-retry-count header.
+
+        RabbitMQ does not modify headers on requeue, so we must republish
+        manually with the updated counter instead of using nack(requeue=True).
+
+        Returns True if the message was republished, False if the retry limit
+        has already been reached and the message was not republished.
+        """
+        new_retry_count = retry_count + 1
+        if new_retry_count > self.config.max_retries:
+            logger.warning(
+                f"Message {original_message.correlation_id} has reached the maximum "
+                f"retry limit ({self.config.max_retries}) — not republishing."
+            )
+            return False
+
+        if not self.channel or self.channel.is_closed:
+            await self.connect()
+
+        # Carry over all existing headers and bump the retry counter
+        headers = dict(original_message.headers or {})
+        headers["x-retry-count"] = new_retry_count
+
+        message = aio_pika.Message(
+            body=original_message.body,
+            headers=headers,
+            delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+            priority=original_message.priority,
+            correlation_id=original_message.correlation_id,
+            content_type=original_message.content_type,
+            reply_to=original_message.reply_to,
+        )
+
+        await self.channel.default_exchange.publish(
+            message,
+            routing_key=self.config.request_queue,
+        )
+
+        logger.info(
+            f"Republished message {original_message.correlation_id} "
+            f"with x-retry-count={new_retry_count}"
+        )
+        return True
+
     async def publish_response(self, response_data: dict, correlation_id: str):
         """Publish response to response queue_management"""
         if not self.channel or self.channel.is_closed:

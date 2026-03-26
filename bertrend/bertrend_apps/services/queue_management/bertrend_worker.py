@@ -253,6 +253,45 @@ class BertrendWorker:
                 "traceback": traceback.format_exc(),
             }
 
+    def _get_retry_count(self, message: aio_pika.abc.AbstractIncomingMessage) -> int:
+        """Return the current retry count stored in the message header x-retry-count."""
+        headers = message.headers or {}
+        try:
+            return int(headers.get("x-retry-count", 0))
+        except (TypeError, ValueError):
+            return 0
+
+    async def _nack_or_discard(
+        self,
+        message: aio_pika.abc.AbstractIncomingMessage,
+        reason: str,
+        correlation_id: str | None,
+    ):
+        """
+        Retry the message if the retry limit has not been reached, otherwise
+        reject it (requeue=False) so it goes to the DLQ.
+
+        Delegates the retry-limit check to republish_with_retry(), which
+        returns False when the limit is reached (and skips publishing).
+        The original message is always rejected with requeue=False so that
+        RabbitMQ does not re-deliver the same copy.
+        """
+        retry_count = self._get_retry_count(message)
+        republished = await self.queue_manager.republish_with_retry(
+            message, retry_count
+        )
+        if republished:
+            logger.warning(
+                f"Message {correlation_id} failed (attempt {retry_count + 1}/{self.config.max_retries}) "
+                f"— republished with incremented retry count. Reason: {reason}"
+            )
+        else:
+            logger.warning(
+                f"Message {correlation_id} exceeded max retries ({self.config.max_retries}) "
+                f"— sending to DLQ. Reason: {reason}"
+            )
+        await message.reject(requeue=False)
+
     async def callback(
         self,
         message: aio_pika.abc.AbstractIncomingMessage,
@@ -268,15 +307,50 @@ class BertrendWorker:
 
             logger.info(f"Request endpoint: {request_data.get('endpoint')}")
 
-            # Process request
-            response_data = await self.process_request(request_data)
+            # Process request with a timeout to avoid blocking the queue indefinitely
+            response_data = await asyncio.wait_for(
+                self.process_request(request_data),
+                timeout=self.config.job_timeout,
+            )
 
             # Add metadata
             response_data["correlation_id"] = correlation_id
             response_data["request_data"] = request_data
 
-            # Publish response/error if reply_to is specified
-            if message.reply_to:
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid message format: {str(e)}")
+            # Reject and don't requeue invalid messages
+            await message.reject(requeue=False)
+            return
+
+        except asyncio.TimeoutError:
+            await self._nack_or_discard(
+                message,
+                reason=f"job timed out after {self.config.job_timeout}s",
+                correlation_id=correlation_id,
+            )
+            return
+
+        except Exception as e:
+            logger.error(f"Error processing message: {str(e)}")
+            logger.error(traceback.format_exc())
+            await self._nack_or_discard(
+                message,
+                reason=str(e),
+                correlation_id=correlation_id,
+            )
+            return
+
+        # Acknowledge message before publishing the response, so that the message
+        # is always acked regardless of any subsequent publish failure
+        await message.ack()
+        logger.info(
+            f"Completed request: {correlation_id} - Status: {response_data.get('status')}"
+        )
+
+        # Publish response/error if reply_to is specified
+        if message.reply_to:
+            try:
                 if response_data.get("status") == "error":
                     await self.queue_manager.publish_error(
                         error_data=response_data, correlation_id=correlation_id
@@ -285,24 +359,11 @@ class BertrendWorker:
                     await self.queue_manager.publish_response(
                         response_data=response_data, correlation_id=correlation_id
                     )
-
-            # Acknowledge message
-            await message.ack()
-            logger.info(
-                f"Completed request: {correlation_id} - Status: {response_data.get('status')}"
-            )
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid message format: {str(e)}")
-            # Reject and don't requeue invalid messages
-            await message.reject(requeue=False)
-
-        except Exception as e:
-            logger.error(f"Error processing message: {str(e)}")
-            logger.error(traceback.format_exc())
-
-            # Requeue for retry (will go to DLQ after max retries)
-            await message.nack(requeue=True)
+            except Exception as e:
+                logger.error(
+                    f"Failed to publish response for {correlation_id}: {str(e)}"
+                )
+                logger.error(traceback.format_exc())
 
     async def start(self):
         """Start the worker"""

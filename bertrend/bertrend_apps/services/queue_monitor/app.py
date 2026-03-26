@@ -274,7 +274,14 @@ client = RabbitMQAdminClient(client_cfg, management_url=mgmt_url)
 
 # --- Data Fetching ---
 queue_data = {}
-global_stats = {"total": 0, "ready": 0, "unacked": 0, "consumers": 0}
+global_stats = {
+    "total": 0,
+    "requests": 0,
+    "responses": 0,
+    "failed": 0,
+    "unacked": 0,
+    "consumers": 0,
+}
 error_msg = None
 
 try:
@@ -284,9 +291,14 @@ try:
 
         # Aggregation
         global_stats["total"] += info.get("messages", 0)
-        global_stats["ready"] += info.get("messages_ready", 0)
         global_stats["unacked"] += info.get("messages_unacknowledged", 0)
         global_stats["consumers"] += info.get("consumers", 0)
+        if "requests" in q:
+            global_stats["requests"] += info.get("messages", 0)
+        elif "responses" in q or "response" in q:
+            global_stats["responses"] += info.get("messages", 0)
+        elif "failed" in q:
+            global_stats["failed"] += info.get("messages", 0)
 
 except Exception as e:
     error_msg = str(e)
@@ -300,18 +312,33 @@ if error_msg:
 
 # 1. Global Overview Row
 st.markdown(f"### {DASHBOARD_ICON} System Overview")
-kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+kpi1, kpi2, kpi3, kpi4, kpi5, kpi6 = st.columns(6)
 kpi1.metric(
     "Total Backlog", global_stats["total"], help="Total messages in all selected queues"
 )
-kpi2.metric("Ready to Process", global_stats["ready"], delta_color="normal")
+kpi2.metric(
+    "Requests",
+    global_stats["requests"],
+    help="Messages in bertrend_requests queue",
+)
 kpi3.metric(
+    "Responses",
+    global_stats["responses"],
+    help="Messages in bertrend_responses queue",
+)
+kpi4.metric(
+    "Failed",
+    global_stats["failed"],
+    delta_color="inverse",
+    help="Messages in bertrend_failed queue",
+)
+kpi5.metric(
     "Unacknowledged",
     global_stats["unacked"],
     delta_color="inverse",
     help="Messages currently being processed but not acked",
 )
-kpi4.metric("Active Consumers", global_stats["consumers"])
+kpi6.metric("Active Consumers", global_stats["consumers"])
 
 st.divider()
 
@@ -660,6 +687,7 @@ else:
                     obj = d["obj"]
 
                     props = m.get("properties", {})
+                    headers = props.get("headers") or {}
                     corr_id = props.get("correlation_id", "No-ID")
                     msg_size = (
                         m.get("payload_bytes", 0)
@@ -676,6 +704,9 @@ else:
                         info_tags.append(f"User: {d['user']}")
                     if d["model_id"]:
                         info_tags.append(f"Model: {d['model_id']}")
+                    retry_count = headers.get("x-retry-count")
+                    if retry_count is not None:
+                        info_tags.append(f"Retry: {retry_count}")
 
                     info_str = f" | {' | '.join(info_tags)}" if info_tags else ""
                     label = f"#{idx + 1} | {fmt} | CID: {corr_id}{info_str} | {msg_size} bytes"
@@ -730,6 +761,12 @@ else:
                                         {
                                             "Key": "App ID",
                                             "Val": str(props.get("app_id") or ""),
+                                        },
+                                        {
+                                            "Key": "x-retry-count",
+                                            "Val": str(headers.get("x-retry-count"))
+                                            if headers.get("x-retry-count") is not None
+                                            else "",
                                         },
                                     ]
                                 ).dropna()
