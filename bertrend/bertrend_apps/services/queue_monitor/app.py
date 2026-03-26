@@ -274,7 +274,14 @@ client = RabbitMQAdminClient(client_cfg, management_url=mgmt_url)
 
 # --- Data Fetching ---
 queue_data = {}
-global_stats = {"total": 0, "requests": 0, "responses": 0, "failed": 0, "unacked": 0, "consumers": 0}
+global_stats = {
+    "total": 0,
+    "requests": 0,
+    "responses": 0,
+    "failed": 0,
+    "unacked": 0,
+    "consumers": 0,
+}
 error_msg = None
 
 try:
