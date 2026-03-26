@@ -38,3 +38,6 @@ class RabbitMQConfig:
     # Retry configuration
     max_retries: int = int(os.getenv("RABBITMQ_MAX_RETRIES", 2))
     retry_delay: int = int(os.getenv("RABBITMQ_RETRY_DELAY", 5000))  # milliseconds
+
+    # Job timeout: max seconds a single job may run before being nacked (default: 1 hour)
+    job_timeout: int = int(os.getenv("RABBITMQ_JOB_TIMEOUT", 3600))

@@ -268,8 +268,11 @@ class BertrendWorker:
 
             logger.info(f"Request endpoint: {request_data.get('endpoint')}")
 
-            # Process request
-            response_data = await self.process_request(request_data)
+            # Process request with a timeout to avoid blocking the queue indefinitely
+            response_data = await asyncio.wait_for(
+                self.process_request(request_data),
+                timeout=self.config.job_timeout,
+            )
 
             # Add metadata
             response_data["correlation_id"] = correlation_id
@@ -279,6 +282,13 @@ class BertrendWorker:
             logger.error(f"Invalid message format: {str(e)}")
             # Reject and don't requeue invalid messages
             await message.reject(requeue=False)
+            return
+
+        except asyncio.TimeoutError:
+            logger.error(
+                f"Job timed out after {self.config.job_timeout}s for {correlation_id} — nacking message"
+            )
+            await message.nack(requeue=True)
             return
 
         except Exception as e:
