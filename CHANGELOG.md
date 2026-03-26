@@ -1,3 +1,25 @@
+## v0.4.9 - 2026-03-26
+
+### Features
+
+- Extended **Queue Monitor** with detailed message statistics, including retry count display per message.
+
+### Fixes
+
+- Improved message handling in the queue worker (retry logic, rejection to Dead Letter Queue, timeout with maximum
+  retries).
+- Fixed invalid parameter in queue worker configuration.
+- Added retry limitation logic to prevent infinite reprocessing.
+
+### Docs
+
+- Updated and expanded documentation for data providers and the scheduling service.
+
+### Tests
+
+- Added unit tests for message handling in `BertrendWorker` callback, covering retry handling, DLQ rejection, and
+  timeout scenarios.
+
 ## v0.4.8 - 2026-03-09
 
 ### Features
