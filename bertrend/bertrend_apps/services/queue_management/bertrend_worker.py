@@ -253,6 +253,45 @@ class BertrendWorker:
                 "traceback": traceback.format_exc(),
             }
 
+    def _get_retry_count(self, message: aio_pika.abc.AbstractIncomingMessage) -> int:
+        """Return the current retry count stored in the message header x-retry-count."""
+        headers = message.headers or {}
+        try:
+            return int(headers.get("x-retry-count", 0))
+        except (TypeError, ValueError):
+            return 0
+
+    async def _nack_or_discard(
+        self,
+        message: aio_pika.abc.AbstractIncomingMessage,
+        reason: str,
+        correlation_id: str | None,
+    ):
+        """
+        Retry the message if the retry limit has not been reached, otherwise
+        reject it (requeue=False) so it goes to the DLQ.
+
+        Delegates the retry-limit check to republish_with_retry(), which
+        returns False when the limit is reached (and skips publishing).
+        The original message is always rejected with requeue=False so that
+        RabbitMQ does not re-deliver the same copy.
+        """
+        retry_count = self._get_retry_count(message)
+        republished = await self.queue_manager.republish_with_retry(
+            message, retry_count
+        )
+        if republished:
+            logger.warning(
+                f"Message {correlation_id} failed (attempt {retry_count + 1}/{self.config.max_retries}) "
+                f"— republished with incremented retry count. Reason: {reason}"
+            )
+        else:
+            logger.warning(
+                f"Message {correlation_id} exceeded max retries ({self.config.max_retries}) "
+                f"— sending to DLQ. Reason: {reason}"
+            )
+        await message.reject(requeue=False)
+
     async def callback(
         self,
         message: aio_pika.abc.AbstractIncomingMessage,
@@ -285,17 +324,21 @@ class BertrendWorker:
             return
 
         except asyncio.TimeoutError:
-            logger.error(
-                f"Job timed out after {self.config.job_timeout}s for {correlation_id} — nacking message"
+            await self._nack_or_discard(
+                message,
+                reason=f"job timed out after {self.config.job_timeout}s",
+                correlation_id=correlation_id,
             )
-            await message.nack(requeue=True)
             return
 
         except Exception as e:
             logger.error(f"Error processing message: {str(e)}")
             logger.error(traceback.format_exc())
-            # Requeue for retry (will go to DLQ after max retries)
-            await message.nack(requeue=True)
+            await self._nack_or_discard(
+                message,
+                reason=str(e),
+                correlation_id=correlation_id,
+            )
             return
 
         # Acknowledge message before publishing the response, so that the message
