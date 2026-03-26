@@ -275,8 +275,29 @@ class BertrendWorker:
             response_data["correlation_id"] = correlation_id
             response_data["request_data"] = request_data
 
-            # Publish response/error if reply_to is specified
-            if message.reply_to:
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid message format: {str(e)}")
+            # Reject and don't requeue invalid messages
+            await message.reject(requeue=False)
+            return
+
+        except Exception as e:
+            logger.error(f"Error processing message: {str(e)}")
+            logger.error(traceback.format_exc())
+            # Requeue for retry (will go to DLQ after max retries)
+            await message.nack(requeue=True)
+            return
+
+        # Acknowledge message before publishing the response, so that the message
+        # is always acked regardless of any subsequent publish failure
+        await message.ack()
+        logger.info(
+            f"Completed request: {correlation_id} - Status: {response_data.get('status')}"
+        )
+
+        # Publish response/error if reply_to is specified
+        if message.reply_to:
+            try:
                 if response_data.get("status") == "error":
                     await self.queue_manager.publish_error(
                         error_data=response_data, correlation_id=correlation_id
@@ -285,24 +306,11 @@ class BertrendWorker:
                     await self.queue_manager.publish_response(
                         response_data=response_data, correlation_id=correlation_id
                     )
-
-            # Acknowledge message
-            await message.ack()
-            logger.info(
-                f"Completed request: {correlation_id} - Status: {response_data.get('status')}"
-            )
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid message format: {str(e)}")
-            # Reject and don't requeue invalid messages
-            await message.reject(requeue=False)
-
-        except Exception as e:
-            logger.error(f"Error processing message: {str(e)}")
-            logger.error(traceback.format_exc())
-
-            # Requeue for retry (will go to DLQ after max retries)
-            await message.nack(requeue=True)
+            except Exception as e:
+                logger.error(
+                    f"Failed to publish response for {correlation_id}: {str(e)}"
+                )
+                logger.error(traceback.format_exc())
 
     async def start(self):
         """Start the worker"""
