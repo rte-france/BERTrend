@@ -737,7 +737,9 @@ else:
                                         },
                                         {
                                             "Key": "x-retry-count",
-                                            "Val": str(headers.get("x-retry-count")) if headers.get("x-retry-count") is not None else "",
+                                            "Val": str(headers.get("x-retry-count"))
+                                            if headers.get("x-retry-count") is not None
+                                            else "",
                                         },
                                     ]
                                 ).dropna()
