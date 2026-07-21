@@ -50,9 +50,7 @@ def _check_data(
             f"Missing '{TIMESTAMP_COLUMN}' column in {selected_file.name}"
         )
     if TEXT_COLUMN not in df.columns:
-        raise DataLoadingError(
-            f"Missing '{TEXT_COLUMN}' column in {selected_file.name}"
-        )
+        raise DataLoadingError(            f"Missing '{TEXT_COLUMN}' column in {selected_file.name}"        )
 
 
 def _clean_data(df: pd.DataFrame, language: str = "French") -> pd.DataFrame | None:
