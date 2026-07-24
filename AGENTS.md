@@ -47,11 +47,14 @@ BERTrend uses `uv` for environment management and `python-dotenv` for configurat
   import os
   from unittest.mock import patch
 
+
   @patch.dict(os.environ, {"BERTREND_BASE_DIR": "test_data"})
   def test_environment_setup():
       import bertrend
+
       assert bertrend.BASE_PATH == Path("test_data")
       assert bertrend.DATA_PATH.exists()
+
 
   def test_simple_logic():
       assert 1 + 1 == 2

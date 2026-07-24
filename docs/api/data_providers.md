@@ -128,7 +128,9 @@ DeepResearchProvider(
 #### Usage Example
 
 ```python
-from bertrend.bertrend_apps.data_provider.deep_research_provider import DeepResearchProvider
+from bertrend.bertrend_apps.data_provider.deep_research_provider import (
+    DeepResearchProvider,
+)
 
 provider = DeepResearchProvider(model="gpt-4.1-mini", max_sub_queries=3)
 articles_df = provider.get_articles("renewable energy trends 2026")
