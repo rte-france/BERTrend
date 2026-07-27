@@ -74,9 +74,9 @@ services:
     depends_on:
       - embedding_server
     ports:
-      - "8083:8083"  # Topic Analysis demo
-      - "8084:8084"  # Weak Signals demo
-      - "8081:8081"  # Prospective demo
+      - "127.0.0.1:8083:8083"  # Topic Analysis demo
+      - "127.0.0.1:8084:8084"  # Weak Signals demo
+      - "127.0.0.1:8081:8081"  # Prospective demo
     volumes:
       - ${BERTREND_BASE_DIR:-.bertrend}:/bertrend
       - ${HF_HOME:-.cache/huggingface}:/app/.cache/huggingface
