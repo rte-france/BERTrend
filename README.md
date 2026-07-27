@@ -320,6 +320,8 @@ Key Features of the demonstrator:
     * based on their popularity trends: noise, weak signals, and strong signals
     * **new popularity metric** considers both the number of documents within a topic and the **frequency of updates**
 
+For a detailed look at the internal data structures of a BERTrend model, see [BERTrend Model Structure](./docs/bertrend_model_structure.md).
+
 #### Launch the Weak Signal Analysis Demonstrator
 
 ```bash
