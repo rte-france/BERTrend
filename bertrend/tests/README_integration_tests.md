@@ -64,26 +64,26 @@ def test_embedding_service_with_local_model():
     """Test that EmbeddingService works with a local model."""
     # Use a small, fast model for testing
     model_name = "all-MiniLM-L6-v2"
-    
+
     # Create a small test dataset
     texts = [
         "This is a test document about artificial intelligence.",
         "Machine learning is a subset of artificial intelligence.",
-        "Natural language processing is used in many applications."
+        "Natural language processing is used in many applications.",
     ]
-    
+
     # Initialize the embedding service with local model
-    embedding_service = EmbeddingService(
-        local=True,
-        model_name=model_name
-    )
-    
+    embedding_service = EmbeddingService(local=True, model_name=model_name)
+
     # Generate embeddings
     embeddings, token_strings, token_embeddings = embedding_service.embed(texts)
-    
+
     # Verify the results
     assert embeddings is not None
-    assert embeddings.shape == (len(texts), 384)  # 384 is the dimension for all-MiniLM-L6-v2
+    assert embeddings.shape == (
+        len(texts),
+        384,
+    )  # 384 is the dimension for all-MiniLM-L6-v2
     assert token_strings is not None
     assert token_embeddings is not None
     assert len(token_strings) == len(texts)

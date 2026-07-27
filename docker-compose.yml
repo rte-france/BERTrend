@@ -4,6 +4,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.embedding_server
+      args:
+        - HTTP_PROXY=${HTTP_PROXY:-}
+        - HTTPS_PROXY=${HTTPS_PROXY:-}
+        - http_proxy=${http_proxy:-}
+        - https_proxy=${https_proxy:-}
+        - NO_PROXY=${NO_PROXY:-}
+        - no_proxy=${no_proxy:-}
     image: bertrend-embedding-server:latest
     container_name: bertrend-embedding-server
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
@@ -13,6 +20,12 @@ services:
       # Mount HF_HOME directory to share with host
       - ${HF_HOME:-.cache/huggingface}:/app/.cache/huggingface
     environment:
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
+      - NO_PROXY=${NO_PROXY:-}
+      - no_proxy=${no_proxy:-}
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
       - CUDA_VISIBLE_DEVICES=0
@@ -41,26 +54,37 @@ services:
           devices:
             - driver: nvidia
               count: 1  # Use 1 GPU for the embedding server
-              capabilities: [gpu]
+              capabilities: [ gpu ]
 
   # Main BERTrend application
   bertrend:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - HTTP_PROXY=${HTTP_PROXY:-}
+        - HTTPS_PROXY=${HTTPS_PROXY:-}
+        - http_proxy=${http_proxy:-}
+        - https_proxy=${https_proxy:-}
+        - NO_PROXY=${NO_PROXY:-}
+        - no_proxy=${no_proxy:-}
     image: bertrend:latest
     container_name: bertrend
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     depends_on:
       - embedding_server
     ports:
-      - "8083:8083"  # Topic Analysis demo
-      - "8084:8084"  # Weak Signals demo
-      - "8081:8081"  # Prospective demo
+      - "127.0.0.1:8083:8083"  # Topic Analysis demo
+      - "127.0.0.1:8084:8084"  # Weak Signals demo
+      - "127.0.0.1:8081:8081"  # Prospective demo
     volumes:
       - ${BERTREND_BASE_DIR:-.bertrend}:/bertrend
       - ${HF_HOME:-.cache/huggingface}:/app/.cache/huggingface
     environment:
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
       - NO_PROXY=$NO_PROXY,embedding_server,bertrend # to avoid communication issues between containers
       - no_proxy=$no_proxy,embedding_server,bertrend # to avoid communication issues between containers
       - PYTHONDONTWRITEBYTECODE=1
@@ -95,9 +119,9 @@ services:
         max-size: "10m"
         max-file: "3"
     deploy:
-       resources:
-         reservations:
-           devices:
-             - driver: nvidia
-               count: 1  # Use 1 GPU for the bertrend server
-               capabilities: [gpu]
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1  # Use 1 GPU for the bertrend server
+              capabilities: [ gpu ]

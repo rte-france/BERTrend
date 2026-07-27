@@ -97,7 +97,7 @@ weights = WeightConfig()
 custom_weights = WeightConfig(
     depth_of_reporting=0.20,
     source_quality_and_transparency=0.20,
-    accuracy_and_fact_checking_rigor=0.20
+    accuracy_and_fact_checking_rigor=0.20,
 )
 ```
 
@@ -112,9 +112,9 @@ The main scoring class that combines individual criteria scores with weights to 
 
 ```python
 from bertrend.article_scoring.article_scoring import (
-    CriteriaScores, 
-    WeightConfig, 
-    ArticleScore
+    CriteriaScores,
+    WeightConfig,
+    ArticleScore,
 )
 
 # Create criteria scores
@@ -128,13 +128,12 @@ scores = CriteriaScores(
     narrative_and_engagement=0.7,
     timeliness_and_relevance=0.9,
     ethical_considerations_and_sensitivity=0.95,
-    rte_relevance_and_strategic_impact=0.6
+    rte_relevance_and_strategic_impact=0.6,
 )
 
 # Create article score with default weights
 article_score = ArticleScore(
-    scores=scores,
-    assessment_summary="Well-researched article with strong sources"
+    scores=scores, assessment_summary="Well-researched article with strong sources"
 )
 
 # Get final score and quality level
@@ -225,13 +224,10 @@ print(f"Score: {article_score.final_score}")
 news_weights = WeightConfig(
     accuracy_and_fact_checking_rigor=0.25,
     source_quality_and_transparency=0.25,
-    depth_of_reporting=0.20
+    depth_of_reporting=0.20,
 )
 
-article_score = ArticleScore(
-    scores=scores,
-    weights=news_weights
-)
+article_score = ArticleScore(scores=scores, weights=news_weights)
 ```
 
 ### Batch Processing
@@ -240,15 +236,17 @@ article_score = ArticleScore(
 def assess_articles(articles_data):
     results = []
     for article_data in articles_data:
-        scores = CriteriaScores(**article_data['criteria_scores'])
+        scores = CriteriaScores(**article_data["criteria_scores"])
         article_score = ArticleScore(scores=scores)
-        results.append({
-            'id': article_data['id'],
-            'final_score': article_score.final_score,
-            'quality_level': article_score.quality_level.value,
-            'top_strengths': article_score.get_top_strengths(3),
-            'top_weaknesses': article_score.get_top_weaknesses(3)
-        })
+        results.append(
+            {
+                "id": article_data["id"],
+                "final_score": article_score.final_score,
+                "quality_level": article_score.quality_level.value,
+                "top_strengths": article_score.get_top_strengths(3),
+                "top_weaknesses": article_score.get_top_weaknesses(3),
+            }
+        )
     return results
 ```
 
@@ -279,21 +277,21 @@ def assess_articles(articles_data):
 class ContentProcessor:
     def __init__(self):
         self.weights = WeightConfig()  # Use appropriate weights
-    
+
     def process_article(self, article):
         # Extract or compute criteria scores
         scores = self.extract_criteria_scores(article)
-        
+
         # Create assessment
         assessment = ArticleScore(
             scores=scores,
             weights=self.weights,
-            assessment_summary=self.generate_summary(scores)
+            assessment_summary=self.generate_summary(scores),
         )
-        
+
         # Store results
         self.store_assessment(article.id, assessment.export_to_dict())
-        
+
         return assessment
 ```
 
@@ -341,7 +339,7 @@ Implement custom scoring by subclassing `ArticleScore` and overriding the `final
 ```python
 # Validate individual components
 scores = CriteriaScores(...)  # Will raise ValidationError if invalid
-weights = WeightConfig(...)   # Will validate weight constraints
+weights = WeightConfig(...)  # Will validate weight constraints
 
 # Check intermediate calculations
 breakdown = article_score.get_detailed_breakdown()

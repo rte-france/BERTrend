@@ -1,3 +1,12 @@
+## v0.4.10 - 2026-07-27
+
+### Fixes
+
+- Fixed #88 Docker Desktop for Windows connectivity issues by binding Streamlit demo ports to IPv4 loopback
+  (`127.0.0.1`).
+- Improved proxy support in corporate environments by passing proxy build arguments and environment variables in Docker
+  configuration.
+
 ## v0.4.9 - 2026-03-26
 
 ### Features

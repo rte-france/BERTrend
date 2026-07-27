@@ -144,27 +144,25 @@ from sendgrid.helpers.mail import Mail
 
 SENDGRID_API_KEY = "your-sendgrid-api-key"
 
+
 def send_email_sendgrid(
-    subject: str,
-    recipients: list[str],
-    content: str,
-    content_type: str = "html"
+    subject: str, recipients: list[str], content: str, content_type: str = "html"
 ) -> None:
     """Send email using SendGrid API"""
     try:
         sg = sendgrid.SendGridAPIClient(api_key=SENDGRID_API_KEY)
-        
+
         message = Mail(
-            from_email='sender@example.com',
+            from_email="sender@example.com",
             to_emails=recipients,
             subject=subject,
             html_content=content if content_type == "html" else None,
-            plain_text_content=content if content_type != "html" else None
+            plain_text_content=content if content_type != "html" else None,
         )
-        
+
         response = sg.send(message)
         logger.debug(f"SendGrid email sent, status: {response.status_code}")
-        
+
     except Exception as err:
         logger.exception("SendGrid error: ", err)
 ```
@@ -177,6 +175,7 @@ Make the email backend configurable via environment variables:
 import os
 
 EMAIL_BACKEND = os.getenv("BERTREND_EMAIL_BACKEND", "gmail")  # gmail, smtp, sendgrid
+
 
 def send_email(credentials, subject: str, recipients: list[str], content, **kwargs):
     """Send email using configured backend"""
@@ -252,7 +251,7 @@ send_email(
     subject="BERTrend Test Email",
     recipients=["your-test-email@example.com"],
     content="<h1>Test successful!</h1>",
-    content_type="html"
+    content_type="html",
 )
 ```
 

@@ -155,7 +155,7 @@ class MySourceProvider(DataProvider):
     """Provider for MySource API."""
 
     def __init__(self):
-        super().__init__()          # initialises the article parser (Goose3)
+        super().__init__()  # initialises the article parser (Goose3)
         # initialise your API client here if needed
 
     # ------------------------------------------------------------------
@@ -183,7 +183,7 @@ class MySourceProvider(DataProvider):
         """Convert a single raw API entry into a BERTrend article dict."""
         try:
             url = entry["article_url"]
-            published = self.parse_date(entry["pub_date"])   # normalise date
+            published = self.parse_date(entry["pub_date"])  # normalise date
 
             # If the source only provides a URL (no body), fetch the full text:
             text, title = self._get_text(url)
@@ -193,9 +193,9 @@ class MySourceProvider(DataProvider):
             return {
                 "title": title,
                 "summary": entry.get("excerpt", ""),
-                "text": text,           # REQUIRED — main content used by BERTrend
-                "timestamp": published, # REQUIRED — format: "YYYY-MM-DD HH:MM:SS"
-                "url": url,             # REQUIRED — used to derive the source domain
+                "text": text,  # REQUIRED — main content used by BERTrend
+                "timestamp": published,  # REQUIRED — format: "YYYY-MM-DD HH:MM:SS"
+                "url": url,  # REQUIRED — used to derive the source domain
                 "link": url,
             }
         except Exception as e:
@@ -233,7 +233,7 @@ PROVIDERS = {
     "bing": BingNewsProvider,
     "newscatcher": NewsCatcherProvider,
     "deep_research": DeepResearchProvider,
-    "mysource": MySourceProvider,   # ← add this line
+    "mysource": MySourceProvider,  # ← add this line
 }
 ```
 
