@@ -119,9 +119,15 @@ flowchart TB
 1. **Decoupled Scheduling**: Scheduler doesn't need to know about RabbitMQ; it just makes standard HTTP calls.
 2. **Asynchronous Processing**: API endpoints respond instantly while heavy tasks run in the background.
 3. **Priority Queue**: Requests can have priority 1-10 (higher = more urgent), set by the FastAPI router.
-4. **Sequential Processing**: Workers process messages based on `prefetch_count` (usually 1) to manage resource usage.
+4. **Bounded Processing**: Each worker processes up to `prefetch_count` messages (default: 1). Total concurrency is
+   the worker process count multiplied by this value; `supervisord.conf` starts two workers by default.
 5. **Direct Core Execution**: Workers call internal library functions directly, avoiding overhead and potential
    recursive loops with the API.
 6. **Dead Letter Queue**: Failed messages after max retries go to `bertrend_failed` for manual inspection.
 7. **Correlation IDs**: Track request-response pairs across the asynchronous flow.
 8. **Durable Queues**: Messages survive RabbitMQ restarts.
+
+`RABBITMQ_JOB_TIMEOUT` is a soft warning threshold. The worker keeps an overlong
+message unacknowledged until its synchronous work finishes because Python cannot
+safely cancel work already running in a thread. Actual failures still use the
+bounded retry and dead-letter flow.

@@ -5,7 +5,7 @@
 
 """
 Unit tests for BertrendWorker.callback() — focusing on:
-  1. Job timeout: a hung process_request is cancelled and the message is nacked.
+  1. Job timeout: uncancellable work is not duplicated after the warning threshold.
   2. Queue blocking: with prefetch_count=1 an unacked message blocks subsequent
      messages from being delivered (RabbitMQ behaviour, simulated here).
   3. Retry limit: messages are rejected to DLQ after max_retries attempts.
@@ -18,7 +18,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from bertrend.bertrend_apps.services.queue_management.bertrend_worker import (
+    ENDPOINT_HANDLERS,
     BertrendWorker,
+)
+from bertrend.bertrend_apps.services.bertrend.models.bertrend_app_models import (
+    TrainNewModelRequest,
 )
 from bertrend.bertrend_apps.services.queue_management.rabbitmq_config import (
     RabbitMQConfig,
@@ -51,7 +55,7 @@ def _make_message(
     return msg
 
 
-def _make_worker(job_timeout: int = 5) -> BertrendWorker:
+def _make_worker(job_timeout: float = 5) -> BertrendWorker:
     config = RabbitMQConfig(job_timeout=job_timeout)
     worker = BertrendWorker(config)
     # Replace queue_manager with a mock so no real RabbitMQ connection is needed
@@ -62,34 +66,57 @@ def _make_worker(job_timeout: int = 5) -> BertrendWorker:
 
 
 # ---------------------------------------------------------------------------
-# Test 1 — Timeout: hung process_request is cancelled, message is nacked
+# Test 1 — Timeout: synchronous work is not duplicated while still running
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
-async def test_callback_nacks_on_timeout():
+async def test_callback_does_not_retry_uncancellable_work_after_timeout():
     """
-    When process_request takes longer than job_timeout, the message must be
-    republished with incremented retry count and the original rejected (not acked).
+    Crossing the timeout must not republish work delegated to a thread because
+    cancelling the awaiting coroutine does not stop the underlying thread.
     """
-    worker = _make_worker(job_timeout=1)  # 1-second timeout for fast test
+    worker = _make_worker(job_timeout=0.01)
     worker.queue_manager.republish_with_retry = AsyncMock(return_value=True)
+    work_started = asyncio.Event()
+    release_work = asyncio.Event()
 
-    async def slow_handler(request_data):
-        await asyncio.sleep(10)  # much longer than timeout
-        return {"status": "success", "response": {}}
+    async def uncancellable_work():
+        work_started.set()
+        await release_work.wait()
+        return {"result": "completed"}
+
+    async def uncancellable_handler(request):
+        # asyncio.to_thread has the same cancellation boundary: cancelling the
+        # awaiter does not stop the work it is awaiting.
+        return await asyncio.shield(uncancellable_work())
 
     msg = _make_message(
-        {"endpoint": "/train-new-model", "method": "POST", "json_data": {}}
+        {
+            "endpoint": "/train-new-model",
+            "method": "POST",
+            "json_data": {"user": "alice", "model_id": "model-1"},
+        }
     )
 
-    with patch.object(worker, "process_request", side_effect=slow_handler):
-        await worker.callback(msg)
+    with patch.dict(
+        ENDPOINT_HANDLERS,
+        {"/train-new-model": (uncancellable_handler, TrainNewModelRequest)},
+    ):
+        callback_task = asyncio.create_task(worker.callback(msg))
+        try:
+            await asyncio.wait_for(work_started.wait(), timeout=1)
+            await asyncio.sleep(0.05)
 
-    worker.queue_manager.republish_with_retry.assert_awaited_once_with(msg, 0)
-    msg.reject.assert_awaited_once_with(requeue=False)
-    msg.ack.assert_not_awaited()
-    msg.nack.assert_not_awaited()
+            assert not callback_task.done()
+            worker.queue_manager.republish_with_retry.assert_not_awaited()
+            msg.reject.assert_not_awaited()
+            msg.ack.assert_not_awaited()
+        finally:
+            release_work.set()
+            await asyncio.wait_for(callback_task, timeout=1)
+
+    msg.ack.assert_awaited_once()
 
 
 # ---------------------------------------------------------------------------
@@ -258,35 +285,6 @@ async def test_nack_or_discard_rejects_at_max_retries():
     )
 
     with patch.object(worker, "process_request", side_effect=failing_handler):
-        await worker.callback(msg)
-
-    worker.queue_manager.republish_with_retry.assert_awaited_once_with(msg, 2)
-    msg.reject.assert_awaited_once_with(requeue=False)
-    msg.nack.assert_not_awaited()
-
-
-@pytest.mark.asyncio
-async def test_timeout_rejects_at_max_retries():
-    """
-    A timed-out message that has already reached max_retries must be rejected
-    to the DLQ. republish_with_retry returns False (limit reached) and
-    reject(requeue=False) is still called.
-    """
-    worker = _make_worker(job_timeout=1)
-    worker.config.max_retries = 2
-    # Simulate limit already reached: republish_with_retry returns False
-    worker.queue_manager.republish_with_retry = AsyncMock(return_value=False)
-
-    async def slow_handler(request_data):
-        await asyncio.sleep(10)
-        return {"status": "success", "response": {}}
-
-    msg = _make_message(
-        {"endpoint": "/train-new-model", "method": "POST", "json_data": {}},
-        headers={"x-retry-count": 2},
-    )
-
-    with patch.object(worker, "process_request", side_effect=slow_handler):
         await worker.callback(msg)
 
     worker.queue_manager.republish_with_retry.assert_awaited_once_with(msg, 2)

@@ -39,5 +39,6 @@ class RabbitMQConfig:
     max_retries: int = int(os.getenv("RABBITMQ_MAX_RETRIES", 2))
     retry_delay: int = int(os.getenv("RABBITMQ_RETRY_DELAY", 5000))  # milliseconds
 
-    # Job timeout: max seconds a single job may run before being nacked (default: 1 hour)
+    # Soft timeout: warn when a job exceeds this duration, but keep waiting because
+    # cancelling asyncio.to_thread does not stop its synchronous work.
     job_timeout: int = int(os.getenv("RABBITMQ_JOB_TIMEOUT", 3600))

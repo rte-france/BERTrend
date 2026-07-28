@@ -307,11 +307,23 @@ class BertrendWorker:
 
             logger.info(f"Request endpoint: {request_data.get('endpoint')}")
 
-            # Process request with a timeout to avoid blocking the queue indefinitely
-            response_data = await asyncio.wait_for(
-                self.process_request(request_data),
+            # Handlers delegate synchronous work to threads. Cancelling the
+            # awaiting coroutine does not stop that work, so republishing on a
+            # timeout would execute the same job concurrently. Treat the timeout
+            # as a warning threshold and keep the message unacknowledged until the
+            # original work finishes.
+            request_task = asyncio.create_task(self.process_request(request_data))
+            done, _ = await asyncio.wait(
+                {request_task},
                 timeout=self.config.job_timeout,
             )
+            if not done:
+                logger.warning(
+                    f"Message {correlation_id} exceeded the "
+                    f"{self.config.job_timeout}s job timeout; waiting for the "
+                    "original work to finish to avoid duplicate execution"
+                )
+            response_data = await request_task
 
             # Add metadata
             response_data["correlation_id"] = correlation_id
@@ -321,14 +333,6 @@ class BertrendWorker:
             logger.error(f"Invalid message format: {str(e)}")
             # Reject and don't requeue invalid messages
             await message.reject(requeue=False)
-            return
-
-        except asyncio.TimeoutError:
-            await self._nack_or_discard(
-                message,
-                reason=f"job timed out after {self.config.job_timeout}s",
-                correlation_id=correlation_id,
-            )
             return
 
         except Exception as e:
