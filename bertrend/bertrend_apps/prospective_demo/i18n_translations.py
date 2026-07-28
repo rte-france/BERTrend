@@ -280,6 +280,26 @@ TRANSLATIONS = {
         "fr": "Saisir ici la requête qui sera faite sur Google News",
         "en": "Enter the query that will be made on Google News",
     },
+    "feed_monitoring_brief_label": {
+        "fr": "Besoin de veille en langage naturel",
+        "en": "Monitoring brief in plain language",
+    },
+    "feed_monitoring_brief_help": {
+        "fr": "Décrivez les actualités à suivre ; une requête modifiable sera proposée.",
+        "en": "Describe the news to monitor; an editable query will be suggested.",
+    },
+    "generate_feed_query_button": {
+        "fr": "Générer la requête",
+        "en": "Generate query",
+    },
+    "generating_feed_query_message": {
+        "fr": "Génération de la requête...",
+        "en": "Generating query...",
+    },
+    "feed_query_generation_error": {
+        "fr": "Impossible de générer la requête. Vérifiez la configuration du LLM et réessayez.",
+        "en": "Could not generate the query. Check the LLM configuration and try again.",
+    },
     "feed_language_label": {
         "fr": "Langue",
         "en": "Language",
