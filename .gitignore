@@ -95,6 +95,9 @@ scripts/deduplicate_mvp.ipynb
 # dotenv
 .env
 
+# Embedding service credentials
+bertrend/services/embedding_server/bertrend_client_registry.json
+
 # virtualenv
 .venv
 venv/
@@ -130,5 +133,4 @@ postman
 # Gmail credentials
 **/gmail_credentials.json
 **/gmail_token.json
-
 

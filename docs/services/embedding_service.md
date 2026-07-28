@@ -6,6 +6,18 @@ This service wraps a `SentenceTransformer` model and exposes authenticated endpo
 
 ## Run the service
 
+Configure two different secrets before starting the service:
+
+```bash
+openssl rand -hex 32
+openssl rand -hex 32
+```
+
+Store the generated values as `BERTREND_CLIENT_SECRET` and
+`BERTREND_SECRET_KEY`, respectively, in your untracked `.env` file. The client
+secret authenticates the default `bertrend` client; the signing key must be
+shared by every server worker.
+
 ```bash
 cd bertrend/services/embedding_server
 python start.py
@@ -37,6 +49,11 @@ The service uses OAuth2 token authentication.
 - Use the returned bearer token for protected endpoints.
 - `POST /encode` requires `full_access` scope.
 - Admin endpoints (`/list_registered_clients`, `/rate-limits`) require `admin` scope.
+
+By default, the client registry is built in memory from
+`BERTREND_CLIENT_SECRET`. For custom clients or admin access, set
+`CLIENT_REGISTRY_FILE` to an existing JSON registry stored outside the source
+tree. Never commit that file. Missing registry files are rejected at startup.
 
 ## API endpoints
 

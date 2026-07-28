@@ -15,7 +15,7 @@ services:
     container_name: bertrend-embedding-server
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     ports:
-      - "6464:6464"  # Embedding server API
+      - "127.0.0.1:6464:6464"  # Embedding server API
     volumes:
       # Mount HF_HOME directory to share with host
       - ${HF_HOME:-.cache/huggingface}:/app/.cache/huggingface
@@ -32,6 +32,9 @@ services:
       # Ensure these are not empty strings
       - DEFAULT_RATE_LIMIT=${DEFAULT_RATE_LIMIT:-50}
       - DEFAULT_RATE_WINDOW=${DEFAULT_RATE_WINDOW:-60}
+      # Shared authentication secrets (required; define them in .env)
+      - BERTREND_SECRET_KEY=${BERTREND_SECRET_KEY:?BERTREND_SECRET_KEY is required}
+      - BERTREND_CLIENT_SECRET=${BERTREND_CLIENT_SECRET:?BERTREND_CLIENT_SECRET is required}
       # Set HF_HOME inside container
       - HF_HOME=/app/.cache/huggingface
       # Set UV_CACHE_DIR to a location where the user has write permissions
@@ -98,7 +101,7 @@ services:
       - NLTK_DATA=/app/nltk_data
       # BERTrend base dir
       - BERTREND_BASE_DIR=/bertrend/
-      - BERTREND_CLIENT_SECRET=bd76aa472dd91aed4a56bf1935dbb802583c119824380d8567086579c0ef3324
+      - BERTREND_CLIENT_SECRET=${BERTREND_CLIENT_SECRET:?BERTREND_CLIENT_SECRET is required}
       # Configure to use the embedding server
       - EMBEDDING_SERVICE_URL=https://embedding_server:6464
       - EMBEDDING_SERVICE_USE_LOCAL=false
