@@ -274,6 +274,11 @@ class BERTopicModel:
 
             logger.debug("\tFitting BERTopic model")
             topics, probs = topic_model.fit_transform(docs, embeddings)
+            zeroshot_labels = {
+                topic: label
+                for topic, label in topic_model.topic_labels_.items()
+                if label in (self.config["bertopic_model"]["zeroshot_topic_list"] or [])
+            }
 
             if not topic_model._outliers:
                 logger.warning("\tNo outliers to reduce.")
@@ -308,6 +313,7 @@ class BERTopicModel:
                 )
                 topic_model.representation_model = backup_representation_model
 
+            topic_model.topic_labels_.update(zeroshot_labels)
             logger.success("\tBERTopic model fitted successfully")
             output = BERTopicModelOutput(topic_model)
             output.topics = new_topics

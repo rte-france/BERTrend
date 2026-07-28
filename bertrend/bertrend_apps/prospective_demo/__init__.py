@@ -35,6 +35,8 @@ DEFAULT_ANALYSIS_CFG = {
         "window_size": DEFAULT_WINDOW_SIZE,
         "language": DEFAULT_LANGUAGE,
         "split_by_paragraph": True,
+        "zeroshot_topic_list": [],
+        "zeroshot_min_similarity": 0.7,
     },
     "analysis_config": {
         "topic_evolution": True,

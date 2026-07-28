@@ -380,6 +380,8 @@ class TestTrainNewModelForPeriod:
             "granularity": 7,
             "window_size": 30,
             "language": "en",
+            "zeroshot_topic_list": ["grid flexibility", "hydrogen storage"],
+            "zeroshot_min_similarity": 0.75,
         }
 
         # Mock BERTrend instance
@@ -443,6 +445,12 @@ class TestTrainNewModelForPeriod:
 
         # Verify key function calls
         mock_train_new_data.assert_called_once()
+        train_kwargs = mock_train_new_data.call_args.kwargs
+        assert train_kwargs["zeroshot_topic_list"] == [
+            "grid flexibility",
+            "hydrogen storage",
+        ]
+        assert train_kwargs["zeroshot_min_similarity"] == 0.75
         mock_bertrend.calculate_signal_popularity.assert_called_once()
         mock_bertrend.classify_signals.assert_called_once()
         mock_generate_llm.assert_called()  # Should be called for each non-empty DataFrame

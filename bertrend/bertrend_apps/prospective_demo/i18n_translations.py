@@ -455,6 +455,26 @@ TRANSLATIONS = {
         "fr": "Sélection de la plage temporelle considérée pour calculer les différents types de signaux (faibles, forts)",
         "en": "Selection of the time range considered to calculate different types of signals (weak, strong)",
     },
+    "zeroshot_topics_label": {
+        "fr": "Sujets attendus (zéro-shot, facultatif)",
+        "en": "Expected topics (zero-shot, optional)",
+    },
+    "zeroshot_topics_placeholder": {
+        "fr": "Un sujet à suivre par ligne",
+        "en": "One topic to monitor per line",
+    },
+    "zeroshot_topics_help": {
+        "fr": "Saisissez un sujet par ligne pour guider la détection vers des thèmes connus. Laissez vide pour une découverte entièrement non supervisée. La modification s'applique aux nouveaux modèles.",
+        "en": "Enter one topic per line to guide detection toward known themes. Leave empty for fully unsupervised discovery. Changes apply to newly trained models.",
+    },
+    "zeroshot_min_similarity_label": {
+        "fr": "Similarité minimale avec les sujets attendus",
+        "en": "Minimum similarity to expected topics",
+    },
+    "zeroshot_min_similarity_help": {
+        "fr": "Similarité sémantique minimale requise pour associer un document à un sujet attendu.",
+        "en": "Minimum semantic similarity required to assign a document to an expected topic.",
+    },
     # Analysis parameters
     "analysis_params_title": {
         "fr": "Paramètres d'analyse de la veille {}: éléments à inclure",

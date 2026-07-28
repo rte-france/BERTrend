@@ -803,6 +803,8 @@ def test_train_new_data():
     mock_bertrend = MagicMock(spec=BERTrend)
     mock_bertrend.doc_groups = {reference_timestamp: ["doc1", "doc2"]}
     mock_bertrend.config = {"granularity": 7}
+    mock_bertrend.topic_model = MagicMock()
+    mock_bertrend.topic_model.config = {"bertopic_model": {}}
 
     # Create mock methods
     mock_train = MagicMock()
@@ -824,6 +826,8 @@ def test_train_new_data():
             embedding_service=mock_embedding_service,
             granularity=7,
             language="English",
+            zeroshot_topic_list=["grid flexibility", "hydrogen storage"],
+            zeroshot_min_similarity=0.75,
         )
 
         # Assert
@@ -831,6 +835,10 @@ def test_train_new_data():
         mock_embedding_service.embed.assert_called_once()
         mock_train.assert_called_once()
         mock_save.assert_called_once_with(models_path=bertrend_models_path)
+        assert mock_bertrend.topic_model.config["bertopic_model"] == {
+            "zeroshot_topic_list": ["grid flexibility", "hydrogen storage"],
+            "zeroshot_min_similarity": 0.75,
+        }
         assert result == mock_bertrend
 
 
