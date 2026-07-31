@@ -31,6 +31,10 @@ from bertrend.bertrend_apps.prospective_demo.report_generation_utils import (
     create_temp_report,
     render_html_report,
 )
+from bertrend.bertrend_apps.prospective_demo.topic_feedback import (
+    apply_topic_feedback,
+    load_topic_feedback,
+)
 from bertrend.bertrend_apps.prospective_demo.utils import is_valid_email
 from bertrend.llm_utils.newsletter_model import (
     STRONG_TOPIC_TYPE,
@@ -103,6 +107,7 @@ def load_signal_data(
         Tuple of (weak_signals_df, strong_signals_df)
     """
     interpretation_path = get_model_interpretation_path(user, model_id, reference_ts)
+    feedback = load_topic_feedback(get_user_models_path(user, model_id))
 
     # Load from parquet files which contain all necessary columns
     # (URLs, LLM Title, LLM Description, Topic, etc.) along with interpretation data
@@ -136,6 +141,7 @@ def load_signal_data(
                 on="Topic",
                 how="left",
             )
+        weak_signals = apply_topic_feedback(weak_signals, feedback)
         logger.info(f"Loaded {len(weak_signals)} weak signals")
         if max_emerging_topics is not None and len(weak_signals) > max_emerging_topics:
             weak_signals = weak_signals.head(max_emerging_topics)
@@ -159,6 +165,7 @@ def load_signal_data(
                 on="Topic",
                 how="left",
             )
+        strong_signals = apply_topic_feedback(strong_signals, feedback)
         logger.info(f"Loaded {len(strong_signals)} strong signals")
         if max_strong_topics is not None and len(strong_signals) > max_strong_topics:
             strong_signals = strong_signals.head(max_strong_topics)
