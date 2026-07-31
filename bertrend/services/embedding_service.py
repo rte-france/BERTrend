@@ -376,7 +376,9 @@ def _group_tokens(tokenizer, token_ids, token_embeddings):
                 continue
 
             is_new_word = (
-                token.startswith("▁") if scheme == "sentencepiece" else not token.startswith("##")
+                token.startswith("▁")
+                if scheme == "sentencepiece"
+                else not token.startswith("##")
             )
 
             if is_new_word:
