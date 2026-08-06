@@ -3,6 +3,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Proxy settings for build-time access (e.g. if you are behind a corporate proxy)
+        - HTTP_PROXY=${HTTP_PROXY:-}
+        - HTTPS_PROXY=${HTTPS_PROXY:-}
+        - NO_PROXY=${NO_PROXY:-}
+        - http_proxy=${http_proxy:-}
+        - https_proxy=${https_proxy:-}
+        - no_proxy=${no_proxy:-}
     container_name: bertrend-scheduler
     user: "${UID:-1000}:${GID:-1000}"
     ports:
@@ -12,6 +20,10 @@ services:
       # Host path uses $HOME, container path uses /home/user
       - ${HOME}/.bertrend/db:/home/user/.bertrend/db
     environment:
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
       - NO_PROXY=$NO_PROXY # to avoid communication issues
       - no_proxy=$no_proxy # to avoid communication issues
       # Application settings
