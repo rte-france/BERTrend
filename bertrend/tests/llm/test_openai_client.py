@@ -10,8 +10,7 @@ import pytest
 from openai import Stream
 from pydantic import BaseModel
 
-from bertrend.llm_utils.agent_utils import run_config_no_tracing
-from bertrend.llm_utils.openai_client import APIType, OpenAI_Client
+from bertrend.llm_utils.openai_client import APIType, OpenAI_Client, PARSE_TIMEOUT
 
 
 @pytest.fixture
@@ -118,7 +117,7 @@ def test_parse_basic_functionality(mock_api_key):
             return_value=mock_factory,
         ) as mock_factory_cls,
         patch(
-            "bertrend.llm_utils.openai_client.Runner.run_sync",
+            "bertrend.llm_utils.openai_client.run_runner_sync",
             return_value=mock_result,
         ) as mock_run_sync,
     ):
@@ -135,7 +134,7 @@ def test_parse_basic_functionality(mock_api_key):
         mock_run_sync.assert_called_once_with(
             input="What is the weather today?",
             starting_agent=mock_agent,
-            run_config=run_config_no_tracing,
+            timeout=PARSE_TIMEOUT,
         )
 
 
@@ -155,7 +154,7 @@ def test_parse_with_system_prompt(mock_api_key):
             return_value=mock_factory,
         ) as mock_factory_cls,
         patch(
-            "bertrend.llm_utils.openai_client.Runner.run_sync",
+            "bertrend.llm_utils.openai_client.run_runner_sync",
             return_value=mock_result,
         ) as mock_run_sync,
     ):
@@ -174,7 +173,7 @@ def test_parse_with_system_prompt(mock_api_key):
         mock_run_sync.assert_called_once_with(
             input="What is the weather today?",
             starting_agent=mock_agent,
-            run_config=run_config_no_tracing,
+            timeout=PARSE_TIMEOUT,
         )
 
 
@@ -191,7 +190,7 @@ def test_parse_error_handling(mock_api_key):
             return_value=mock_factory,
         ),
         patch(
-            "bertrend.llm_utils.openai_client.Runner.run_sync",
+            "bertrend.llm_utils.openai_client.run_runner_sync",
             side_effect=Exception("API Parse Error"),
         ),
         pytest.raises(Exception, match="API Parse Error"),
@@ -215,7 +214,7 @@ def test_parse_with_none_response_format(mock_api_key):
             return_value=mock_factory,
         ) as mock_factory_cls,
         patch(
-            "bertrend.llm_utils.openai_client.Runner.run_sync",
+            "bertrend.llm_utils.openai_client.run_runner_sync",
             return_value=mock_result,
         ) as mock_run_sync,
     ):
@@ -230,7 +229,7 @@ def test_parse_with_none_response_format(mock_api_key):
         mock_run_sync.assert_called_once_with(
             input="What is the weather today?",
             starting_agent=mock_agent,
-            run_config=run_config_no_tracing,
+            timeout=PARSE_TIMEOUT,
         )
         assert result == mock_parsed
 
@@ -250,7 +249,7 @@ def test_parse_includes_model_settings_for_gpt5(mock_api_key):
             return_value=mock_factory,
         ) as mock_factory_cls,
         patch(
-            "bertrend.llm_utils.openai_client.Runner.run_sync",
+            "bertrend.llm_utils.openai_client.run_runner_sync",
             return_value=mock_result,
         ),
     ):

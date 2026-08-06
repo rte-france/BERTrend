@@ -21,15 +21,28 @@ load_dotenv(override=True)
 run_config_no_tracing = RunConfig(tracing_disabled=True)
 
 
-def run_runner_sync(*args, **kwargs):
-    """Create a new event loop in a script thread (useful for Jupyter notebooks, ipython, streamlit)"""
+def run_runner_sync(*args, timeout: float | None = None, **kwargs):
+    """Run the agent ``Runner`` synchronously in a fresh event loop.
+
+    Creating a dedicated event loop makes this safe to call from threads that
+    have no running loop (Jupyter notebooks, ipython, Streamlit, or the queue
+    worker thread pool).
+
+    When ``timeout`` (seconds) is provided, the run is bounded with
+    ``asyncio.wait_for``. Because the agent performs the LLM call over async
+    HTTP, this cancellation actually tears down a stalled request instead of
+    leaving the calling thread blocked forever. A stalled request therefore
+    raises ``asyncio.TimeoutError`` (surfaced as the caller's error handling)
+    rather than silently freezing the worker and, with it, the whole queue.
+    """
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
+        coro = Runner.run(*args, run_config=run_config_no_tracing, **kwargs)
+        if timeout is not None:
+            coro = asyncio.wait_for(coro, timeout=timeout)
         # If Runner.run is async, run it to completion
-        return loop.run_until_complete(
-            Runner.run(*args, run_config=run_config_no_tracing, **kwargs)
-        )
+        return loop.run_until_complete(coro)
     finally:
         loop.close()
 
