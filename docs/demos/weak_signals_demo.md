@@ -116,6 +116,100 @@ The application provides configuration options for:
 
 These can be configured through the sidebar in the application.
 
+## Working with large datasets
+
+The **Data Loading** tab offers two ways to provide data:
+
+- **Local data** uses Streamlit's file uploader, which is capped by Streamlit's
+  `maxUploadSize` (**200 MB by default**). Large corpora (e.g. an arXiv dump)
+  will exceed this limit.
+- **Remote data** lists the compatible files found in the BERTrend data
+  directory (`DATA_PATH`, i.e. `$BERTREND_BASE_DIR/data`, default
+  `~/.bertrend/data`) and has **no size limit**.
+
+To use a large dataset with the demo, prefer one of:
+
+1. **Place the file in `DATA_PATH`** and select it from the **Remote data**
+   tab. This bypasses the uploader size limit entirely (recommended).
+2. **Raise the uploader limit** by creating a `.streamlit/config.toml` next to
+   the app with:
+   ```toml
+   [server]
+   maxUploadSize = 4000  # in MB
+   ```
+   or by launching with `streamlit run app.py --server.maxUploadSize 4000`.
+
+Supported input formats are `.csv`, `.parquet`, and `.jsonl(.gz)`. Each file
+must contain at least a **`text`** column and a **`timestamp`** column; the
+optional `url`, `title`, `source`, and `document_id` columns are used when
+present.
+
+## Running BERTrend without the demo (programmatic API)
+
+For large datasets, batch runs, or reproducing published results, it is often
+easier to drive BERTrend directly from Python rather than through the Streamlit
+app. The notebooks in [`getting_started/`](../../getting_started) show the full
+retrospective-analysis pipeline end to end:
+
+- [`bertrend_quickstart.ipynb`](../../getting_started/bertrend_quickstart.ipynb)
+- [`explore_bertrend_model.ipynb`](../../getting_started/explore_bertrend_model.ipynb)
+
+The core steps are:
+
+```python
+from pathlib import Path
+from bertrend.BERTrend import BERTrend
+from bertrend.BERTopicModel import BERTopicModel
+from bertrend.services.embedding_service import EmbeddingService
+from bertrend.utils.data_loading import load_data, group_by_days
+from bertrend.trend_analysis.weak_signals import analyze_signal
+
+# 1. Configure the topic model and BERTrend
+topic_model = BERTopicModel({"global": {"language": "English"}})
+bertrend = BERTrend(topic_model=topic_model)
+
+# 2. Load a DataFrame with (at least) `text` and `timestamp` columns
+df = load_data(Path("my_dataset.jsonl"), language="English")
+
+# 3. Embed the documents (local model or remote embedding server)
+embedding_service = EmbeddingService(local=True)
+embeddings, _, _ = embedding_service.embed(texts=df["text"])
+
+# 4. Split into time slices
+grouped_data = group_by_days(df=df, day_granularity=30)
+
+# 5. Train the per-period topic models and merge them over time
+bertrend.train_topic_models(
+    grouped_data=grouped_data,
+    embedding_model=embedding_service.embedding_model_name,
+    embeddings=embeddings,
+)
+
+# 6. Compute popularity and classify signals over time
+bertrend.calculate_signal_popularity()
+for ts in bertrend.doc_groups.keys():
+    noise_df, weak_df, strong_df = bertrend.classify_signals(
+        window_size=30, current_date=ts
+    )
+
+# 7. (Optional) LLM-based interpretation of a given signal/topic
+summary, analysis = analyze_signal(bertrend, topic_number=1, current_date=ts)
+```
+
+The plotting helpers used by the demo live in
+`bertrend/demos/weak_signals/visualizations_utils.py` and
+`bertrend/trend_analysis/weak_signals.py`, and can be reused on the objects
+produced above (signal classification and popularity evolution) to build the
+figures.
+
+> **Note:** the repository ships the BERTrend *method* and the notebooks above,
+> but not a one-click script for a specific paper figure nor a frozen copy of
+> the arXiv corpus used in the paper. An arXiv data provider is available
+> (`bertrend/bertrend_apps/data_provider/arxiv_provider.py`, with
+> `bertrend/bertrend_apps/config/feeds/arxiv_feed.toml`) to fetch data, but
+> exact reproduction requires matching the original query, date range,
+> `granularity`, and `window_size`.
+
 ## Dependencies
 
 The Weak Signals Demo package depends on:

@@ -366,6 +366,17 @@ Provides various statistics about topics:
 
 ![llm_interpretation](docs/images/llm_interpretation.png)
 
+#### Large datasets and running without the demo
+
+The demonstrator's file uploader is limited by Streamlit's `maxUploadSize`
+(200 MB by default). To work with large corpora (e.g. arXiv), either place the
+file in the BERTrend data directory (`DATA_PATH`) and select it from the
+**Remote data** tab, or raise the limit via `--server.maxUploadSize`. For batch
+runs or reproducing published results, you can also drive BERTrend directly
+from Python — see the
+[Weak Signals demo documentation](docs/demos/weak_signals_demo.md#working-with-large-datasets)
+and the notebooks in [`getting_started/`](getting_started).
+
 ## Article Scoring Service
 
 For service setup and API details, see:
