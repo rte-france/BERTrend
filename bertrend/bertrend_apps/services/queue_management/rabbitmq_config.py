@@ -39,5 +39,8 @@ class RabbitMQConfig:
     max_retries: int = int(os.getenv("RABBITMQ_MAX_RETRIES", 2))
     retry_delay: int = int(os.getenv("RABBITMQ_RETRY_DELAY", 5000))  # milliseconds
 
-    # Job timeout: max seconds a single job may run before being nacked (default: 1 hour)
-    job_timeout: int = int(os.getenv("RABBITMQ_JOB_TIMEOUT", 3600))
+    # Job timeout: max seconds a single job may run before being nacked (default: 15 min).
+    # Kept well below the previous 1 hour so a stalled job cannot block the
+    # single-slot queue for an extended period; raise via env var for genuinely
+    # long-running jobs.
+    job_timeout: int = int(os.getenv("RABBITMQ_JOB_TIMEOUT", 900))
