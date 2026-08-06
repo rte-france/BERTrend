@@ -2,7 +2,10 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import math
+import os
+import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from datetime import timedelta
 from pathlib import Path
 
@@ -39,6 +42,13 @@ from bertrend.utils.data_loading import (
 )
 
 DEFAULT_TOP_K = 5
+
+# Per-topic wall-clock budget (seconds) for LLM interpretation. Bounds the wait
+# on each topic analysis so a single stalled LLM call cannot block the whole
+# interpretation step (and, through it, the queue worker) indefinitely.
+TOPIC_INTERPRETATION_TIMEOUT = float(
+    os.getenv("TOPIC_INTERPRETATION_TIMEOUT", 400.0)
+)
 
 
 class ConfigFileNotFoundError(Exception):
@@ -198,22 +208,43 @@ def generate_llm_interpretation(
 
     interpretation = []
 
-    # Use ThreadPoolExecutor for parallel processing of I/O-bound analyze_signal calls
+    # Overall wall-clock budget: roughly the number of sequential waves of
+    # concurrent tasks multiplied by the per-topic budget, so the whole step is
+    # bounded even if some topics stall.
+    if topics:
+        waves = math.ceil(len(topics) / max(1, max_workers))
+        overall_timeout = waves * TOPIC_INTERPRETATION_TIMEOUT
+    else:
+        overall_timeout = TOPIC_INTERPRETATION_TIMEOUT
+
+    # Use ThreadPoolExecutor for parallel processing of I/O-bound analyze_signal calls.
+    # cancel_futures=True (on the `with` exit) drops not-yet-started tasks rather
+    # than waiting for them, so a straggler cannot block indefinitely.
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Submit all topic analysis tasks
         future_to_topic = {
             executor.submit(process_topic, topic): topic for topic in topics
         }
 
-        # Collect results as they complete
-        for future in as_completed(future_to_topic):
-            topic = future_to_topic[future]
+        # Collect results, bounding the total wait so a stalled topic analysis
+        # cannot freeze the interpretation step.
+        deadline = time.monotonic() + overall_timeout
+        for future, topic in future_to_topic.items():
+            remaining = deadline - time.monotonic()
             try:
-                result = future.result()
+                result = future.result(timeout=max(0.0, remaining))
                 if result:
                     interpretation.append(result)
+            except FutureTimeoutError:
+                logger.error(
+                    f"Timed out waiting for interpretation of topic {topic} "
+                    f"after {overall_timeout:.0f}s overall budget; skipping it."
+                )
             except Exception as e:
                 logger.error(f"Exception occurred for topic {topic}: {str(e)}")
+
+        # Do not wait on any still-running/queued stragglers when leaving the block.
+        executor.shutdown(wait=False, cancel_futures=True)
 
     # Sort results by topic number to maintain consistent output order
     interpretation.sort(key=lambda x: x["topic"])
