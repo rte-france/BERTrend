@@ -8,19 +8,23 @@ import re
 from enum import Enum
 from typing import Type
 
-from agents import ModelSettings, Runner
+from agents import ModelSettings
 from loguru import logger
 from openai import OpenAI, Stream, Timeout
 from openai.types import Reasoning
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from pydantic import BaseModel
 
-from bertrend.llm_utils.agent_utils import BaseAgentFactory, run_config_no_tracing
+from bertrend.llm_utils.agent_utils import BaseAgentFactory, run_runner_sync
 
 # Note: .env is loaded in bertrend/__init__.py which is imported before this module
 
 MAX_ATTEMPTS = 3
 TIMEOUT = 60.0
+# Wall-clock timeout (seconds) for a single structured-output (parse) call.
+# Generous enough for reasoning models, but bounded so that a stalled
+# connection can never hang the worker (and therefore the whole queue).
+PARSE_TIMEOUT = float(os.getenv("OPENAI_PARSE_TIMEOUT", 180.0))
 DEFAULT_TEMPERATURE = 0.1
 DEFAULT_MODEL = "gpt-4.1-mini"
 
@@ -214,11 +218,14 @@ class OpenAI_Client:
 
         parsing_agent = BaseAgentFactory(model_name=model).create_agent(**agent_kwargs)
 
-        # invoke agent
-        result = Runner.run_sync(
+        # Invoke agent with a bounded wall-clock timeout so a stalled LLM
+        # connection cannot block the caller indefinitely. On timeout this
+        # raises asyncio.TimeoutError, which callers already handle by
+        # logging and returning None instead of freezing the queue worker.
+        result = run_runner_sync(
             input=user_prompt,
             starting_agent=parsing_agent,
-            run_config=run_config_no_tracing,
+            timeout=PARSE_TIMEOUT,
         )
         response = (
             result.final_output if hasattr(result, "final_output") else str(result)
