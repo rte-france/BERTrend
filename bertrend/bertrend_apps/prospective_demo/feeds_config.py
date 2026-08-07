@@ -59,6 +59,30 @@ def generate_atom_crontab_expression(hours="0,6,12,18"):
     return f"{minute} {hours} * * *"
 
 
+def _feed_query_dialog_keys(config: dict | None) -> tuple[str, str]:
+    """Session-state keys for the query and monitoring-brief widgets."""
+    suffix = config.get("id", "existing") if config else "new"
+    return f"feed_query_{suffix}", f"feed_monitoring_brief_{suffix}"
+
+
+def _clear_feed_query_dialog_state(config: dict | None = None) -> None:
+    """Clear query/brief keys so a cancelled dialog does not pre-fill the next open."""
+    for key in _feed_query_dialog_keys(config):
+        st.session_state.pop(key, None)
+
+
+def open_feed_monitoring_dialog(config: dict | None = None) -> None:
+    """Open the feed dialog after resetting query/brief widget state from the prior open.
+
+    Streamlit dialogs have no dismiss callback, so key-bound widgets would otherwise
+    keep unsaved edits (or a generated query) across Escape / click-away. Clearing
+    here on every open, then re-seeding from config inside the dialog, restores the
+    previous value=-based reset behavior without wiping mid-dialog generation.
+    """
+    _clear_feed_query_dialog_state(config)
+    edit_feed_monitoring(config)
+
+
 @st.dialog(translate("feed_config_dialog_title"))
 def edit_feed_monitoring(config: dict | None = None):
     """Create or update a feed monitoring configuration."""
@@ -95,15 +119,16 @@ def edit_feed_monitoring(config: dict | None = None):
             format_func=lambda lang: translate(f"language_{lang.lower()}"),
             help=translate("feed_language_help"),
         )
-        query_key_suffix = config.get("id", "existing") if config else "new"
-        query_state_key = f"feed_query_{query_key_suffix}"
+        query_state_key, brief_state_key = _feed_query_dialog_keys(config)
+        # Seed only when absent: open_feed_monitoring_dialog clears on entry so a
+        # fresh open reloads config; mid-dialog re-runs (e.g. Generate) keep edits.
         if query_state_key not in st.session_state:
             st.session_state[query_state_key] = (
                 "" if not config else config.get("query", "")
             )
 
         if provider == "google":
-            brief_state_key = f"feed_monitoring_brief_{query_key_suffix}"
+            query_key_suffix = config.get("id", "existing") if config else "new"
             brief = st.text_area(
                 translate("feed_monitoring_brief_label"),
                 key=brief_state_key,
@@ -301,10 +326,10 @@ def configure_information_sources():
     if st.button(
         f":green[{ADD_ICON}]", type="tertiary", help=translate("new_feed_help")
     ):
-        edit_feed_monitoring()
+        open_feed_monitoring_dialog()
 
     clickable_df_buttons = [
-        (EDIT_ICON, edit_feed_monitoring, "secondary"),
+        (EDIT_ICON, open_feed_monitoring_dialog, "secondary"),
         (lambda x: toggle_icon(df, x), handle_toggle_feed, "secondary"),
         (DELETE_ICON, handle_delete, "primary"),
     ]
