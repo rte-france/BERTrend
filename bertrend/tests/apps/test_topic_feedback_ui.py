@@ -15,12 +15,14 @@ from bertrend.bertrend_apps.prospective_demo import (
 from bertrend.bertrend_apps.prospective_demo import dashboard_analysis
 from bertrend.bertrend_apps.prospective_demo import automated_report_generation
 from bertrend.bertrend_apps.prospective_demo import report_generation
+from bertrend.bertrend_apps.prospective_demo import dashboard_signals
 from bertrend.bertrend_apps.prospective_demo.dashboard_signals import (
     _prepare_topics_for_display,
 )
 from bertrend.bertrend_apps.prospective_demo.topic_feedback import (
     HIDDEN_TOPIC,
     PROMOTED_TOPIC,
+    apply_topic_feedback,
     set_topic_feedback,
 )
 
@@ -47,6 +49,59 @@ def test_signal_table_hides_and_marks_saved_topic_feedback():
         "⭐ Preferred",
         "Most popular",
     ]
+
+
+def test_signal_table_path_matches_raw_input_not_preapplied_frames():
+    """Tables must apply feedback after popularity sort on raw frames.
+
+    Pre-applying feedback before _prepare_topics_for_display is redundant but
+    must not change outcomes; raw frames are the intended table input.
+    """
+    topics = pd.DataFrame(
+        {
+            "Topic": [1, 2, 3],
+            LLM_TOPIC_TITLE_COLUMN: ["Most popular", "Hidden", "Preferred"],
+            "Latest_Popularity": [100, 50, 10],
+            "Documents": [["one"], ["two"], ["three"]],
+        }
+    )
+    columns = ["Topic", LLM_TOPIC_TITLE_COLUMN, "Latest_Popularity", "Documents"]
+    feedback = {2: HIDDEN_TOPIC, 3: PROMOTED_TOPIC}
+
+    from_raw = _prepare_topics_for_display(topics, columns, feedback)
+    preapplied = apply_topic_feedback(topics, feedback)
+    from_preapplied = _prepare_topics_for_display(preapplied, columns, feedback)
+
+    assert from_raw["Topic"].tolist() == [3, 1]
+    assert from_raw["Topic"].tolist() == from_preapplied["Topic"].tolist()
+    assert (
+        from_raw[LLM_TOPIC_TITLE_COLUMN].tolist()
+        == from_preapplied[LLM_TOPIC_TITLE_COLUMN].tolist()
+    )
+
+
+def test_signal_analysis_passes_raw_to_tables_and_applied_to_explore():
+    """Structural + behavioral: signal_analysis wiring matches review fix."""
+    source = Path(dashboard_signals.__file__).read_text(encoding="utf-8")
+    analysis = source.split("def signal_analysis")[1].split("def explore_topic_sources")[
+        0
+    ]
+    assert "raw_topics = get_df_topics(" in analysis
+    assert "raw_topics[NOISE]" in analysis
+    assert "raw_topics[WEAK_SIGNALS]" in analysis
+    assert "raw_topics[STRONG_SIGNALS]" in analysis
+    assert "explore_topic_sources(dfs_topics, feedback)" in analysis
+    assert "display_translated_signal_categories(" in analysis
+    # Tables must not receive the feedback-applied dict entries.
+    assert "dfs_topics[NOISE]" not in analysis
+    assert "dfs_topics[WEAK_SIGNALS]" not in analysis
+    assert "dfs_topics[STRONG_SIGNALS]" not in analysis
+
+    prepare_src = source.split("def _prepare_topics_for_display")[1].split(
+        "def display_topic_links"
+    )[0]
+    assert "sort_values" in prepare_src
+    assert "apply_topic_feedback(displayed_topics, feedback)" in prepare_src
 
 
 def test_report_picker_omits_hidden_topics_and_prioritizes_promoted_topics():
