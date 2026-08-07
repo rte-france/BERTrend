@@ -14,6 +14,8 @@ PROMOTED_TOPIC = "promoted"
 HIDDEN_TOPIC = "hidden"
 TOPIC_FEEDBACK_FILE = "topic_feedback.json"
 
+# Literal values must stay in sync with PROMOTED_TOPIC / HIDDEN_TOPIC above
+# (typing.Literal cannot reference those constants).
 TopicFeedback = Literal["promoted", "hidden"]
 VALID_TOPIC_FEEDBACK = {PROMOTED_TOPIC, HIDDEN_TOPIC}
 

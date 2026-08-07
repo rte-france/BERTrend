@@ -90,18 +90,22 @@ def signal_analysis():
     feedback = load_topic_feedback(
         get_user_models_path(st.session_state.username, model_id)
     )
+    raw_topics = get_df_topics(model_interpretation_path)
+    # Feedback applied once for source exploration (selectbox options / ordering).
+    # Table display applies it separately after a popularity sort in
+    # _prepare_topics_for_display — pass raw frames there to avoid a redundant pass.
     dfs_topics = {
         category: apply_topic_feedback(topics, feedback)
-        for category, topics in get_df_topics(model_interpretation_path).items()
+        for category, topics in raw_topics.items()
     }
 
     col1, col2 = st.columns(COLS_RATIO)
     with col1:
         # Display dataframes for weak_signals, strong, etc
         display_translated_signal_categories(
-            dfs_topics[NOISE],
-            dfs_topics[WEAK_SIGNALS],
-            dfs_topics[STRONG_SIGNALS],
+            raw_topics[NOISE],
+            raw_topics[WEAK_SIGNALS],
+            raw_topics[STRONG_SIGNALS],
             reference_ts,
             columns=columns,
             column_config=column_config,
@@ -257,7 +261,12 @@ def _prepare_topics_for_display(
     columns: list[str],
     feedback: dict[int, TopicFeedback],
 ) -> pd.DataFrame:
-    """Prepare a signal table while keeping promoted topics visible first."""
+    """Prepare a signal table while keeping promoted topics visible first.
+
+    Callers should pass raw (unfiltered) topic frames. Popularity is sorted first,
+    then apply_topic_feedback re-orders so promoted topics still float to the top
+    while relative popularity order is preserved within each feedback group.
+    """
     displayed_topics = topics[columns].sort_values(
         by=["Latest_Popularity"], ascending=False
     )
