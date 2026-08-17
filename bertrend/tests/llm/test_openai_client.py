@@ -103,7 +103,8 @@ class _TestResponseModel(BaseModel):
 
 def test_parse_basic_functionality(mock_api_key):
     """Test parse method with a simple user prompt"""
-    client = OpenAI_Client(api_key="test_api_key")
+    # Use a non-GPT-5 model so this test covers the branch without model_settings
+    client = OpenAI_Client(api_key="test_api_key", model="gpt-4.1-mini")
 
     mock_agent = Mock()
     mock_factory = Mock()
@@ -140,7 +141,8 @@ def test_parse_basic_functionality(mock_api_key):
 
 def test_parse_with_system_prompt(mock_api_key):
     """Test parse method with both user and system prompts"""
-    client = OpenAI_Client(api_key="test_api_key")
+    # Use a non-GPT-5 model so this test covers the branch without model_settings
+    client = OpenAI_Client(api_key="test_api_key", model="gpt-4.1-mini")
 
     mock_agent = Mock()
     mock_factory = Mock()
@@ -200,7 +202,8 @@ def test_parse_error_handling(mock_api_key):
 
 def test_parse_with_none_response_format(mock_api_key):
     """Test parse method with response_format=None"""
-    client = OpenAI_Client(api_key="test_api_key")
+    # Use a non-GPT-5 model so this test covers the branch without model_settings
+    client = OpenAI_Client(api_key="test_api_key", model="gpt-4.1-mini")
 
     mock_agent = Mock()
     mock_factory = Mock()

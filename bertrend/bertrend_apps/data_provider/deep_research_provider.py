@@ -20,7 +20,7 @@ from bertrend.llm_utils.agent_utils import BaseAgentFactory, run_config_no_traci
 
 load_dotenv(override=True)
 
-DEFAULT_MODEL = os.getenv("OPENAI_DEFAULT_MODEL", "gpt-4.1-mini")
+DEFAULT_MODEL = os.getenv("OPENAI_DEFAULT_MODEL", "gpt-5.6-luna")
 DEFAULT_MAX_SUB_QUERIES = 5
 DEFAULT_SEARCH_DELAY = 3.0  # seconds between DuckDuckGo requests to avoid rate limiting
 

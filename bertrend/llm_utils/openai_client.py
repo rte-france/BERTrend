@@ -26,7 +26,10 @@ TIMEOUT = 60.0
 # connection can never hang the worker (and therefore the whole queue).
 PARSE_TIMEOUT = float(os.getenv("OPENAI_PARSE_TIMEOUT", 180.0))
 DEFAULT_TEMPERATURE = 0.1
-DEFAULT_MODEL = "gpt-4.1-mini"
+DEFAULT_MODEL = "gpt-5.6-luna"
+# Reasoning effort applied to GPT-5-family models (low keeps latency/cost down;
+# bump to "medium"/"high" via OPENAI_REASONING_EFFORT if deeper reasoning is needed).
+DEFAULT_REASONING_EFFORT = os.getenv("OPENAI_REASONING_EFFORT", "low")
 
 
 class APIType(Enum):
@@ -201,7 +204,7 @@ class OpenAI_Client:
         model = kwargs["model"]
         model_settings = (
             ModelSettings(
-                reasoning=Reasoning(effort="low"),
+                reasoning=Reasoning(effort=DEFAULT_REASONING_EFFORT),
                 verbosity="low",
             )
             if test_gpt5_version(model)
