@@ -3,6 +3,8 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
+import math
+
 import pandas as pd
 import plotly.graph_objects as go
 from bertopic import BERTopic
@@ -183,7 +185,16 @@ def plot_topic_size_evolution(
     """
 
     # Add colored overlays for signal regions
+    y_min = min(all_popularity_values) if all_popularity_values else 1e-5
     y_max = max(all_popularity_values) if all_popularity_values else 1
+
+    # The y-axis is logarithmic. Plotly interprets the 'range' of a log axis in
+    # powers of ten, so a linear range such as [0, y_max] is read as
+    # [10**0, 10**y_max] and collapses the plot. Popularity values are strictly
+    # positive (filtered to > 1e-5 upstream), so use positive bounds (with a bit
+    # of headroom) and express the range in log10 units.
+    y_axis_min = max(y_min / 2, 1e-6)
+    y_axis_max = y_max * 2
 
     # Update the figure layout
     fig.update_layout(
@@ -192,7 +203,7 @@ def plot_topic_size_evolution(
         yaxis_title="Popularity",
         hovermode="closest",
         xaxis_range=[window_start, window_end],
-        yaxis_range=[0, y_max],
+        yaxis_range=[math.log10(y_axis_min), math.log10(y_axis_max)],
         xaxis=dict(type="date", tickformat="%Y-%m-%d"),
     )
 
@@ -221,16 +232,18 @@ def plot_topic_size_evolution(
         bgcolor="rgba(255, 255, 255, 0.8)",
     )
 
-    # Noise region (grey)
+    # Noise region (grey) — lower bound must stay positive on a log axis
     fig.add_hrect(
-        y0=-100 * y_max, y1=q1, fillcolor="rgba(128, 128, 128, 0.2)", line_width=0
+        y0=y_axis_min, y1=q1, fillcolor="rgba(128, 128, 128, 0.2)", line_width=0
     )
 
     # Weak signal region (orange)
     fig.add_hrect(y0=q1, y1=q3, fillcolor="rgba(255, 165, 0, 0.2)", line_width=0)
 
     # Strong signal region (green)
-    fig.add_hrect(y0=q3, y1=y_max * 100, fillcolor="rgba(0, 255, 0, 0.2)", line_width=0)
+    fig.add_hrect(
+        y0=q3, y1=y_axis_max, fillcolor="rgba(0, 255, 0, 0.2)", line_width=0
+    )
 
     return fig
 
