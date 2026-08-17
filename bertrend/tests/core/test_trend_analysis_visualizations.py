@@ -220,6 +220,15 @@ def test_plot_topic_size_evolution():
     assert result.layout.xaxis.title.text == "Timestamp"
     assert result.layout.yaxis.title.text == "Popularity"
 
+    # Regression guard for issue #8: the y-axis is logarithmic and its range
+    # must be expressed in log10 units (not raw popularity values), otherwise
+    # Plotly reads [0, y_max] as [10**0, 10**y_max] and collapses the plot.
+    assert result.layout.yaxis.type == "log"
+    y_low, y_high = result.layout.yaxis.range
+    # For data [5, 10, 15, 20], the log10 range must stay small (~ -0.4 .. 1.6),
+    # never the broken linear [0, 20].
+    assert -2 < y_low < y_high < 2
+
     # Check that the figure has the correct shapes (vertical line for current date and 3 horizontal regions)
     assert len(result.layout.shapes) == 4
 

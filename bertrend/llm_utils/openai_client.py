@@ -8,21 +8,59 @@ import re
 from enum import Enum
 from typing import Type
 
-from agents import ModelSettings, Runner
+from agents import ModelSettings
 from loguru import logger
 from openai import OpenAI, Stream, Timeout
 from openai.types import Reasoning
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from pydantic import BaseModel
 
-from bertrend.llm_utils.agent_utils import BaseAgentFactory, run_config_no_tracing
+from bertrend.llm_utils.agent_utils import BaseAgentFactory, run_runner_sync
 
 # Note: .env is loaded in bertrend/__init__.py which is imported before this module
 
 MAX_ATTEMPTS = 3
 TIMEOUT = 60.0
+# Wall-clock timeout (seconds) for a single structured-output (parse) call.
+# Generous enough for reasoning models, but bounded so that a stalled
+# connection can never hang the worker (and therefore the whole queue).
+PARSE_TIMEOUT = float(os.getenv("OPENAI_PARSE_TIMEOUT", 180.0))
 DEFAULT_TEMPERATURE = 0.1
-DEFAULT_MODEL = "gpt-4.1-mini"
+DEFAULT_MODEL = "gpt-5.6-luna"
+# Reasoning effort applied to GPT-5-family models (low keeps latency/cost down;
+# bump to "medium"/"high" via OPENAI_REASONING_EFFORT if deeper reasoning is needed).
+# Individual LLM tasks can override this per call via parse(reasoning_effort=...),
+# or via a per-task env var OPENAI_REASONING_EFFORT_<TASK> (see resolve_reasoning_effort).
+VALID_REASONING_EFFORTS = {"minimal", "low", "medium", "high"}
+DEFAULT_REASONING_EFFORT = os.getenv("OPENAI_REASONING_EFFORT", "low")
+
+# LLM task identifiers used to resolve a per-task reasoning effort from the
+# environment variable OPENAI_REASONING_EFFORT_<TASK> (task name upper-cased).
+REASONING_TASK_TOPIC_DESCRIPTION = "topic_description"
+REASONING_TASK_SIGNAL_ANALYSIS = "signal_analysis"
+
+
+def resolve_reasoning_effort(
+    task: str | None = None, override: str | None = None
+) -> str | None:
+    """Resolve the GPT-5 reasoning effort for a given LLM task.
+
+    Resolution order (first match wins):
+      1. an explicit ``override`` passed by the caller;
+      2. a per-task env var ``OPENAI_REASONING_EFFORT_<TASK>`` (task upper-cased,
+         e.g. ``OPENAI_REASONING_EFFORT_SIGNAL_ANALYSIS``);
+      3. the global default ``DEFAULT_REASONING_EFFORT`` (env
+         ``OPENAI_REASONING_EFFORT``, "low").
+
+    The returned value is validated downstream by ``OpenAI_Client.parse``.
+    """
+    if override:
+        return override
+    if task:
+        value = os.getenv(f"OPENAI_REASONING_EFFORT_{task.upper()}")
+        if value:
+            return value
+    return DEFAULT_REASONING_EFFORT
 
 
 class APIType(Enum):
@@ -190,14 +228,34 @@ class OpenAI_Client:
         user_prompt: str,
         system_prompt: str = None,
         response_format: Type[BaseModel] = None,
+        reasoning_effort: str | None = None,
         **kwargs,
     ) -> BaseModel | None:
-        """Call OpenAI model for generation with structured output (with openai-agents sdk)"""
+        """Call OpenAI model for generation with structured output (with openai-agents sdk).
+
+        Parameters
+        ----------
+        reasoning_effort : str, optional
+            Reasoning effort for GPT-5-family models: one of "minimal", "low",
+            "medium", "high". Lets each LLM task pick its own level (e.g. a light
+            "low" for topic descriptions, a higher level for in-depth analysis).
+            Defaults to DEFAULT_REASONING_EFFORT (env OPENAI_REASONING_EFFORT,
+            "low"). Ignored for non-GPT-5 models.
+        """
         kwargs.setdefault("model", self.model)
         model = kwargs["model"]
+
+        effort = reasoning_effort or DEFAULT_REASONING_EFFORT
+        if effort not in VALID_REASONING_EFFORTS:
+            logger.warning(
+                f"Invalid reasoning_effort '{effort}'; falling back to "
+                f"'{DEFAULT_REASONING_EFFORT}'. Valid values: {sorted(VALID_REASONING_EFFORTS)}"
+            )
+            effort = DEFAULT_REASONING_EFFORT
+
         model_settings = (
             ModelSettings(
-                reasoning=Reasoning(effort="low"),
+                reasoning=Reasoning(effort=effort),
                 verbosity="low",
             )
             if test_gpt5_version(model)
@@ -214,11 +272,14 @@ class OpenAI_Client:
 
         parsing_agent = BaseAgentFactory(model_name=model).create_agent(**agent_kwargs)
 
-        # invoke agent
-        result = Runner.run_sync(
+        # Invoke agent with a bounded wall-clock timeout so a stalled LLM
+        # connection cannot block the caller indefinitely. On timeout this
+        # raises asyncio.TimeoutError, which callers already handle by
+        # logging and returning None instead of freezing the queue worker.
+        result = run_runner_sync(
             input=user_prompt,
             starting_agent=parsing_agent,
-            run_config=run_config_no_tracing,
+            timeout=PARSE_TIMEOUT,
         )
         response = (
             result.final_output if hasattr(result, "final_output") else str(result)

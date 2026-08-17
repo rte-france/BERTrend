@@ -10,8 +10,7 @@ import pytest
 from openai import Stream
 from pydantic import BaseModel
 
-from bertrend.llm_utils.agent_utils import run_config_no_tracing
-from bertrend.llm_utils.openai_client import APIType, OpenAI_Client
+from bertrend.llm_utils.openai_client import APIType, OpenAI_Client, PARSE_TIMEOUT
 
 
 @pytest.fixture
@@ -104,7 +103,8 @@ class _TestResponseModel(BaseModel):
 
 def test_parse_basic_functionality(mock_api_key):
     """Test parse method with a simple user prompt"""
-    client = OpenAI_Client(api_key="test_api_key")
+    # Use a non-GPT-5 model so this test covers the branch without model_settings
+    client = OpenAI_Client(api_key="test_api_key", model="gpt-4.1-mini")
 
     mock_agent = Mock()
     mock_factory = Mock()
@@ -118,7 +118,7 @@ def test_parse_basic_functionality(mock_api_key):
             return_value=mock_factory,
         ) as mock_factory_cls,
         patch(
-            "bertrend.llm_utils.openai_client.Runner.run_sync",
+            "bertrend.llm_utils.openai_client.run_runner_sync",
             return_value=mock_result,
         ) as mock_run_sync,
     ):
@@ -135,13 +135,14 @@ def test_parse_basic_functionality(mock_api_key):
         mock_run_sync.assert_called_once_with(
             input="What is the weather today?",
             starting_agent=mock_agent,
-            run_config=run_config_no_tracing,
+            timeout=PARSE_TIMEOUT,
         )
 
 
 def test_parse_with_system_prompt(mock_api_key):
     """Test parse method with both user and system prompts"""
-    client = OpenAI_Client(api_key="test_api_key")
+    # Use a non-GPT-5 model so this test covers the branch without model_settings
+    client = OpenAI_Client(api_key="test_api_key", model="gpt-4.1-mini")
 
     mock_agent = Mock()
     mock_factory = Mock()
@@ -155,7 +156,7 @@ def test_parse_with_system_prompt(mock_api_key):
             return_value=mock_factory,
         ) as mock_factory_cls,
         patch(
-            "bertrend.llm_utils.openai_client.Runner.run_sync",
+            "bertrend.llm_utils.openai_client.run_runner_sync",
             return_value=mock_result,
         ) as mock_run_sync,
     ):
@@ -174,7 +175,7 @@ def test_parse_with_system_prompt(mock_api_key):
         mock_run_sync.assert_called_once_with(
             input="What is the weather today?",
             starting_agent=mock_agent,
-            run_config=run_config_no_tracing,
+            timeout=PARSE_TIMEOUT,
         )
 
 
@@ -191,7 +192,7 @@ def test_parse_error_handling(mock_api_key):
             return_value=mock_factory,
         ),
         patch(
-            "bertrend.llm_utils.openai_client.Runner.run_sync",
+            "bertrend.llm_utils.openai_client.run_runner_sync",
             side_effect=Exception("API Parse Error"),
         ),
         pytest.raises(Exception, match="API Parse Error"),
@@ -201,7 +202,8 @@ def test_parse_error_handling(mock_api_key):
 
 def test_parse_with_none_response_format(mock_api_key):
     """Test parse method with response_format=None"""
-    client = OpenAI_Client(api_key="test_api_key")
+    # Use a non-GPT-5 model so this test covers the branch without model_settings
+    client = OpenAI_Client(api_key="test_api_key", model="gpt-4.1-mini")
 
     mock_agent = Mock()
     mock_factory = Mock()
@@ -215,7 +217,7 @@ def test_parse_with_none_response_format(mock_api_key):
             return_value=mock_factory,
         ) as mock_factory_cls,
         patch(
-            "bertrend.llm_utils.openai_client.Runner.run_sync",
+            "bertrend.llm_utils.openai_client.run_runner_sync",
             return_value=mock_result,
         ) as mock_run_sync,
     ):
@@ -230,7 +232,7 @@ def test_parse_with_none_response_format(mock_api_key):
         mock_run_sync.assert_called_once_with(
             input="What is the weather today?",
             starting_agent=mock_agent,
-            run_config=run_config_no_tracing,
+            timeout=PARSE_TIMEOUT,
         )
         assert result == mock_parsed
 
@@ -250,7 +252,7 @@ def test_parse_includes_model_settings_for_gpt5(mock_api_key):
             return_value=mock_factory,
         ) as mock_factory_cls,
         patch(
-            "bertrend.llm_utils.openai_client.Runner.run_sync",
+            "bertrend.llm_utils.openai_client.run_runner_sync",
             return_value=mock_result,
         ),
     ):
@@ -262,3 +264,92 @@ def test_parse_includes_model_settings_for_gpt5(mock_api_key):
         assert kwargs["instructions"] is None
         assert kwargs["output_type"] == _TestResponseModel
         assert kwargs["model_settings"] is not None
+
+
+def test_parse_custom_reasoning_effort_for_gpt5(mock_api_key):
+    """A per-task reasoning_effort overrides the default for GPT-5 models."""
+    client = OpenAI_Client(api_key="test_api_key", model="gpt-5")
+
+    mock_agent = Mock()
+    mock_factory = Mock()
+    mock_factory.create_agent.return_value = mock_agent
+    mock_result = Mock(final_output=_TestResponseModel(answer="Ok", confidence=0.5))
+
+    with (
+        patch(
+            "bertrend.llm_utils.openai_client.BaseAgentFactory",
+            return_value=mock_factory,
+        ),
+        patch(
+            "bertrend.llm_utils.openai_client.run_runner_sync",
+            return_value=mock_result,
+        ),
+    ):
+        client.parse(
+            "What is the weather today?",
+            response_format=_TestResponseModel,
+            reasoning_effort="high",
+        )
+
+        _, kwargs = mock_factory.create_agent.call_args
+        assert kwargs["model_settings"].reasoning.effort == "high"
+
+
+def test_parse_invalid_reasoning_effort_falls_back(mock_api_key):
+    """An invalid reasoning_effort falls back to the default effort."""
+    from bertrend.llm_utils.openai_client import DEFAULT_REASONING_EFFORT
+
+    client = OpenAI_Client(api_key="test_api_key", model="gpt-5")
+
+    mock_agent = Mock()
+    mock_factory = Mock()
+    mock_factory.create_agent.return_value = mock_agent
+    mock_result = Mock(final_output=_TestResponseModel(answer="Ok", confidence=0.5))
+
+    with (
+        patch(
+            "bertrend.llm_utils.openai_client.BaseAgentFactory",
+            return_value=mock_factory,
+        ),
+        patch(
+            "bertrend.llm_utils.openai_client.run_runner_sync",
+            return_value=mock_result,
+        ),
+    ):
+        client.parse(
+            "What is the weather today?",
+            response_format=_TestResponseModel,
+            reasoning_effort="ultra",  # not a valid effort
+        )
+
+        _, kwargs = mock_factory.create_agent.call_args
+        assert kwargs["model_settings"].reasoning.effort == DEFAULT_REASONING_EFFORT
+
+
+def test_resolve_reasoning_effort_override_wins(monkeypatch):
+    """An explicit override takes precedence over env vars."""
+    from bertrend.llm_utils.openai_client import resolve_reasoning_effort
+
+    monkeypatch.setenv("OPENAI_REASONING_EFFORT_SIGNAL_ANALYSIS", "high")
+    assert (
+        resolve_reasoning_effort(task="signal_analysis", override="medium") == "medium"
+    )
+
+
+def test_resolve_reasoning_effort_per_task_env(monkeypatch):
+    """A per-task env var is used when no override is given."""
+    from bertrend.llm_utils.openai_client import resolve_reasoning_effort
+
+    monkeypatch.setenv("OPENAI_REASONING_EFFORT_SIGNAL_ANALYSIS", "high")
+    assert resolve_reasoning_effort(task="signal_analysis") == "high"
+
+
+def test_resolve_reasoning_effort_falls_back_to_default(monkeypatch):
+    """Without override or task env var, the global default is returned."""
+    from bertrend.llm_utils.openai_client import (
+        resolve_reasoning_effort,
+        DEFAULT_REASONING_EFFORT,
+    )
+
+    monkeypatch.delenv("OPENAI_REASONING_EFFORT_SIGNAL_ANALYSIS", raising=False)
+    assert resolve_reasoning_effort(task="signal_analysis") == DEFAULT_REASONING_EFFORT

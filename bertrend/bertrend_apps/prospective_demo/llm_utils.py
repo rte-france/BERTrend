@@ -13,6 +13,7 @@ def generate_bertrend_topic_description(
     topic_number: int,
     texts: list[str],
     language_code: str = "fr",
+    reasoning_effort: str | None = None,
 ) -> tuple[str, str]:
     """Generates a LLM-based human-readable description of a topic composed of a title and a description (as a dict)"""
     if not texts:
@@ -27,7 +28,10 @@ def generate_bertrend_topic_description(
     )
 
     topic_description: TopicDescription = get_topic_description(
-        topic_representation, docs_text, language_code
+        topic_representation,
+        docs_text,
+        language_code,
+        reasoning_effort=reasoning_effort,
     )
     if not topic_description:
         return None, None
