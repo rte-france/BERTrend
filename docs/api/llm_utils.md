@@ -35,7 +35,23 @@ Reads defaults from environment variables: `OPENAI_API_KEY`, `OPENAI_BASE_URL`, 
 |-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
 | `generate(prompt, model, temperature, max_tokens, **kwargs)`                | Generate a text completion from a single prompt string.                                 |
 | `generate_from_history(messages, model, temperature, max_tokens, **kwargs)` | Generate a completion from a list of chat messages (`[{"role": ..., "content": ...}]`). |
-| `parse(prompt, response_format, model, **kwargs)`                           | Generate a structured (parsed) response conforming to a Pydantic model schema.          |
+| `parse(prompt, response_format, reasoning_effort, model, **kwargs)`         | Generate a structured (parsed) response conforming to a Pydantic model schema.          |
+
+#### GPT-5 reasoning effort
+
+For GPT-5-family models (any model whose name starts with `gpt-<n>` where `n >= 5`,
+e.g. `gpt-5.6-luna`), `parse()` attaches a reasoning effort. Effort can be set in
+three ways, highest priority first:
+
+1. **Per call** — pass `reasoning_effort` to `parse()` (one of `minimal`, `low`, `medium`, `high`).
+2. **Per task** — set an env var `OPENAI_REASONING_EFFORT_<TASK>`, resolved by
+   `resolve_reasoning_effort(task, override)`. Built-in tasks:
+   - `OPENAI_REASONING_EFFORT_TOPIC_DESCRIPTION` — topic title/description generation.
+   - `OPENAI_REASONING_EFFORT_SIGNAL_ANALYSIS` — weak/strong signal analysis.
+3. **Global default** — `OPENAI_REASONING_EFFORT` (defaults to `low`).
+
+Invalid values log a warning and fall back to the global default. Reasoning effort
+is ignored for non-GPT-5 models.
 
 ---
 

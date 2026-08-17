@@ -100,6 +100,9 @@ docker run --gpus all \
 | `OPENAI_API_KEY`              | Your OpenAI API key | - |
 | `OPENAI_BASE_URL`     | OpenAI API endpoint | - |
 | `OPENAI_DEFAULT_MODEL`   | Default OpenAI model to use | `gpt-5.6-luna` |
+| `OPENAI_REASONING_EFFORT` | GPT-5 reasoning effort (`minimal`/`low`/`medium`/`high`); GPT-5 models only | `low` |
+| `OPENAI_REASONING_EFFORT_TOPIC_DESCRIPTION` | Per-task override for topic description | inherits `OPENAI_REASONING_EFFORT` |
+| `OPENAI_REASONING_EFFORT_SIGNAL_ANALYSIS` | Per-task override for signal analysis | inherits `OPENAI_REASONING_EFFORT` |
 | `BERTREND_BASE_DIR`           | Base directory for BERTrend data | `/bertrend/` |
 | `EMBEDDING_SERVICE_URL`       | URL of the embedding server | `https://embedding_server:6464` |
 | `EMBEDDING_SERVICE_USE_LOCAL` | Whether to use local embeddings | `false` |

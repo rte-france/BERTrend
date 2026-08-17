@@ -324,3 +324,32 @@ def test_parse_invalid_reasoning_effort_falls_back(mock_api_key):
 
         _, kwargs = mock_factory.create_agent.call_args
         assert kwargs["model_settings"].reasoning.effort == DEFAULT_REASONING_EFFORT
+
+
+def test_resolve_reasoning_effort_override_wins(monkeypatch):
+    """An explicit override takes precedence over env vars."""
+    from bertrend.llm_utils.openai_client import resolve_reasoning_effort
+
+    monkeypatch.setenv("OPENAI_REASONING_EFFORT_SIGNAL_ANALYSIS", "high")
+    assert (
+        resolve_reasoning_effort(task="signal_analysis", override="medium") == "medium"
+    )
+
+
+def test_resolve_reasoning_effort_per_task_env(monkeypatch):
+    """A per-task env var is used when no override is given."""
+    from bertrend.llm_utils.openai_client import resolve_reasoning_effort
+
+    monkeypatch.setenv("OPENAI_REASONING_EFFORT_SIGNAL_ANALYSIS", "high")
+    assert resolve_reasoning_effort(task="signal_analysis") == "high"
+
+
+def test_resolve_reasoning_effort_falls_back_to_default(monkeypatch):
+    """Without override or task env var, the global default is returned."""
+    from bertrend.llm_utils.openai_client import (
+        resolve_reasoning_effort,
+        DEFAULT_REASONING_EFFORT,
+    )
+
+    monkeypatch.delenv("OPENAI_REASONING_EFFORT_SIGNAL_ANALYSIS", raising=False)
+    assert resolve_reasoning_effort(task="signal_analysis") == DEFAULT_REASONING_EFFORT

@@ -29,9 +29,38 @@ DEFAULT_TEMPERATURE = 0.1
 DEFAULT_MODEL = "gpt-5.6-luna"
 # Reasoning effort applied to GPT-5-family models (low keeps latency/cost down;
 # bump to "medium"/"high" via OPENAI_REASONING_EFFORT if deeper reasoning is needed).
-# Individual LLM tasks can override this per call via parse(reasoning_effort=...).
+# Individual LLM tasks can override this per call via parse(reasoning_effort=...),
+# or via a per-task env var OPENAI_REASONING_EFFORT_<TASK> (see resolve_reasoning_effort).
 VALID_REASONING_EFFORTS = {"minimal", "low", "medium", "high"}
 DEFAULT_REASONING_EFFORT = os.getenv("OPENAI_REASONING_EFFORT", "low")
+
+# LLM task identifiers used to resolve a per-task reasoning effort from the
+# environment variable OPENAI_REASONING_EFFORT_<TASK> (task name upper-cased).
+REASONING_TASK_TOPIC_DESCRIPTION = "topic_description"
+REASONING_TASK_SIGNAL_ANALYSIS = "signal_analysis"
+
+
+def resolve_reasoning_effort(
+    task: str | None = None, override: str | None = None
+) -> str | None:
+    """Resolve the GPT-5 reasoning effort for a given LLM task.
+
+    Resolution order (first match wins):
+      1. an explicit ``override`` passed by the caller;
+      2. a per-task env var ``OPENAI_REASONING_EFFORT_<TASK>`` (task upper-cased,
+         e.g. ``OPENAI_REASONING_EFFORT_SIGNAL_ANALYSIS``);
+      3. the global default ``DEFAULT_REASONING_EFFORT`` (env
+         ``OPENAI_REASONING_EFFORT``, "low").
+
+    The returned value is validated downstream by ``OpenAI_Client.parse``.
+    """
+    if override:
+        return override
+    if task:
+        value = os.getenv(f"OPENAI_REASONING_EFFORT_{task.upper()}")
+        if value:
+            return value
+    return DEFAULT_REASONING_EFFORT
 
 
 class APIType(Enum):

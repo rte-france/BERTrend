@@ -7,7 +7,11 @@ from bertopic import BERTopic
 from loguru import logger
 
 from bertrend import LLM_CONFIG
-from bertrend.llm_utils.openai_client import OpenAI_Client
+from bertrend.llm_utils.openai_client import (
+    OpenAI_Client,
+    REASONING_TASK_TOPIC_DESCRIPTION,
+    resolve_reasoning_effort,
+)
 from bertrend.topic_analysis.data_structure import TopicDescription
 from bertrend.topic_analysis.prompts import TOPIC_DESCRIPTION_PROMPT
 
@@ -20,9 +24,10 @@ def get_topic_description(
 ) -> TopicDescription | None:
     """Generates a LLM-based human-readable description of a topic composed of a title and a description (as a dict).
 
-    reasoning_effort lets this task pick its GPT-5 reasoning level (defaults to
-    the global default, i.e. "low"); this is a lightweight task so "low" is
-    usually sufficient.
+    reasoning_effort lets this task pick its GPT-5 reasoning level. When None it
+    falls back to the env var OPENAI_REASONING_EFFORT_TOPIC_DESCRIPTION, then to
+    the global default (OPENAI_REASONING_EFFORT, "low"). This is a lightweight
+    task so "low" is usually sufficient.
     """
     # Prepare the prompt
     prompt = TOPIC_DESCRIPTION_PROMPT[language_code]
@@ -38,7 +43,9 @@ def get_topic_description(
                 topic_representation=topic_representation,
                 docs_text=docs_text,
             ),
-            reasoning_effort=reasoning_effort,
+            reasoning_effort=resolve_reasoning_effort(
+                task=REASONING_TASK_TOPIC_DESCRIPTION, override=reasoning_effort
+            ),
         )
         return answer
     except Exception as e:
