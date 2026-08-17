@@ -338,7 +338,14 @@ def analyze_signal(
     topic_number: int,
     current_date: Timestamp,
     maximum_analysed_periods: int = MAXIMUM_ANALYZED_PERIODS,
+    reasoning_effort: str | None = None,
 ) -> tuple[TopicSummaryList, SignalAnalysis]:
+    """Analyze a signal (topic) over time via LLM.
+
+    reasoning_effort selects the GPT-5 reasoning level for this task (defaults to
+    the global default, i.e. "low"). This is a heavier, analysis-oriented task,
+    so callers may pass e.g. "medium"/"high" when deeper reasoning is desired.
+    """
     topic_merge_rows = bertrend.all_merge_histories_df[
         bertrend.all_merge_histories_df["Topic1"] == topic_number
     ].sort_values("Timestamp")
@@ -391,6 +398,7 @@ def analyze_signal(
                 user_prompt=summary_prompt,
                 temperature=LLM_CONFIG["temperature"],
                 response_format=TopicSummaryList,
+                reasoning_effort=reasoning_effort,
             )
 
             if not summaries:
@@ -410,6 +418,7 @@ def analyze_signal(
                 user_prompt=weak_signal_prompt,
                 temperature=LLM_CONFIG["temperature"],
                 response_format=SignalAnalysis,
+                reasoning_effort=reasoning_effort,
             )
 
             return summaries, weak_signal_analysis

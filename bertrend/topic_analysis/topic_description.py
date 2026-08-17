@@ -16,8 +16,14 @@ def get_topic_description(
     topic_representation: str,
     docs_text: str,
     language_code: str = "fr",
+    reasoning_effort: str | None = None,
 ) -> TopicDescription | None:
-    """Generates a LLM-based human-readable description of a topic composed of a title and a description (as a dict)"""
+    """Generates a LLM-based human-readable description of a topic composed of a title and a description (as a dict).
+
+    reasoning_effort lets this task pick its GPT-5 reasoning level (defaults to
+    the global default, i.e. "low"); this is a lightweight task so "low" is
+    usually sufficient.
+    """
     # Prepare the prompt
     prompt = TOPIC_DESCRIPTION_PROMPT[language_code]
     try:
@@ -32,6 +38,7 @@ def get_topic_description(
                 topic_representation=topic_representation,
                 docs_text=docs_text,
             ),
+            reasoning_effort=reasoning_effort,
         )
         return answer
     except Exception as e:
@@ -44,6 +51,7 @@ def generate_topic_description(
     topic_number: int,
     filtered_docs: pd.DataFrame,
     language_code: str = "fr",
+    reasoning_effort: str | None = None,
 ) -> TopicDescription | None:
     """Generates a LLM-based human-readable description of a topic composed of a title and a description (as a dict)"""
     topic_words = topic_model.get_topic(topic_number)
@@ -63,4 +71,9 @@ def generate_topic_description(
         ]
     )
 
-    return get_topic_description(topic_representation, docs_text, language_code)
+    return get_topic_description(
+        topic_representation,
+        docs_text,
+        language_code,
+        reasoning_effort=reasoning_effort,
+    )

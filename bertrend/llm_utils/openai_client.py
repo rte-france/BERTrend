@@ -29,6 +29,8 @@ DEFAULT_TEMPERATURE = 0.1
 DEFAULT_MODEL = "gpt-5.6-luna"
 # Reasoning effort applied to GPT-5-family models (low keeps latency/cost down;
 # bump to "medium"/"high" via OPENAI_REASONING_EFFORT if deeper reasoning is needed).
+# Individual LLM tasks can override this per call via parse(reasoning_effort=...).
+VALID_REASONING_EFFORTS = {"minimal", "low", "medium", "high"}
 DEFAULT_REASONING_EFFORT = os.getenv("OPENAI_REASONING_EFFORT", "low")
 
 
@@ -197,14 +199,34 @@ class OpenAI_Client:
         user_prompt: str,
         system_prompt: str = None,
         response_format: Type[BaseModel] = None,
+        reasoning_effort: str | None = None,
         **kwargs,
     ) -> BaseModel | None:
-        """Call OpenAI model for generation with structured output (with openai-agents sdk)"""
+        """Call OpenAI model for generation with structured output (with openai-agents sdk).
+
+        Parameters
+        ----------
+        reasoning_effort : str, optional
+            Reasoning effort for GPT-5-family models: one of "minimal", "low",
+            "medium", "high". Lets each LLM task pick its own level (e.g. a light
+            "low" for topic descriptions, a higher level for in-depth analysis).
+            Defaults to DEFAULT_REASONING_EFFORT (env OPENAI_REASONING_EFFORT,
+            "low"). Ignored for non-GPT-5 models.
+        """
         kwargs.setdefault("model", self.model)
         model = kwargs["model"]
+
+        effort = reasoning_effort or DEFAULT_REASONING_EFFORT
+        if effort not in VALID_REASONING_EFFORTS:
+            logger.warning(
+                f"Invalid reasoning_effort '{effort}'; falling back to "
+                f"'{DEFAULT_REASONING_EFFORT}'. Valid values: {sorted(VALID_REASONING_EFFORTS)}"
+            )
+            effort = DEFAULT_REASONING_EFFORT
+
         model_settings = (
             ModelSettings(
-                reasoning=Reasoning(effort=DEFAULT_REASONING_EFFORT),
+                reasoning=Reasoning(effort=effort),
                 verbosity="low",
             )
             if test_gpt5_version(model)

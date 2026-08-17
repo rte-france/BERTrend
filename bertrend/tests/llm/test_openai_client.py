@@ -264,3 +264,63 @@ def test_parse_includes_model_settings_for_gpt5(mock_api_key):
         assert kwargs["instructions"] is None
         assert kwargs["output_type"] == _TestResponseModel
         assert kwargs["model_settings"] is not None
+
+
+def test_parse_custom_reasoning_effort_for_gpt5(mock_api_key):
+    """A per-task reasoning_effort overrides the default for GPT-5 models."""
+    client = OpenAI_Client(api_key="test_api_key", model="gpt-5")
+
+    mock_agent = Mock()
+    mock_factory = Mock()
+    mock_factory.create_agent.return_value = mock_agent
+    mock_result = Mock(final_output=_TestResponseModel(answer="Ok", confidence=0.5))
+
+    with (
+        patch(
+            "bertrend.llm_utils.openai_client.BaseAgentFactory",
+            return_value=mock_factory,
+        ),
+        patch(
+            "bertrend.llm_utils.openai_client.run_runner_sync",
+            return_value=mock_result,
+        ),
+    ):
+        client.parse(
+            "What is the weather today?",
+            response_format=_TestResponseModel,
+            reasoning_effort="high",
+        )
+
+        _, kwargs = mock_factory.create_agent.call_args
+        assert kwargs["model_settings"].reasoning.effort == "high"
+
+
+def test_parse_invalid_reasoning_effort_falls_back(mock_api_key):
+    """An invalid reasoning_effort falls back to the default effort."""
+    from bertrend.llm_utils.openai_client import DEFAULT_REASONING_EFFORT
+
+    client = OpenAI_Client(api_key="test_api_key", model="gpt-5")
+
+    mock_agent = Mock()
+    mock_factory = Mock()
+    mock_factory.create_agent.return_value = mock_agent
+    mock_result = Mock(final_output=_TestResponseModel(answer="Ok", confidence=0.5))
+
+    with (
+        patch(
+            "bertrend.llm_utils.openai_client.BaseAgentFactory",
+            return_value=mock_factory,
+        ),
+        patch(
+            "bertrend.llm_utils.openai_client.run_runner_sync",
+            return_value=mock_result,
+        ),
+    ):
+        client.parse(
+            "What is the weather today?",
+            response_format=_TestResponseModel,
+            reasoning_effort="ultra",  # not a valid effort
+        )
+
+        _, kwargs = mock_factory.create_agent.call_args
+        assert kwargs["model_settings"].reasoning.effort == DEFAULT_REASONING_EFFORT
