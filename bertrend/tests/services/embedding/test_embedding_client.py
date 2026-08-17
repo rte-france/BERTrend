@@ -9,10 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from bertrend.services.embedding_client import (
-    MAX_DOCS_PER_REQUEST_PER_WORKER,
-    EmbeddingAPIClient,
-)
+from bertrend.services.embedding_client import EmbeddingAPIClient
 
 
 # Mock response for API calls
@@ -411,8 +408,9 @@ def test_embed_documents():
                     assert embeddings == [mock_embeddings1[0], mock_embeddings2[0]]
 
 
-def test_embed_documents_too_many():
-    """Test embed_documents method with too many documents"""
+def test_embed_documents_too_many_are_chunked():
+    """Inputs exceeding the per-call limit are processed in sequential chunks
+    (issue #42) instead of raising, with no document dropped."""
     with patch("bertrend.services.embedding_client.requests.get") as mock_get:
         mock_get.side_effect = [
             MockResponse("test_model", 200),  # For get_api_model_name
@@ -429,12 +427,28 @@ def test_embed_documents_too_many():
                 client_secret="test_secret",
             )
 
-            # Create a list with more documents than allowed
-            too_many_docs = ["text"] * (MAX_DOCS_PER_REQUEST_PER_WORKER + 1)
+        # Force a tiny per-call limit so a small input triggers chunking, and make
+        # embed_batch echo one embedding per input document.
+        with (
+            patch(
+                "bertrend.services.embedding_client.MAX_DOCS_PER_REQUEST_PER_WORKER",
+                2,
+            ),
+            patch.object(
+                client,
+                "embed_batch",
+                side_effect=lambda batch, show_progress_bar=True: [
+                    [0.0, 1.0] for _ in batch
+                ],
+            ),
+        ):
+            # 5 docs with a per-call limit of 2 (2 * 1 worker) -> 3 sequential chunks
+            texts = [f"text{i}" for i in range(5)]
+            embeddings = client.embed_documents(texts, batch_size=10)
 
-            with pytest.raises(ValueError) as excinfo:
-                client.embed_documents(too_many_docs)
-            assert "Too many documents to be embedded" in str(excinfo.value)
+            # All documents embedded, order/length preserved, nothing dropped
+            assert len(embeddings) == len(texts)
+            assert all(e == [0.0, 1.0] for e in embeddings)
 
 
 def test_embed_documents_batch_failure():
