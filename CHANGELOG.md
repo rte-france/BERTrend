@@ -1,3 +1,52 @@
+## v0.4.13 - 2026-08-17
+
+### Features
+
+- Completed **natural-language feed query generation**: generate Google News queries from monitoring briefs, with
+  dialog UI integration, i18n translations, and test coverage (#93).
+
+### Fixes
+
+- Further fixed #94 (local-mode embedding failures): token grouping now auto-detects the tokenizer's subword scheme
+  (SentencePiece vs. WordPiece) instead of assuming a fixed language, so any local embedding model is supported.
+  Embedding error paths now log full tracebacks via `logger.exception()`.
+- Restricted `sentence-transformers` to `<5.4.0` to avoid a compatibility regression; added `sentencepiece` and
+  `protobuf` as explicit dependencies.
+
+## v0.4.12 - 2026-08-17
+
+### Fixes
+
+- Fixed the log-scale y-axis calculation in the topic popularity evolution graph. (#8)
+- Processed large document sets in chunks to fix remote embedding failures on large corpora.
+- Aligned signal-analysis dataframes with the current-date slider.
+
+## v0.4.11 - 2026-08-17
+
+### Features
+
+- Added initial support for generating monitoring-brief-based feed queries (Google News query generation from
+  LLM-summarized briefs).
+- Switched the default LLM model to `gpt-5.6-luna` (previously `gpt-4.1-mini`).
+- Added per-task GPT-5 reasoning effort control (`OPENAI_REASONING_EFFORT` / per-task env var overrides), defaulting
+  to `low`, wired into the topic-description and signal-analysis tasks.
+- Added a BERTrend model exploration notebook under `getting_started/`.
+
+### Fixes
+
+- Improved local-mode embedding robustness and error diagnosability (#94): errors are now logged with full
+  tracebacks instead of being swallowed, and token grouping no longer hard-codes French tokenization.
+- Bounded LLM structured-output (`parse`) calls and parallel topic interpretation with wall-clock timeouts.
+- Lowered the default queue job timeout from 1h to 15min.
+- Reset the feed query dialog state on open.
+- Added proxy support for build and runtime in the scheduling service's `docker-compose.yml`.
+
+### Docs
+
+- Documented large-dataset usage and running BERTrend without the demo.
+- Updated the BERTrend model structure documentation.
+- Documented the new reasoning-effort environment variables.
+
 ## v0.4.10 - 2026-07-27
 
 ### Fixes
