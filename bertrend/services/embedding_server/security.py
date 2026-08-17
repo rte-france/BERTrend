@@ -8,8 +8,8 @@ import os
 import secrets
 import time
 from collections import defaultdict, deque
-from datetime import datetime, timedelta, timezone
-from typing import Annotated, Deque
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
 
 import jwt  # PyJWT
 import urllib3
@@ -25,7 +25,7 @@ from loguru import logger
 from pydantic import BaseModel, ValidationError
 
 # Load environment variables
-load_dotenv(override=True)
+load_dotenv()
 
 # Disable warnings related to https certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -36,10 +36,18 @@ def generate_hex_token(length: int = 32):
     return secrets.token_hex(length)
 
 
-# Configuration (should be in environment variables)
-# to get a string like this run:
-# openssl rand -hex 32
-SECRET_KEY = os.getenv("BERTREND_SECRET_KEY", generate_hex_token())
+def get_secret_key() -> str:
+    """Return the deployment-wide JWT signing key."""
+    secret_key = os.getenv("BERTREND_SECRET_KEY")
+    if not secret_key:
+        raise RuntimeError(
+            "BERTREND_SECRET_KEY must be set to a shared secret for all workers"
+        )
+    if len(secret_key.encode()) < 32:
+        raise RuntimeError("BERTREND_SECRET_KEY must be at least 32 bytes")
+    return secret_key
+
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 48  # 48h
 
@@ -48,12 +56,7 @@ DEFAULT_RATE_LIMIT = int(os.getenv("DEFAULT_RATE_LIMIT", "50"))  # Requests per 
 DEFAULT_RATE_WINDOW = int(os.getenv("DEFAULT_RATE_WINDOW", "60"))  # Window in seconds
 
 # Client registry - in production, store somewhere else - database, file...
-CLIENT_REGISTRY_FILE = os.getenv(
-    "CLIENT_REGISTRY_FILE",
-    os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "bertrend_client_registry.json"
-    ),
-)
+CLIENT_REGISTRY_FILE = os.getenv("CLIENT_REGISTRY_FILE")
 
 RESTRICTED_ACCESS = "restricted_access"
 FULL_ACCESS = "full_access"
@@ -67,23 +70,6 @@ SCOPES = {
 }
 
 
-DEFAULT_CLIENT_REGISTRY = {
-    "admin": {
-        "client_secret": generate_hex_token(),
-        "scopes": [ADMIN, FULL_ACCESS, RESTRICTED_ACCESS],
-        "authorized_groups": [],  # Empty list means access to all groups
-        "rate_limit": DEFAULT_RATE_LIMIT * 2,  # Higher limit for admin
-        "rate_window": DEFAULT_RATE_WINDOW,
-    },
-    "bertrend": {
-        "client_secret": generate_hex_token(),
-        "scopes": [RESTRICTED_ACCESS],
-        "authorized_groups": [],  # Empty list means access to all groups
-        "rate_limit": DEFAULT_RATE_LIMIT,
-        "rate_window": DEFAULT_RATE_WINDOW,
-    },
-}
-
 # Configure OAuth2
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="token",
@@ -92,20 +78,34 @@ oauth2_scheme = OAuth2PasswordBearer(
 
 # Store for rate limiting (in memory - for production use Redis or similar)
 # Maps client_id -> deque of request timestamps
-rate_limit_store: dict[str, Deque[float]] = defaultdict(lambda: deque(maxlen=1000))
+rate_limit_store: dict[str, deque[float]] = defaultdict(lambda: deque(maxlen=1000))
 
 
 def load_client_registry():
     """Function to load client registry from JSON file"""
+    if not CLIENT_REGISTRY_FILE:
+        client_secret = os.getenv("BERTREND_CLIENT_SECRET")
+        if not client_secret:
+            raise RuntimeError(
+                "BERTREND_CLIENT_SECRET must be set when CLIENT_REGISTRY_FILE is unset"
+            )
+        return {
+            "bertrend": {
+                "client_secret": client_secret,
+                "scopes": [FULL_ACCESS],
+                "authorized_groups": [],
+                "rate_limit": DEFAULT_RATE_LIMIT,
+                "rate_window": DEFAULT_RATE_WINDOW,
+            }
+        }
+
     try:
         with open(CLIENT_REGISTRY_FILE, "r") as f:
             return json.load(f)
     except FileNotFoundError:
-        # Create a default client registry file if it doesn't exist
-        default_registry = DEFAULT_CLIENT_REGISTRY
-        with open(CLIENT_REGISTRY_FILE, "w") as f:
-            json.dump(default_registry, f, indent=4)
-        return default_registry
+        raise RuntimeError(
+            f"Configured client registry does not exist: {CLIENT_REGISTRY_FILE}"
+        )
     except json.JSONDecodeError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -169,7 +169,7 @@ class TokenData(BaseModel):
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     """Creates access token"""
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + expires_delta or timedelta(
+    expire = datetime.now(UTC) + expires_delta or timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES
     )
     to_encode.update(
@@ -182,7 +182,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
             ),
         }
     )
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, get_secret_key(), algorithm=ALGORITHM)
     return encoded_jwt
 
 
@@ -241,7 +241,7 @@ async def get_current_client(
         headers={"WWW-Authenticate": authenticate_value},
     )
     try:
-        payload = jwt.decode(token, key=SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, key=get_secret_key(), algorithms=[ALGORITHM])
         client_id = payload.get("sub")
         if client_id is None:
             raise credentials_exception

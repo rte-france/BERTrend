@@ -122,8 +122,9 @@ Recommended steps:
             - `OPENAI_BASE_URL` (optional for OpenAI-compatible providers such as LiteLLM and Azure)
             - `OPENAI_DEFAULT_MODEL`
         - Providers (optional): `SEMANTIC_SCHOLAR_API_KEY`, `NEWSCATCHER_API_KEY`, `DBPEDIA_REST_API_URL`
-        - Embedding service security (optional): `BERTREND_SECRET_KEY`, `DEFAULT_RATE_LIMIT`, `DEFAULT_RATE_WINDOW`,
-          `CLIENT_REGISTRY_FILE`
+        - Embedding service security: `BERTREND_CLIENT_SECRET` and `BERTREND_SECRET_KEY` are required when running the
+          embedding service. Generate separate values with `openssl rand -hex 32`. `DEFAULT_RATE_LIMIT`,
+          `DEFAULT_RATE_WINDOW`, and `CLIENT_REGISTRY_FILE` are optional.
         - Email (optional): `BERTREND_EMAIL_BACKEND`, `GMAIL_*`, `SMTP_*`, `SENDGRID_API_KEY`
         - Misc: `CUDA_VISIBLE_DEVICES`
 2. Use a virtual environment and install dependencies inside it:

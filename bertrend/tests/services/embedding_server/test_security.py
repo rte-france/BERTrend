@@ -4,7 +4,6 @@
 #  This file is part of BERTrend.
 
 import json
-import os
 import time
 from collections import deque
 from datetime import timedelta
@@ -13,7 +12,9 @@ from unittest.mock import MagicMock
 import jwt
 import pytest
 from fastapi import HTTPException
+from fastapi.security import SecurityScopes
 
+from bertrend.services.embedding_server import security
 from bertrend.services.embedding_server.security import (
     ADMIN,
     ALGORITHM,
@@ -21,12 +22,13 @@ from bertrend.services.embedding_server.security import (
     DEFAULT_RATE_WINDOW,
     FULL_ACCESS,
     RESTRICTED_ACCESS,
-    SECRET_KEY,
     Token,
     TokenData,
     check_rate_limit,
     create_access_token,
     generate_hex_token,
+    get_current_client,
+    get_secret_key,
     get_token,
     is_authorized_for_group,
     list_registered_clients,
@@ -34,6 +36,62 @@ from bertrend.services.embedding_server.security import (
     rate_limit_store,
     view_rate_limits,
 )
+
+
+@pytest.fixture(autouse=True)
+def configured_signing_key(monkeypatch):
+    """Provide a deterministic deployment key unless a test overrides it."""
+    monkeypatch.setenv("BERTREND_SECRET_KEY", "test-signing-key-" * 4)
+
+
+# --- security configuration ---
+
+
+def test_get_secret_key_requires_environment(monkeypatch):
+    """JWT signing must not fall back to a worker-local random key."""
+    monkeypatch.delenv("BERTREND_SECRET_KEY", raising=False)
+
+    with pytest.raises(RuntimeError, match="BERTREND_SECRET_KEY"):
+        security.get_secret_key()
+
+
+def test_get_secret_key_rejects_short_values(monkeypatch):
+    """HS256 signing keys must contain at least 256 bits of secret material."""
+    monkeypatch.setenv("BERTREND_SECRET_KEY", "too-short")
+
+    with pytest.raises(RuntimeError, match="at least 32 bytes"):
+        security.get_secret_key()
+
+
+def test_create_access_token_uses_environment_signing_key(monkeypatch):
+    """Every worker must sign tokens with the same deployment-provided key."""
+    signing_key = "a" * 64
+    monkeypatch.setenv("BERTREND_SECRET_KEY", signing_key)
+
+    token = create_access_token(
+        data={"sub": "client1"},
+        expires_delta=timedelta(minutes=5),
+    )
+
+    payload = jwt.decode(token, signing_key, algorithms=[ALGORITHM])
+    assert payload["sub"] == "client1"
+
+
+@pytest.mark.asyncio
+async def test_get_current_client_uses_environment_signing_key(monkeypatch, tmp_path):
+    """Every worker must validate tokens with the same deployment-provided key."""
+    signing_key = "b" * 64
+    monkeypatch.setenv("BERTREND_SECRET_KEY", signing_key)
+    registry_file = tmp_path / "registry.json"
+    registry_file.write_text(
+        json.dumps({"client1": {"client_secret": "secret", "scopes": []}})
+    )
+    monkeypatch.setattr(security, "CLIENT_REGISTRY_FILE", str(registry_file))
+    token = jwt.encode({"sub": "client1"}, signing_key, algorithm=ALGORITHM)
+
+    token_data = await get_current_client(SecurityScopes(), token, MagicMock())
+
+    assert token_data.client_id == "client1"
 
 
 # --- generate_hex_token ---
@@ -101,7 +159,7 @@ def test_create_access_token():
         data={"sub": "client1", "scopes": [FULL_ACCESS]},
         expires_delta=timedelta(minutes=30),
     )
-    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    payload = jwt.decode(token, get_secret_key(), algorithms=[ALGORITHM])
     assert payload["sub"] == "client1"
     assert payload["scopes"] == [FULL_ACCESS]
     assert "exp" in payload
@@ -123,17 +181,32 @@ def test_create_access_token_no_expiry():
 # --- load_client_registry ---
 
 
-def test_load_client_registry_creates_default(monkeypatch, tmp_path):
-    """Test that load_client_registry creates a default file if missing."""
+def test_client_registry_file_is_opt_in():
+    """Package data must not be used as an implicit credential source."""
+    assert security.CLIENT_REGISTRY_FILE is None
+
+
+def test_load_client_registry_rejects_missing_configured_file(monkeypatch, tmp_path):
+    """An explicitly configured registry must already exist."""
     registry_file = str(tmp_path / "registry.json")
     monkeypatch.setattr(
         "bertrend.services.embedding_server.security.CLIENT_REGISTRY_FILE",
         registry_file,
     )
+
+    with pytest.raises(RuntimeError, match="does not exist"):
+        load_client_registry()
+
+
+def test_load_client_registry_uses_runtime_client_secret(monkeypatch):
+    """The default client registry must come from deployment secrets."""
+    monkeypatch.setattr(security, "CLIENT_REGISTRY_FILE", None)
+    monkeypatch.setenv("BERTREND_CLIENT_SECRET", "runtime-client-secret")
+
     registry = load_client_registry()
-    assert "admin" in registry
-    assert "bertrend" in registry
-    assert os.path.exists(registry_file)
+
+    assert registry["bertrend"]["client_secret"] == "runtime-client-secret"
+    assert registry["bertrend"]["scopes"] == [FULL_ACCESS]
 
 
 def test_load_client_registry_reads_existing(monkeypatch, tmp_path):
@@ -275,7 +348,7 @@ def test_get_token_valid_client(monkeypatch, tmp_path):
     token = get_token(form_data)
     assert isinstance(token, Token)
     assert token.token_type == "bearer"
-    payload = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
+    payload = jwt.decode(token.access_token, get_secret_key(), algorithms=[ALGORITHM])
     assert payload["sub"] == "myclient"
     assert FULL_ACCESS in payload["scopes"]
 

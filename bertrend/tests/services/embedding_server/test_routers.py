@@ -14,6 +14,12 @@ from fastapi.testclient import TestClient
 from bertrend.services.embedding_server.routers import authentication, info
 
 
+@pytest.fixture(autouse=True)
+def configured_signing_key(monkeypatch):
+    """Provide the deployment signing key required by authenticated routes."""
+    monkeypatch.setenv("BERTREND_SECRET_KEY", "test-signing-key-" * 4)
+
+
 # ===================== Info Router Tests =====================
 
 
