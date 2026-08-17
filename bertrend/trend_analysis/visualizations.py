@@ -241,9 +241,7 @@ def plot_topic_size_evolution(
     fig.add_hrect(y0=q1, y1=q3, fillcolor="rgba(255, 165, 0, 0.2)", line_width=0)
 
     # Strong signal region (green)
-    fig.add_hrect(
-        y0=q3, y1=y_axis_max, fillcolor="rgba(0, 255, 0, 0.2)", line_width=0
-    )
+    fig.add_hrect(y0=q3, y1=y_axis_max, fillcolor="rgba(0, 255, 0, 0.2)", line_width=0)
 
     return fig
 

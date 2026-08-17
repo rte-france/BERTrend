@@ -1,6 +1,6 @@
 [project]
 name = "bertrend"
-version = "0.4.12"
+version = "0.4.13"
 description = "BERTrend analyses topic evolution over time using state-of-the-art transformer models: topic modelling and LLM"
 license = "LICENSE.md"
 readme = "README.md"
@@ -51,7 +51,9 @@ dependencies = [
     "pytest-asyncio",
     "python-dotenv (>=1.2.1)",
     "scikit-learn (>=1.8.0)",
-    "sentence-transformers (>=5.2.2)",
+    "sentence-transformers (>=5.2.2,<5.4.0)",
+    "sentencepiece (>=0.2.1)",
+    "protobuf (>=4.25.0)",
     "starlette (>=0.52.1)",
     "requests (>=2.32.3)",
     "seaborn (>=0.13.2)",
@@ -66,7 +68,7 @@ dependencies = [
     "tiktoken (>=0.12.0)",
     "typer (>=0.21.1)",
     "umap-learn (>=0.5.11)",
-    "ruff>=0.15.0",
+    "ruff>=0.16.0",
     "psutil>=7.2.2",
     "pika>=1.3.2",
     "aio-pika>=9.5.5",

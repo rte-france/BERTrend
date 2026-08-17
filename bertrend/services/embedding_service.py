@@ -217,7 +217,7 @@ class EmbeddingService(BaseEmbedder):
         tokenizer = self.embedding_model._first_module().tokenizer
 
         token_strings, token_embeddings = _group_tokens(
-            tokenizer, token_ids, token_embeddings, language="french"
+            tokenizer, token_ids, token_embeddings
         )
 
         return embeddings, token_strings, token_embeddings
@@ -311,7 +311,31 @@ def _convert_to_numpy(obj, type=None):
         raise TypeError("Object must be a list or torch.Tensor")
 
 
-def _group_tokens(tokenizer, token_ids, token_embeddings, language="french"):
+def _detect_subword_scheme(tokenizer) -> str:
+    """
+    Detect whether a tokenizer marks the start of a new word (SentencePiece/Unigram
+    style, e.g. the "▁" prefix used by XLM-R, CamemBERT, T5, ALBERT, etc.) or the
+    continuation of a word (WordPiece style, e.g. the "##" prefix used by BERT-based
+    models). This allows token grouping to work with any local embedding model,
+    instead of assuming a fixed language/tokenizer family.
+
+    Parameters
+    ----------
+    tokenizer : object
+        The tokenizer whose vocabulary should be inspected.
+
+    Returns
+    -------
+    str
+        Either "sentencepiece" or "wordpiece".
+    """
+    vocab = tokenizer.get_vocab()
+    if any(token.startswith("▁") for token in vocab):
+        return "sentencepiece"
+    return "wordpiece"
+
+
+def _group_tokens(tokenizer, token_ids, token_embeddings):
     """
     Group split tokens into whole words and average their embeddings.
 
@@ -323,8 +347,6 @@ def _group_tokens(tokenizer, token_ids, token_embeddings, language="french"):
         List of token ids.
     token_embeddings : list
         List of token embeddings.
-    language : str, default="french"
-        The language of the tokens.
 
     Returns
     -------
@@ -336,11 +358,8 @@ def _group_tokens(tokenizer, token_ids, token_embeddings, language="french"):
     grouped_token_lists = []
     grouped_embedding_lists = []
 
-    special_tokens = {
-        "english": ["[CLS]", "[SEP]", "[PAD]"],
-        "french": ["<s>", "</s>", "<pad>"],
-    }
-    subword_prefix = {"english": "##", "french": "▁"}
+    special_tokens = set(tokenizer.all_special_tokens)
+    scheme = _detect_subword_scheme(tokenizer)
 
     for token_id, token_embedding in tqdm(
         zip(token_ids, token_embeddings), desc="Grouping split tokens into whole words"
@@ -353,25 +372,23 @@ def _group_tokens(tokenizer, token_ids, token_embeddings, language="french"):
         current_embedding = []
 
         for token, embedding in zip(tokens, token_embedding):
-            if token in special_tokens[language]:
+            if token in special_tokens:
                 continue
 
-            if language == "french" and token.startswith(subword_prefix[language]):
+            is_new_word = (
+                token.startswith("▁")
+                if scheme == "sentencepiece"
+                else not token.startswith("##")
+            )
+
+            if is_new_word:
                 if current_word:
                     grouped_tokens.append(current_word)
                     grouped_embeddings.append(np.mean(current_embedding, axis=0))
-                current_word = token[1:]
-                current_embedding = [embedding]
-            elif language == "english" and not token.startswith(
-                subword_prefix[language]
-            ):
-                if current_word:
-                    grouped_tokens.append(current_word)
-                    grouped_embeddings.append(np.mean(current_embedding, axis=0))
-                current_word = token
+                current_word = token[1:] if scheme == "sentencepiece" else token
                 current_embedding = [embedding]
             else:
-                current_word += token.lstrip(subword_prefix[language])
+                current_word += token[2:] if scheme == "wordpiece" else token
                 current_embedding.append(embedding)
 
         if current_word:

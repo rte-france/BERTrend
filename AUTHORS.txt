@@ -7,6 +7,7 @@ Lead Developers:
     - Jérôme Picault
     - Guillaume Grosjean
     - Allaa Boutaleb
+    - Leshanshui Yang
 
 Other Developers:
     -

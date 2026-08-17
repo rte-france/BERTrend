@@ -46,9 +46,7 @@ DEFAULT_TOP_K = 5
 # Per-topic wall-clock budget (seconds) for LLM interpretation. Bounds the wait
 # on each topic analysis so a single stalled LLM call cannot block the whole
 # interpretation step (and, through it, the queue worker) indefinitely.
-TOPIC_INTERPRETATION_TIMEOUT = float(
-    os.getenv("TOPIC_INTERPRETATION_TIMEOUT", 400.0)
-)
+TOPIC_INTERPRETATION_TIMEOUT = float(os.getenv("TOPIC_INTERPRETATION_TIMEOUT", 400.0))
 
 
 class ConfigFileNotFoundError(Exception):

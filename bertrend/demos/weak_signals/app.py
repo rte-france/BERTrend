@@ -163,7 +163,7 @@ def load_data_page():
             if SessionStateManager.get("data_embedded", False):
                 save_state()
         except Exception as e:
-            logger.error(f"An error occurred while embedding documents: {e}")
+            logger.exception("An error occurred while embedding documents")
             st.error(
                 translate("error_embedding_documents").format(e=e),
                 icon=ERROR_ICON,
