@@ -233,20 +233,26 @@ def display_signal_types():
     """Show weak/strong signals"""
     bertrend = SessionStateManager.get("bertrend")
 
-    # Classify signals
-    window_end = st.session_state.get("window_end")
+    # Classify signals using the same reference date as the slider, the
+    # popularity-graph "Current Date" marker, the q1/q3 thresholds and
+    # analyze_signal — i.e. current_date. Previously this used window_end
+    # (= current_date + granularity), so the dataframes showed signals one
+    # granularity step ahead of the slider and of the per-topic analysis, which
+    # misaligned the timestamps and the topic selection in signal analysis
+    # (issue #11).
+    current_date = pd.Timestamp(SessionStateManager.get("current_date"))
     window_start = st.session_state.get("window_start")
     q1 = st.session_state.get("q1")
     q3 = st.session_state.get("q3")
     noise_topics_df, weak_signal_topics_df, strong_signal_topics_df = (
-        bertrend._classify_signals(window_start, window_end, q1, q3)
+        bertrend._classify_signals(window_start, current_date, q1, q3)
     )
     # Display DataFrames for each category noise, weak signals, strong signals
     display_signal_categories_df(
         noise_topics_df,
         weak_signal_topics_df,
         strong_signal_topics_df,
-        window_end,
+        current_date,
     )
 
 
