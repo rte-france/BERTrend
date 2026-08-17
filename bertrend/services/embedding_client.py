@@ -113,14 +113,31 @@ class EmbeddingAPIClient(SecureAPIClient, Embeddings):
         show_progress_bar: bool = True,
         batch_size: int = BATCH_DOCUMENT_SIZE,
     ) -> list[list[float]]:
-        if len(texts) > MAX_DOCS_PER_REQUEST_PER_WORKER * self.num_workers:
-            # Too many documents to embed in one request, refuse it
-            logger.error(
-                f"Error: Too many documents to be embedded ({len(texts)} chunks, max {MAX_DOCS_PER_REQUEST_PER_WORKER * self.num_workers})"
+        # The embedding service can only handle a bounded number of documents at a
+        # time (MAX_DOCS_PER_REQUEST_PER_WORKER per worker). Rather than refusing
+        # larger inputs — which previously raised a ValueError and blocked the whole
+        # embedding step (see issue #42) — process them in sequential chunks that
+        # each stay within the limit and concatenate the results. This keeps the
+        # 1:1 mapping between input documents and returned embeddings that callers
+        # rely on, so no document is dropped.
+        max_docs_per_call = MAX_DOCS_PER_REQUEST_PER_WORKER * max(self.num_workers, 1)
+        if len(texts) > max_docs_per_call:
+            logger.warning(
+                f"{len(texts)} documents exceed the maximum handled in a single call "
+                f"({max_docs_per_call}); processing them in sequential chunks to avoid "
+                f"overloading the embedding service."
             )
-            raise ValueError(
-                f"Error: Too many documents to be embedded ({len(texts)} chunks, max {MAX_DOCS_PER_REQUEST_PER_WORKER * self.num_workers})"
-            )
+            embeddings: list[list[float]] = []
+            for start in range(0, len(texts), max_docs_per_call):
+                embeddings.extend(
+                    self.embed_documents(
+                        texts[start : start + max_docs_per_call],
+                        show_progress_bar=show_progress_bar,
+                        batch_size=batch_size,
+                    )
+                )
+            assert len(embeddings) == len(texts)
+            return embeddings
 
         logger.debug(f"Calling EmbeddingAPI using model: {self.model_name}")
 

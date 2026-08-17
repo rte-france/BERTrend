@@ -19,6 +19,9 @@ from bertrend.bertrend_apps.prospective_demo import CONFIG_FEEDS_BASE_PATH
 from bertrend.bertrend_apps.prospective_demo.feeds_common import (
     read_user_feeds,
 )
+from bertrend.bertrend_apps.prospective_demo.feed_query_generator import (
+    generate_google_news_query,
+)
 from bertrend.bertrend_apps.prospective_demo.i18n import translate
 from bertrend.bertrend_apps.prospective_demo.models_info import delete_model_config
 from bertrend.config.parameters import LANGUAGES
@@ -56,10 +59,36 @@ def generate_atom_crontab_expression(hours="0,6,12,18"):
     return f"{minute} {hours} * * *"
 
 
+def _feed_query_dialog_keys(config: dict | None) -> tuple[str, str]:
+    """Session-state keys for the query and monitoring-brief widgets."""
+    suffix = config.get("id", "existing") if config else "new"
+    return f"feed_query_{suffix}", f"feed_monitoring_brief_{suffix}"
+
+
+def _clear_feed_query_dialog_state(config: dict | None = None) -> None:
+    """Clear query/brief keys so a cancelled dialog does not pre-fill the next open."""
+    for key in _feed_query_dialog_keys(config):
+        st.session_state.pop(key, None)
+
+
+def open_feed_monitoring_dialog(config: dict | None = None) -> None:
+    """Open the feed dialog after resetting query/brief widget state from the prior open.
+
+    Streamlit dialogs have no dismiss callback, so key-bound widgets would otherwise
+    keep unsaved edits (or a generated query) across Escape / click-away. Clearing
+    here on every open, then re-seeding from config inside the dialog, restores the
+    previous value=-based reset behavior without wiping mid-dialog generation.
+    """
+    _clear_feed_query_dialog_state(config)
+    edit_feed_monitoring(config)
+
+
 @st.dialog(translate("feed_config_dialog_title"))
 def edit_feed_monitoring(config: dict | None = None):
     """Create or update a feed monitoring configuration."""
     evaluate_articles_quality = False
+    query_state_key = None
+    brief_state_key = None
 
     chosen_id = st.text_input(
         translate("feed_id_label") + " :red[*]",
@@ -82,11 +111,6 @@ def edit_feed_monitoring(config: dict | None = None):
         help=translate("feed_source_help"),
     )
     if provider == "google" or provider == "arxiv" or provider == "deep_research":
-        query = st.text_input(
-            translate("feed_query_label") + " :red[*]",
-            value="" if not config else config.get("query", ""),
-            help=translate("feed_query_help"),
-        )
         language = st.segmented_control(
             translate("feed_language_label"),
             selection_mode="single",
@@ -94,6 +118,40 @@ def edit_feed_monitoring(config: dict | None = None):
             default=LANGUAGES[0] if provider == "google" else LANGUAGES[1],
             format_func=lambda lang: translate(f"language_{lang.lower()}"),
             help=translate("feed_language_help"),
+        )
+        query_state_key, brief_state_key = _feed_query_dialog_keys(config)
+        # Seed only when absent: open_feed_monitoring_dialog clears on entry so a
+        # fresh open reloads config; mid-dialog re-runs (e.g. Generate) keep edits.
+        if query_state_key not in st.session_state:
+            st.session_state[query_state_key] = (
+                "" if not config else config.get("query", "")
+            )
+
+        if provider == "google":
+            query_key_suffix = config.get("id", "existing") if config else "new"
+            brief = st.text_area(
+                translate("feed_monitoring_brief_label"),
+                key=brief_state_key,
+                help=translate("feed_monitoring_brief_help"),
+            )
+            if st.button(
+                translate("generate_feed_query_button"),
+                disabled=not brief.strip(),
+                key=f"generate_feed_query_{query_key_suffix}",
+            ):
+                try:
+                    with st.spinner(translate("generating_feed_query_message")):
+                        st.session_state[query_state_key] = generate_google_news_query(
+                            brief, language
+                        )
+                except Exception as error:
+                    logger.error(f"Could not generate feed query: {error}")
+                    st.error(translate("feed_query_generation_error"))
+
+        query = st.text_input(
+            translate("feed_query_label") + " :red[*]",
+            key=query_state_key,
+            help=translate("feed_query_help"),
         )
         if "update_frequency" not in st.session_state:
             st.session_state.update_frequency = (
@@ -204,6 +262,9 @@ def edit_feed_monitoring(config: dict | None = None):
 
         if "update_frequency" in st.session_state:
             del st.session_state["update_frequency"]  # to avoid memory effect
+        for state_key in (query_state_key, brief_state_key):
+            if state_key and state_key in st.session_state:
+                del st.session_state[state_key]
 
         # Remove prevous crontab if any
         SCHEDULER_UTILS.remove_scrapping_for_user(
@@ -265,10 +326,10 @@ def configure_information_sources():
     if st.button(
         f":green[{ADD_ICON}]", type="tertiary", help=translate("new_feed_help")
     ):
-        edit_feed_monitoring()
+        open_feed_monitoring_dialog()
 
     clickable_df_buttons = [
-        (EDIT_ICON, edit_feed_monitoring, "secondary"),
+        (EDIT_ICON, open_feed_monitoring_dialog, "secondary"),
         (lambda x: toggle_icon(df, x), handle_toggle_feed, "secondary"),
         (DELETE_ICON, handle_delete, "primary"),
     ]
