@@ -161,6 +161,26 @@ def edit_model_parameters(row_dict: dict):
         help=f"{INFO_ICON} {translate('split_by_paragraph_help')}",
     )
 
+    current_model_config = st.session_state.model_analysis_cfg[model_id]["model_config"]
+    zeroshot_topics = st.text_area(
+        label=translate("zeroshot_topics_label"),
+        placeholder=translate("zeroshot_topics_placeholder"),
+        help=f"{INFO_ICON} {translate('zeroshot_topics_help')}",
+        value="\n".join(current_model_config.get("zeroshot_topic_list", [])),
+    )
+    zeroshot_topic_list = [
+        topic.strip() for topic in zeroshot_topics.splitlines() if topic.strip()
+    ]
+    zeroshot_min_similarity = st.slider(
+        translate("zeroshot_min_similarity_label"),
+        min_value=0.0,
+        max_value=1.0,
+        value=float(current_model_config.get("zeroshot_min_similarity", 0.7)),
+        step=0.05,
+        disabled=not zeroshot_topic_list,
+        help=f"{INFO_ICON} {translate('zeroshot_min_similarity_help')}",
+    )
+
     language = st.segmented_control(
         translate("feed_language_label"),
         selection_mode="single",
@@ -256,6 +276,8 @@ def edit_model_parameters(row_dict: dict):
         "window_size": new_window_size,
         "language": "fr" if language == "French" else "en",
         "split_by_paragraph": split_by_paragraph,
+        "zeroshot_topic_list": zeroshot_topic_list,
+        "zeroshot_min_similarity": zeroshot_min_similarity,
     }
     analysis_config = {
         "topic_evolution": topic_evolution,

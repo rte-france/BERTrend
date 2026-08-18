@@ -992,6 +992,8 @@ def train_new_data(
     embedding_service: EmbeddingService,
     granularity: int,
     language: str,
+    zeroshot_topic_list: list[str] | None = None,
+    zeroshot_min_similarity: float | None = None,
 ) -> BERTrend:
     """
     Process new data for incremental trend analysis.
@@ -1010,6 +1012,11 @@ def train_new_data(
         Number of days to group documents.
     language : str
         Language of the text data.
+    zeroshot_topic_list : list[str] or None, optional
+        Expected topics used to guide topic modeling. When omitted, the existing
+        model configuration is preserved.
+    zeroshot_min_similarity : float or None, optional
+        Minimum similarity for assigning documents to an expected topic.
 
     Returns
     -------
@@ -1043,6 +1050,12 @@ def train_new_data(
         else:
             bertrend = BERTrend(topic_model=BERTopicModel())
         bertrend.config["granularity"] = granularity
+
+    if zeroshot_topic_list is not None:
+        bertopic_config = bertrend.topic_model.config["bertopic_model"]
+        bertopic_config["zeroshot_topic_list"] = zeroshot_topic_list or None
+        if zeroshot_min_similarity is not None:
+            bertopic_config["zeroshot_min_similarity"] = zeroshot_min_similarity
 
     # Embed new data
     embeddings, token_strings, token_embeddings = embedding_service.embed(

@@ -279,6 +279,8 @@ def train_new_model_for_period(
     granularity = model_config["granularity"]
     language_code = model_config["language"]
     window_size = model_config["window_size"]
+    zeroshot_topic_list = model_config.get("zeroshot_topic_list", [])
+    zeroshot_min_similarity = model_config.get("zeroshot_min_similarity", 0.7)
 
     # Process new data
     bertrend = train_new_data(
@@ -288,6 +290,8 @@ def train_new_model_for_period(
         embedding_service=embedding_service,
         language="French" if language_code == "fr" else "English",
         granularity=granularity,
+        zeroshot_topic_list=zeroshot_topic_list,
+        zeroshot_min_similarity=zeroshot_min_similarity,
     )
 
     if len(bertrend.doc_groups) < 2:
@@ -378,6 +382,8 @@ def regenerate_models(
     granularity = model_config["granularity"]
     language_code = model_config["language"]
     split_by_paragraph = model_config.get("split_by_paragraph", True)
+    zeroshot_topic_list = model_config.get("zeroshot_topic_list", [])
+    zeroshot_min_similarity = model_config.get("zeroshot_min_similarity", 0.7)
 
     # Load model config
     df = load_all_data(model_id=model_id, user=user, language_code=language_code)
@@ -412,7 +418,11 @@ def regenerate_models(
                 {
                     "global": {
                         "language": "French" if language_code == "fr" else "English"
-                    }
+                    },
+                    "bertopic_model": {
+                        "zeroshot_topic_list": zeroshot_topic_list,
+                        "zeroshot_min_similarity": zeroshot_min_similarity,
+                    },
                 }
             )
         )

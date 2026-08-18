@@ -3,7 +3,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import tomllib
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -260,6 +260,36 @@ def test_create_topic_model_with_empty_zeroshot_topic_list(
     assert (
         result.topic_model.zeroshot_topic_list is None
     )  # Check that it was set to None internally
+
+
+def test_fit_preserves_zeroshot_topic_labels(
+    topic_model, mock_sentence_transformer, mock_embedding
+):
+    """Keep user-provided zero-shot labels after topic representation updates."""
+    mock_bertopic = MagicMock(spec=BERTopic)
+    mock_bertopic.fit_transform.return_value = ([0, 1], [1.0, 1.0])
+    mock_bertopic._outliers = 0
+    mock_bertopic.zeroshot_topic_list = ["solar power"]
+    mock_bertopic.topic_labels_ = {0: "solar power", 1: "1_generated"}
+
+    def replace_labels(*args, **kwargs):
+        mock_bertopic.topic_labels_ = {0: "0_generated", 1: "1_generated"}
+
+    mock_bertopic.update_topics.side_effect = replace_labels
+
+    with patch("bertrend.BERTopicModel.BERTopic", return_value=mock_bertopic):
+        result = topic_model.fit(
+            ["Solar document", "Other document"],
+            embedding_model=mock_sentence_transformer,
+            embeddings=mock_embedding,
+            zeroshot_topic_list=["solar power"],
+            zeroshot_min_similarity=0.7,
+        )
+
+    assert result.topic_model.topic_labels_ == {
+        0: "solar power",
+        1: "1_generated",
+    }
 
 
 def test_create_topic_model_exception_handling(
