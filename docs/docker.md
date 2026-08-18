@@ -7,9 +7,9 @@ This guide explains how to use BERTrend with Docker, which provides an easy way 
 BERTrend provides two Docker images:
 
 1. **Main BERTrend Image** (`bertrend:latest`): Contains the core BERTrend application and three demo applications:
-   - Topic Analysis Demo (port 8501)
-   - Weak Signals Demo (port 8502)
-   - Prospective Demo (port 8503)
+   - Topic Analysis Demo (port 8083)
+   - Weak Signals Demo (port 8084)
+   - Prospective Demo (port 8081)
 
 2. **Embedding Server Image** (`bertrend-embedding-server:latest`): Provides embedding services for the main application, running on port 6464.
 
@@ -47,9 +47,38 @@ BERTREND_BASE_DIR=/path/to/your/data/directory
    ```
 
 4. Access the demos at:
-   - Topic Analysis: http://localhost:8501
-   - Weak Signals: http://localhost:8502
-   - Prospective Demo: http://localhost:8503
+   - Topic Analysis: http://localhost:8083
+   - Weak Signals: http://localhost:8084
+   - Prospective Demo: http://localhost:8081
+
+## Lightweight Deployment (external embedding server)
+
+If you already run an embedding server elsewhere (another host, container, or
+cluster), you can start **only the main BERTrend application** with the
+lightweight compose file. It does not build or start the embedding server, and
+reuses the same image built from `Dockerfile` — there is no separate Dockerfile
+to maintain. The app still reserves a GPU (used to speed up topic modelling —
+BERTopic / UMAP / HDBSCAN); to run on a CPU-only host, remove the `deploy:`
+block (and `CUDA_VISIBLE_DEVICES`) from the service.
+
+```bash
+EMBEDDING_SERVICE_URL=https://your-embedding-host:6464 \
+  docker compose -f docker-compose.lightweight.yml up -d
+```
+
+Alternatively, use the convenience script `./start_bertrend_lightweight.sh`,
+which sets `HOST_UID`/`HOST_GID` (so files written to mounted volumes are owned
+by the host user), creates the mounted host directories, checks that
+`EMBEDDING_SERVICE_URL` is set, and (re)builds and starts the stack.
+
+`EMBEDDING_SERVICE_URL` is **required** (compose refuses to start without it) and
+must point to your running embedding server; `EMBEDDING_SERVICE_USE_LOCAL` is
+forced to `false`. All other variables (`OPENAI_*`, `BERTREND_BASE_DIR`,
+`BERTREND_CLIENT_SECRET`, proxies, …) behave as in the full stack and can be set
+in your `.env`.
+
+Use the standard `docker-compose.yml` instead when you also want the embedding
+server running locally.
 
 ## Building the Docker Images Locally
 
@@ -80,7 +109,7 @@ docker run --gpus all -p 6464:6464 \
 
 ```bash
 docker run --gpus all \
-  -p 8501:8501 -p 8502:8502 -p 8503:8503 \
+  -p 8083:8083 -p 8084:8084 -p 8081:8081 \
   -v /path/to/bertrend/data:/bertrend \
   -e OPENAI_API_KEY=your_key \
   -e OPENAI_BASE_URL=your_endpoint \
@@ -139,11 +168,14 @@ Mount a directory to the Hugging Face cache to avoid re-downloading models:
 
 ## GPU Support
 
-Both containers support GPU acceleration. To enable it:
+Both containers support GPU acceleration, used both by the embedding server and
+to speed up topic modelling (BERTopic / UMAP / HDBSCAN) in the main application.
 
 1. Ensure you have the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed.
 
-2. When using Docker Compose, uncomment the `deploy` sections in the `docker-compose.yml` file.
+2. The Compose files (`docker-compose.yml` and `docker-compose.lightweight.yml`)
+   enable GPU by default via their `deploy` sections. To run on a CPU-only host,
+   remove those `deploy` sections (and `CUDA_VISIBLE_DEVICES`).
 
 3. When running containers individually, add the `--gpus all` flag.
 

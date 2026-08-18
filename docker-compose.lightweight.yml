@@ -1,0 +1,87 @@
+# Lightweight BERTrend deployment.
+#
+# Runs ONLY the main BERTrend application and assumes the embedding server is
+# already running elsewhere (on another host/container/cluster). Unlike the full
+# stack in docker-compose.yml, this variant does not build or start the embedding
+# server and does not reserve a GPU, so it can run on a modest / CPU-only host.
+#
+# It reuses the same image built from `Dockerfile` (no dedicated Dockerfile).
+#
+# Usage:
+#   EMBEDDING_SERVICE_URL=https://your-embedding-host:6464 \
+#     docker compose -f docker-compose.lightweight.yml up -d
+#
+# Use the standard docker-compose.yml instead if you also want to run the
+# embedding server locally.
+
+services:
+  # Main BERTrend application (embedding delegated to an external service)
+  bertrend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - HTTP_PROXY=${HTTP_PROXY:-}
+        - HTTPS_PROXY=${HTTPS_PROXY:-}
+        - http_proxy=${http_proxy:-}
+        - https_proxy=${https_proxy:-}
+        - NO_PROXY=${NO_PROXY:-}
+        - no_proxy=${no_proxy:-}
+    image: bertrend:latest
+    container_name: bertrend
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    ports:
+      - "127.0.0.1:8083:8083"  # Topic Analysis demo
+      - "127.0.0.1:8084:8084"  # Weak Signals demo
+      - "127.0.0.1:8081:8081"  # Prospective demo
+    volumes:
+      - ${BERTREND_BASE_DIR:-.bertrend}:/bertrend
+      - ${HF_HOME:-.cache/huggingface}:/app/.cache/huggingface
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
+      - NO_PROXY=${NO_PROXY:-}
+      - no_proxy=${no_proxy:-}
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=0
+      # Set HF_HOME inside container
+      - HF_HOME=/app/.cache/huggingface
+      # Set UV_CACHE_DIR to a location where the user has write permissions
+      - UV_CACHE_DIR=/app/.cache/uv
+      # Set NLTK_DATA to a location where the user has write permissions
+      - NLTK_DATA=/app/nltk_data
+      # BERTrend base dir
+      - BERTREND_BASE_DIR=/bertrend/
+      - BERTREND_CLIENT_SECRET=${BERTREND_CLIENT_SECRET:-}
+      # Use an externally-running embedding server (REQUIRED).
+      - EMBEDDING_SERVICE_URL=${EMBEDDING_SERVICE_URL:?Set EMBEDDING_SERVICE_URL to the URL of your external embedding server}
+      - EMBEDDING_SERVICE_USE_LOCAL=false
+      # OpenAI environment variables (replace with your own values)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - OPENAI_DEFAULT_MODEL=${OPENAI_DEFAULT_MODEL:-gpt-5.6-luna}
+    healthcheck:
+      test: curl -f http://localhost:8081/_stcore/health && curl -f http://localhost:8083/_stcore/health && curl -f http://localhost:8084/_stcore/health || exit 1
+      interval: 120s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # GPU is used to speed up topic modelling (BERTopic / UMAP / HDBSCAN); the
+    # embedding workload itself runs on the external embedding server. To run on
+    # a CPU-only host, remove this `deploy:` block (and CUDA_VISIBLE_DEVICES above).
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1  # Use 1 GPU for the bertrend app
+              capabilities: [ gpu ]
