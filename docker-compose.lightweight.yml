@@ -1,9 +1,11 @@
 # Lightweight BERTrend deployment.
 #
-# Runs ONLY the main BERTrend application and assumes the embedding server is
-# already running elsewhere (on another host/container/cluster). Unlike the full
-# stack in docker-compose.yml, this variant does not build or start the embedding
-# server and does not reserve a GPU, so it can run on a modest / CPU-only host.
+# Runs the BERTrend application together with RabbitMQ and the scheduler (both
+# required by the prospective demo), but assumes the embedding server is already
+# running elsewhere (another host/container/cluster). Unlike the full stack in
+# docker-compose.yml, this variant does not build or start the embedding server.
+# The app keeps a GPU reservation to speed up topic modelling; remove the
+# `deploy:` block (and CUDA_VISIBLE_DEVICES) to run on a CPU-only host.
 #
 # It reuses the same image built from `Dockerfile` (no dedicated Dockerfile).
 #
@@ -30,6 +32,12 @@ services:
     image: bertrend:latest
     container_name: bertrend
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    # Start order: rabbitmq (healthy) -> scheduler (healthy) -> this app.
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      scheduler:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8083:8083"  # Topic Analysis demo
       - "127.0.0.1:8084:8084"  # Weak Signals demo
@@ -42,8 +50,8 @@ services:
       - HTTPS_PROXY=${HTTPS_PROXY:-}
       - http_proxy=${http_proxy:-}
       - https_proxy=${https_proxy:-}
-      - NO_PROXY=${NO_PROXY:-}
-      - no_proxy=${no_proxy:-}
+      - NO_PROXY=${NO_PROXY:-},bertrend,rabbitmq,scheduler
+      - no_proxy=${no_proxy:-},bertrend,rabbitmq,scheduler
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
       - CUDA_VISIBLE_DEVICES=0
@@ -59,6 +67,13 @@ services:
       # Use an externally-running embedding server (REQUIRED).
       - EMBEDDING_SERVICE_URL=${EMBEDDING_SERVICE_URL:?Set EMBEDDING_SERVICE_URL to the URL of your external embedding server}
       - EMBEDDING_SERVICE_USE_LOCAL=false
+      # Execution queue (RabbitMQ) + scheduler service used by the prospective demo.
+      # The scheduler fires jobs by calling back to this app's FastAPI service
+      # (BERTREND_APPS_SERVICE_URL), which enqueues them to RabbitMQ for the workers.
+      - RABBITMQ_HOST=rabbitmq
+      - SCHEDULER_SERVICE_TYPE=apscheduler
+      - SCHEDULER_SERVICE_URL=http://scheduler:8000/
+      - BERTREND_APPS_SERVICE_URL=http://bertrend:8881/
       # OpenAI environment variables (replace with your own values)
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
@@ -85,3 +100,74 @@ services:
             - driver: nvidia
               count: 1  # Use 1 GPU for the bertrend app
               capabilities: [ gpu ]
+
+  # RabbitMQ broker backing the execution queue consumed by the in-container workers.
+  rabbitmq:
+    image: rabbitmq:4.2-management
+    container_name: bertrend_rabbitmq
+    ports:
+      - "127.0.0.1:15672:15672"  # management UI (optional)
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # APScheduler service that fires scheduled jobs (feed scraping, model training,
+  # report generation) by calling back to the app's FastAPI service.
+  scheduler:
+    build:
+      context: ./bertrend/services/scheduling
+      dockerfile: Dockerfile
+      args:
+        - HTTP_PROXY=${HTTP_PROXY:-}
+        - HTTPS_PROXY=${HTTPS_PROXY:-}
+        - http_proxy=${http_proxy:-}
+        - https_proxy=${https_proxy:-}
+        - NO_PROXY=${NO_PROXY:-}
+        - no_proxy=${no_proxy:-}
+    image: bertrend-scheduler:latest
+    container_name: bertrend-scheduler
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    # Scheduler starts after the broker is ready.
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8882:8000"  # scheduler API / docs (optional)
+    volumes:
+      # Persist the APScheduler SQLite job store (host dir should be owned by HOST_UID).
+      - ${BERTREND_BASE_DIR:-.bertrend}/scheduler-db:/home/user/.bertrend/db
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
+      - NO_PROXY=$NO_PROXY,bertrend,rabbitmq  # reach the app service without the proxy
+      - no_proxy=$no_proxy,bertrend,rabbitmq
+      - TZ=Europe/Paris
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+      - MAX_WORKERS=100
+      - HOME=/home/user
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/')" ]
+      interval: 180s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

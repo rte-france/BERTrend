@@ -4,16 +4,29 @@ This guide explains how to use BERTrend with Docker, which provides an easy way 
 
 ## Docker Images Overview
 
-BERTrend provides two Docker images:
+BERTrend provides these Docker images:
 
 1. **Main BERTrend Image** (`bertrend:latest`): Contains the core BERTrend application and three demo applications:
    - Topic Analysis Demo (port 8083)
    - Weak Signals Demo (port 8084)
    - Prospective Demo (port 8081)
 
+   It also runs, inside the same container (via supervisor), the FastAPI apps service and the queue **workers** that the prospective demo relies on.
+
 2. **Embedding Server Image** (`bertrend-embedding-server:latest`): Provides embedding services for the main application, running on port 6464.
 
-Both images are built with NVIDIA CUDA support for GPU acceleration.
+3. **Scheduler Image** (`bertrend-scheduler:latest`, built from `bertrend/services/scheduling`): APScheduler service (port 8882) that fires scheduled jobs — feed scraping, model training, report generation.
+
+The main and embedding-server images are built with NVIDIA CUDA support for GPU acceleration.
+
+### Services and startup order
+
+The prospective demo's automation needs two supporting services, which the Compose files now start for you:
+
+- **RabbitMQ** (`rabbitmq:4.2-management`): the execution-queue broker the in-container workers consume from.
+- **Scheduler** (`bertrend-scheduler`): registers/fires scheduled jobs, which call back to the app's FastAPI service (port 8881) to enqueue work onto RabbitMQ.
+
+They must come up in order — **RabbitMQ first, then the scheduler, then the app**. The Compose files enforce this with `depends_on` health conditions (`rabbitmq` healthy → `scheduler` healthy → `bertrend`), so a plain `docker compose up -d` brings everything up in the right order. The app is wired to them via `RABBITMQ_HOST=rabbitmq`, `SCHEDULER_SERVICE_TYPE=apscheduler`, `SCHEDULER_SERVICE_URL=http://scheduler:8000/`, and `BERTREND_APPS_SERVICE_URL=http://bertrend:8881/`.
 
 ## Prerequisites
 
@@ -54,12 +67,12 @@ BERTREND_BASE_DIR=/path/to/your/data/directory
 ## Lightweight Deployment (external embedding server)
 
 If you already run an embedding server elsewhere (another host, container, or
-cluster), you can start **only the main BERTrend application** with the
-lightweight compose file. It does not build or start the embedding server, and
-reuses the same image built from `Dockerfile` — there is no separate Dockerfile
-to maintain. The app still reserves a GPU (used to speed up topic modelling —
-BERTopic / UMAP / HDBSCAN); to run on a CPU-only host, remove the `deploy:`
-block (and `CUDA_VISIBLE_DEVICES`) from the service.
+cluster), the lightweight compose file starts the BERTrend application **plus
+RabbitMQ and the scheduler** (both required by the prospective demo), but not the
+embedding server. It reuses the same image built from `Dockerfile` — there is no
+separate Dockerfile to maintain. The app still reserves a GPU (used to speed up
+topic modelling — BERTopic / UMAP / HDBSCAN); to run on a CPU-only host, remove
+the `deploy:` block (and `CUDA_VISIBLE_DEVICES`) from the service.
 
 ```bash
 EMBEDDING_SERVICE_URL=https://your-embedding-host:6464 \
