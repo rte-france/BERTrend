@@ -1,0 +1,8 @@
+# Documentation build requirements (used by Read the Docs, see /.readthedocs.yaml).
+# Kept separate from the project dependencies: building the docs does not require
+# torch, bertopic & co.
+sphinx>=8.1
+myst-parser>=4.0          # the documentation is written in Markdown
+furo>=2024.8.6            # theme
+sphinxcontrib-mermaid>=1.0.0   # ```mermaid fences in the Markdown pages
+sphinx-copybutton>=0.5.2   # copy button on code blocks
