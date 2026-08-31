@@ -2,6 +2,9 @@
 
 This document provides architectural diagrams for the BERTrend system, showing the main components and their interactions.
 
+> See also the interactive page [`data_architecture.html`](../data_architecture.html) (open it in a browser) for the
+> data architecture, the BERTrend functions and the relational schema.
+
 ## System Architecture
 
 ```mermaid

@@ -1,5 +1,8 @@
 ### BERTrend Model Structure
 
+> For an interactive, click-to-expand view of the same data structures (plus the BERTrend functions and the
+> relational schema), see [`data_architecture.html`](data_architecture.html) (open it in a browser).
+
 A BERTrend model is a comprehensive state object that tracks the evolution of topics over time. It extends the capabilities of BERTopic by maintaining a longitudinal view of topic emergence, merging, and popularity.
 
 #### 1. Serialization Overview
