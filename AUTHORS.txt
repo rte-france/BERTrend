@@ -10,7 +10,7 @@ Lead Developers:
     - Leshanshui Yang
 
 Other Developers:
-    -
+    - Guillaume Berthod 
 
 Further Contributions by:
     - 

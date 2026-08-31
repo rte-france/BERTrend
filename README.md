@@ -34,6 +34,17 @@ BERTrend classifies topics as noise, weak signals, or strong signals based on th
 that considers both the number of documents and update frequency. This method allows for real-time monitoring and
 analysis of emerging trends while filtering out noise.
 
+## Documentation
+
+The [`docs/`](./docs/README.md) folder contains the full documentation (architecture, services, demos, usage guides and
+API reference).
+
+A good entry point to understand what BERTrend produces and manipulates is the interactive page
+[**BERTrend architecture and functions**](./docs/data_architecture.html): the data architecture, the BERTrend functions
+and the relational schema, with click-to-expand details for every data structure. It renders as-is on the documentation
+site; when browsing the sources on GitHub, HTML files are not rendered, so download `docs/data_architecture.html` and
+open it in a browser.
+
 ## Main Features
 
 The BERTrend repository provides a set of metrics, methods, and visualization tools to support the analysis of dynamic
@@ -321,6 +332,8 @@ Key Features of the demonstrator:
     * **new popularity metric** considers both the number of documents within a topic and the **frequency of updates**
 
 For a detailed look at the internal data structures of a BERTrend model, see [BERTrend Model Structure](./docs/bertrend_model_structure.md).
+For an interactive view of the files and data structures produced by BERTrend, see
+[BERTrend architecture and functions](./docs/data_architecture.html).
 
 #### Launch the Weak Signal Analysis Demonstrator
 
