@@ -132,3 +132,6 @@ postman
 **/gmail_token.json
 
 
+
+# Sphinx documentation build output
+docs/_build/

@@ -8,9 +8,9 @@ There are currently two ways of generating newsletter.
 To generate a newsletter, you should first create the following configuration files:
 
 - `newsletter.cfg`: sets parameters for the newsletter and the topic model. You can follow examples
-  in [bertrend_apps/config/newsletters](../bertrend/bertrend_apps/config/newsletters).
+  in [bertrend_apps/config/newsletters](https://github.com/rte-france/BERTrend/tree/main/bertrend/bertrend_apps/config/newsletters).
 - `feed.cfg`: define on which feed you want to generate the newsletter and at which frequency. You can follow examples
-  in [bertrend_apps/config/feeds](../bertrend/bertrend_apps/config/feeds).
+  in [bertrend_apps/config/feeds](https://github.com/rte-france/BERTrend/tree/main/bertrend/bertrend_apps/config/feeds).
 
 ## One-shot creation
 
