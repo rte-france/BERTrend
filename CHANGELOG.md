@@ -1,3 +1,16 @@
+## v0.4.14 - 2026-09-01
+
+### Fixes
+
+- Fixed a TCP connection leak in the prospective-demo queue workers where thousands of
+  sockets piled up in `CLOSE-WAIT`. `OpenAI_Client.parse()` now reuses a single
+  synchronous client with a bounded HTTP connection pool instead of spinning up a new
+  event loop and async client per call (which were never closed). The client is now
+  closeable (`close()` / context manager), and a single shared client is reused across
+  all LLM calls of a model-training job (topic descriptions and signal interpretations).
+  Added pool-tuning env vars `OPENAI_MAX_CONNECTIONS`, `OPENAI_MAX_KEEPALIVE_CONNECTIONS`
+  and `OPENAI_KEEPALIVE_EXPIRY`.
+
 ## v0.4.13 - 2026-08-17
 
 ### Features

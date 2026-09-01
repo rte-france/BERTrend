@@ -102,97 +102,65 @@ class _TestResponseModel(BaseModel):
 
 
 def test_parse_basic_functionality(mock_api_key):
-    """Test parse method with a simple user prompt"""
-    # Use a non-GPT-5 model so this test covers the branch without model_settings
+    """Test parse uses the synchronous responses.parse and returns output_parsed."""
+    # Use a non-GPT-5 model so this test covers the branch without reasoning.
     client = OpenAI_Client(api_key="test_api_key", model="gpt-4.1-mini")
 
-    mock_agent = Mock()
-    mock_factory = Mock()
-    mock_factory.create_agent.return_value = mock_agent
     mock_parsed = _TestResponseModel(answer="This is a test answer", confidence=0.95)
-    mock_result = Mock(final_output=mock_parsed)
+    mock_response = Mock(output_parsed=mock_parsed)
 
-    with (
-        patch(
-            "bertrend.llm_utils.openai_client.BaseAgentFactory",
-            return_value=mock_factory,
-        ) as mock_factory_cls,
-        patch(
-            "bertrend.llm_utils.openai_client.run_runner_sync",
-            return_value=mock_result,
-        ) as mock_run_sync,
-    ):
+    with patch.object(
+        client.llm_client.responses, "parse", return_value=mock_response
+    ) as mock_parse:
         result = client.parse(
             "What is the weather today?", response_format=_TestResponseModel
         )
         assert result == mock_parsed
-        mock_factory_cls.assert_called_once_with(model_name=client.model)
-        mock_factory.create_agent.assert_called_once_with(
-            name="parsing_agent",
-            instructions=None,
-            output_type=_TestResponseModel,
-        )
-        mock_run_sync.assert_called_once_with(
-            input="What is the weather today?",
-            starting_agent=mock_agent,
-            timeout=PARSE_TIMEOUT,
-        )
+        mock_parse.assert_called_once()
+        _, kwargs = mock_parse.call_args
+        assert kwargs["input"] == [
+            {"role": "user", "content": "What is the weather today?"}
+        ]
+        assert kwargs["text_format"] == _TestResponseModel
+        # A bounded per-request timeout is always set.
+        assert kwargs["timeout"] == PARSE_TIMEOUT
+        # A non-GPT-5 model must not receive a reasoning parameter.
+        assert "reasoning" not in kwargs
 
 
 def test_parse_with_system_prompt(mock_api_key):
-    """Test parse method with both user and system prompts"""
-    # Use a non-GPT-5 model so this test covers the branch without model_settings
+    """Test parse builds a system+user message list from both prompts."""
+    # Use a non-GPT-5 model so this test covers the branch without reasoning.
     client = OpenAI_Client(api_key="test_api_key", model="gpt-4.1-mini")
 
-    mock_agent = Mock()
-    mock_factory = Mock()
-    mock_factory.create_agent.return_value = mock_agent
     mock_parsed = _TestResponseModel(answer="System prompt response", confidence=0.9)
-    mock_result = Mock(final_output=mock_parsed)
+    mock_response = Mock(output_parsed=mock_parsed)
 
-    with (
-        patch(
-            "bertrend.llm_utils.openai_client.BaseAgentFactory",
-            return_value=mock_factory,
-        ) as mock_factory_cls,
-        patch(
-            "bertrend.llm_utils.openai_client.run_runner_sync",
-            return_value=mock_result,
-        ) as mock_run_sync,
-    ):
+    with patch.object(
+        client.llm_client.responses, "parse", return_value=mock_response
+    ) as mock_parse:
         result = client.parse(
             "What is the weather today?",
             system_prompt="You are a weather assistant",
             response_format=_TestResponseModel,
         )
         assert result == mock_parsed
-        mock_factory_cls.assert_called_once_with(model_name=client.model)
-        mock_factory.create_agent.assert_called_once_with(
-            name="parsing_agent",
-            instructions="You are a weather assistant",
-            output_type=_TestResponseModel,
-        )
-        mock_run_sync.assert_called_once_with(
-            input="What is the weather today?",
-            starting_agent=mock_agent,
-            timeout=PARSE_TIMEOUT,
-        )
+        _, kwargs = mock_parse.call_args
+        assert kwargs["input"] == [
+            {"role": "system", "content": "You are a weather assistant"},
+            {"role": "user", "content": "What is the weather today?"},
+        ]
+        assert kwargs["text_format"] == _TestResponseModel
 
 
 def test_parse_error_handling(mock_api_key):
-    """Test if parse propagates errors from the runner"""
+    """Test if parse propagates errors from the underlying client."""
     client = OpenAI_Client(api_key="test_api_key")
 
-    mock_agent = Mock()
-    mock_factory = Mock()
-    mock_factory.create_agent.return_value = mock_agent
     with (
-        patch(
-            "bertrend.llm_utils.openai_client.BaseAgentFactory",
-            return_value=mock_factory,
-        ),
-        patch(
-            "bertrend.llm_utils.openai_client.run_runner_sync",
+        patch.object(
+            client.llm_client.responses,
+            "parse",
             side_effect=Exception("API Parse Error"),
         ),
         pytest.raises(Exception, match="API Parse Error"),
@@ -201,98 +169,88 @@ def test_parse_error_handling(mock_api_key):
 
 
 def test_parse_with_none_response_format(mock_api_key):
-    """Test parse method with response_format=None"""
-    # Use a non-GPT-5 model so this test covers the branch without model_settings
+    """With response_format=None, parse falls back to a plain text generation."""
+    # Use a non-GPT-5 model so this test covers the branch without reasoning.
     client = OpenAI_Client(api_key="test_api_key", model="gpt-4.1-mini")
 
-    mock_agent = Mock()
-    mock_factory = Mock()
-    mock_factory.create_agent.return_value = mock_agent
-    mock_parsed = {"answer": "Default response", "confidence": 0.8}
-    mock_result = Mock(final_output=mock_parsed)
-
-    with (
-        patch(
-            "bertrend.llm_utils.openai_client.BaseAgentFactory",
-            return_value=mock_factory,
-        ) as mock_factory_cls,
-        patch(
-            "bertrend.llm_utils.openai_client.run_runner_sync",
-            return_value=mock_result,
-        ) as mock_run_sync,
-    ):
+    with patch.object(
+        client.llm_client.responses,
+        "create",
+        return_value=MagicMock(output_text="Default response"),
+    ) as mock_create:
         result = client.parse("What is the weather today?", response_format=None)
 
-        mock_factory_cls.assert_called_once_with(model_name=client.model)
-        mock_factory.create_agent.assert_called_once_with(
-            name="parsing_agent",
-            instructions=None,
-            output_type=None,
-        )
-        mock_run_sync.assert_called_once_with(
-            input="What is the weather today?",
-            starting_agent=mock_agent,
-            timeout=PARSE_TIMEOUT,
+        assert result == "Default response"
+        mock_create.assert_called_once()
+        _, kwargs = mock_create.call_args
+        assert kwargs["input"] == [
+            {"role": "user", "content": "What is the weather today?"}
+        ]
+
+
+def test_parse_completions_api(mock_api_key):
+    """With the COMPLETIONS API, parse uses chat.completions.parse."""
+    client = OpenAI_Client(
+        api_key="test_api_key", model="gpt-4.1-mini", api_type=APIType.COMPLETIONS
+    )
+
+    mock_parsed = _TestResponseModel(answer="Completions answer", confidence=0.7)
+    mock_completion = Mock(
+        choices=[Mock(message=Mock(parsed=mock_parsed))],
+    )
+
+    with patch.object(
+        client.llm_client.chat.completions, "parse", return_value=mock_completion
+    ) as mock_parse:
+        result = client.parse(
+            "What is the weather today?", response_format=_TestResponseModel
         )
         assert result == mock_parsed
+        _, kwargs = mock_parse.call_args
+        assert kwargs["response_format"] == _TestResponseModel
+        assert kwargs["messages"] == [
+            {"role": "user", "content": "What is the weather today?"}
+        ]
 
 
-def test_parse_includes_model_settings_for_gpt5(mock_api_key):
-    """Test parse method includes model settings when using GPT-5"""
+def test_parse_includes_reasoning_for_gpt5(mock_api_key):
+    """Test parse passes a reasoning effort when using a GPT-5 model."""
     client = OpenAI_Client(api_key="test_api_key", model="gpt-5")
 
-    mock_agent = Mock()
-    mock_factory = Mock()
-    mock_factory.create_agent.return_value = mock_agent
-    mock_result = Mock(final_output=_TestResponseModel(answer="Ok", confidence=0.5))
+    mock_response = Mock(
+        output_parsed=_TestResponseModel(answer="Ok", confidence=0.5)
+    )
 
-    with (
-        patch(
-            "bertrend.llm_utils.openai_client.BaseAgentFactory",
-            return_value=mock_factory,
-        ) as mock_factory_cls,
-        patch(
-            "bertrend.llm_utils.openai_client.run_runner_sync",
-            return_value=mock_result,
-        ),
-    ):
+    with patch.object(
+        client.llm_client.responses, "parse", return_value=mock_response
+    ) as mock_parse:
         client.parse("What is the weather today?", response_format=_TestResponseModel)
 
-        mock_factory_cls.assert_called_once_with(model_name="gpt-5")
-        _, kwargs = mock_factory.create_agent.call_args
-        assert kwargs["name"] == "parsing_agent"
-        assert kwargs["instructions"] is None
-        assert kwargs["output_type"] == _TestResponseModel
-        assert kwargs["model_settings"] is not None
+        _, kwargs = mock_parse.call_args
+        assert kwargs["reasoning"] == {"effort": "low"}
+        # Reasoning models require temperature == 1.
+        assert kwargs["temperature"] == 1
 
 
 def test_parse_custom_reasoning_effort_for_gpt5(mock_api_key):
     """A per-task reasoning_effort overrides the default for GPT-5 models."""
     client = OpenAI_Client(api_key="test_api_key", model="gpt-5")
 
-    mock_agent = Mock()
-    mock_factory = Mock()
-    mock_factory.create_agent.return_value = mock_agent
-    mock_result = Mock(final_output=_TestResponseModel(answer="Ok", confidence=0.5))
+    mock_response = Mock(
+        output_parsed=_TestResponseModel(answer="Ok", confidence=0.5)
+    )
 
-    with (
-        patch(
-            "bertrend.llm_utils.openai_client.BaseAgentFactory",
-            return_value=mock_factory,
-        ),
-        patch(
-            "bertrend.llm_utils.openai_client.run_runner_sync",
-            return_value=mock_result,
-        ),
-    ):
+    with patch.object(
+        client.llm_client.responses, "parse", return_value=mock_response
+    ) as mock_parse:
         client.parse(
             "What is the weather today?",
             response_format=_TestResponseModel,
             reasoning_effort="high",
         )
 
-        _, kwargs = mock_factory.create_agent.call_args
-        assert kwargs["model_settings"].reasoning.effort == "high"
+        _, kwargs = mock_parse.call_args
+        assert kwargs["reasoning"] == {"effort": "high"}
 
 
 def test_parse_invalid_reasoning_effort_falls_back(mock_api_key):
@@ -301,29 +259,38 @@ def test_parse_invalid_reasoning_effort_falls_back(mock_api_key):
 
     client = OpenAI_Client(api_key="test_api_key", model="gpt-5")
 
-    mock_agent = Mock()
-    mock_factory = Mock()
-    mock_factory.create_agent.return_value = mock_agent
-    mock_result = Mock(final_output=_TestResponseModel(answer="Ok", confidence=0.5))
+    mock_response = Mock(
+        output_parsed=_TestResponseModel(answer="Ok", confidence=0.5)
+    )
 
-    with (
-        patch(
-            "bertrend.llm_utils.openai_client.BaseAgentFactory",
-            return_value=mock_factory,
-        ),
-        patch(
-            "bertrend.llm_utils.openai_client.run_runner_sync",
-            return_value=mock_result,
-        ),
-    ):
+    with patch.object(
+        client.llm_client.responses, "parse", return_value=mock_response
+    ) as mock_parse:
         client.parse(
             "What is the weather today?",
             response_format=_TestResponseModel,
             reasoning_effort="ultra",  # not a valid effort
         )
 
-        _, kwargs = mock_factory.create_agent.call_args
-        assert kwargs["model_settings"].reasoning.effort == DEFAULT_REASONING_EFFORT
+        _, kwargs = mock_parse.call_args
+        assert kwargs["reasoning"] == {"effort": DEFAULT_REASONING_EFFORT}
+
+
+def test_close_closes_underlying_client(mock_api_key):
+    """close() releases the underlying HTTP client's pooled connections."""
+    client = OpenAI_Client(api_key="test_api_key")
+
+    with patch.object(client.llm_client, "close") as mock_close:
+        client.close()
+        mock_close.assert_called_once()
+
+
+def test_context_manager_closes_client(mock_api_key):
+    """Using the client as a context manager closes it on exit."""
+    with patch.object(OpenAI_Client, "close") as mock_close:
+        with OpenAI_Client(api_key="test_api_key") as client:
+            assert isinstance(client, OpenAI_Client)
+        mock_close.assert_called_once()
 
 
 def test_resolve_reasoning_effort_override_wins(monkeypatch):

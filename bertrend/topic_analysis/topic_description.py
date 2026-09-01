@@ -21,6 +21,7 @@ def get_topic_description(
     docs_text: str,
     language_code: str = "fr",
     reasoning_effort: str | None = None,
+    openai_client: OpenAI_Client | None = None,
 ) -> TopicDescription | None:
     """Generates a LLM-based human-readable description of a topic composed of a title and a description (as a dict).
 
@@ -28,15 +29,21 @@ def get_topic_description(
     falls back to the env var OPENAI_REASONING_EFFORT_TOPIC_DESCRIPTION, then to
     the global default (OPENAI_REASONING_EFFORT, "low"). This is a lightweight
     task so "low" is usually sufficient.
+
+    openai_client lets callers pass a shared, reusable client (recommended when
+    describing many topics in a loop, e.g. the queue worker) to avoid opening a
+    new HTTP connection pool per call. When None, a temporary client is created
+    and closed for this single call.
     """
     # Prepare the prompt
     prompt = TOPIC_DESCRIPTION_PROMPT[language_code]
+    # Reuse the caller's client when provided; otherwise create (and close) one.
+    client = openai_client or OpenAI_Client(
+        api_key=LLM_CONFIG["api_key"],
+        base_url=LLM_CONFIG["base_url"],
+        model=LLM_CONFIG["model"],
+    )
     try:
-        client = OpenAI_Client(
-            api_key=LLM_CONFIG["api_key"],
-            base_url=LLM_CONFIG["base_url"],
-            model=LLM_CONFIG["model"],
-        )
         answer = client.parse(
             response_format=TopicDescription,
             user_prompt=prompt.format(
@@ -51,6 +58,9 @@ def get_topic_description(
     except Exception as e:
         logger.error(f"Error calling OpenAI API: {e}")
         return None
+    finally:
+        if openai_client is None:
+            client.close()
 
 
 def generate_topic_description(

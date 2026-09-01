@@ -8,23 +8,31 @@ import re
 from enum import Enum
 from typing import Type
 
-from agents import ModelSettings
+import httpx
 from loguru import logger
 from openai import OpenAI, Stream, Timeout
-from openai.types import Reasoning
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from pydantic import BaseModel
-
-from bertrend.llm_utils.agent_utils import BaseAgentFactory, run_runner_sync
 
 # Note: .env is loaded in bertrend/__init__.py which is imported before this module
 
 MAX_ATTEMPTS = 3
 TIMEOUT = 60.0
-# Wall-clock timeout (seconds) for a single structured-output (parse) call.
+# Per-request timeout (seconds) for a single structured-output (parse) call.
 # Generous enough for reasoning models, but bounded so that a stalled
 # connection can never hang the worker (and therefore the whole queue).
 PARSE_TIMEOUT = float(os.getenv("OPENAI_PARSE_TIMEOUT", 180.0))
+
+# HTTP connection-pool bounds for the OpenAI client. A bounded pool with a short
+# keep-alive expiry ensures idle keep-alive sockets are actively reaped instead
+# of piling up (previously the agents-SDK path leaked connections into
+# CLOSE-WAIT — see the worker connection-leak fix).
+OPENAI_MAX_CONNECTIONS = int(os.getenv("OPENAI_MAX_CONNECTIONS", 20))
+OPENAI_MAX_KEEPALIVE_CONNECTIONS = int(
+    os.getenv("OPENAI_MAX_KEEPALIVE_CONNECTIONS", 10)
+)
+OPENAI_KEEPALIVE_EXPIRY = float(os.getenv("OPENAI_KEEPALIVE_EXPIRY", 30.0))
+
 DEFAULT_TEMPERATURE = 0.1
 DEFAULT_MODEL = "gpt-5.6-luna"
 # Reasoning effort applied to GPT-5-family models (low keeps latency/cost down;
@@ -125,11 +133,35 @@ class OpenAI_Client:
             "api_key": api_key,
             "timeout": Timeout(TIMEOUT, connect=10.0),
             "max_retries": MAX_ATTEMPTS,
+            # Bounded connection pool with a short keep-alive expiry so idle
+            # sockets are reaped rather than accumulating (avoids the CLOSE-WAIT
+            # leak). A single client is reused across calls; remember to close()
+            # it (or use it as a context manager) when done.
+            "http_client": httpx.Client(
+                limits=httpx.Limits(
+                    max_connections=OPENAI_MAX_CONNECTIONS,
+                    max_keepalive_connections=OPENAI_MAX_KEEPALIVE_CONNECTIONS,
+                    keepalive_expiry=OPENAI_KEEPALIVE_EXPIRY,
+                ),
+            ),
         }
         self.llm_client = OpenAI(**openai_params)
         self.model = model or os.getenv("OPENAI_DEFAULT_MODEL") or DEFAULT_MODEL
         self.temperature = temperature if not test_gpt5_version(self.model) else 1
         self.api_type = api_type
+
+    def close(self) -> None:
+        """Close the underlying HTTP client and release pooled connections."""
+        try:
+            self.llm_client.close()
+        except Exception as e:  # pragma: no cover - best-effort cleanup
+            logger.debug(f"Error closing OpenAI client: {e}")
+
+    def __enter__(self) -> "OpenAI_Client":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
 
     def generate(
         self,
@@ -231,7 +263,13 @@ class OpenAI_Client:
         reasoning_effort: str | None = None,
         **kwargs,
     ) -> BaseModel | None:
-        """Call OpenAI model for generation with structured output (with openai-agents sdk).
+        """Call OpenAI model for generation with structured output.
+
+        Uses the shared, synchronous ``self.llm_client`` (native OpenAI structured
+        outputs) rather than the openai-agents SDK. This reuses a single bounded
+        HTTP connection pool instead of spinning up a throwaway event loop and a
+        new async client per call — which previously leaked connections into
+        CLOSE-WAIT in the queue workers.
 
         Parameters
         ----------
@@ -243,7 +281,23 @@ class OpenAI_Client:
             "low"). Ignored for non-GPT-5 models.
         """
         kwargs.setdefault("model", self.model)
+        kwargs.setdefault("timeout", PARSE_TIMEOUT)
         model = kwargs["model"]
+        is_gpt5 = test_gpt5_version(model)
+
+        # Reasoning models (GPT-5 family) require temperature == 1.
+        kwargs["temperature"] = (
+            1 if is_gpt5 else kwargs.get("temperature", self.temperature)
+        )
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": user_prompt})
+
+        # No schema requested: fall back to a plain text generation.
+        if response_format is None:
+            return self.generate_from_history(messages, **kwargs)
 
         effort = reasoning_effort or DEFAULT_REASONING_EFFORT
         if effort not in VALID_REASONING_EFFORTS:
@@ -253,38 +307,25 @@ class OpenAI_Client:
             )
             effort = DEFAULT_REASONING_EFFORT
 
-        model_settings = (
-            ModelSettings(
-                reasoning=Reasoning(effort=effort),
-                verbosity="low",
+        if self.api_type == APIType.COMPLETIONS:
+            if is_gpt5:
+                kwargs["reasoning_effort"] = effort
+            completion = self.llm_client.chat.completions.parse(
+                messages=messages,
+                response_format=response_format,
+                **kwargs,
             )
-            if test_gpt5_version(model)
-            else None
-        )
+            return completion.choices[0].message.parsed
 
-        agent_kwargs = {
-            "name": "parsing_agent",
-            "instructions": system_prompt,
-            "output_type": response_format,
-        }
-        if model_settings:
-            agent_kwargs["model_settings"] = model_settings
-
-        parsing_agent = BaseAgentFactory(model_name=model).create_agent(**agent_kwargs)
-
-        # Invoke agent with a bounded wall-clock timeout so a stalled LLM
-        # connection cannot block the caller indefinitely. On timeout this
-        # raises asyncio.TimeoutError, which callers already handle by
-        # logging and returning None instead of freezing the queue worker.
-        result = run_runner_sync(
-            input=user_prompt,
-            starting_agent=parsing_agent,
-            timeout=PARSE_TIMEOUT,
+        # RESPONSES API (default)
+        if is_gpt5:
+            kwargs["reasoning"] = {"effort": effort}
+        response = self.llm_client.responses.parse(
+            input=messages,
+            text_format=response_format,
+            **kwargs,
         )
-        response = (
-            result.final_output if hasattr(result, "final_output") else str(result)
-        )
-        return response
+        return response.output_parsed
 
 
 def test_gpt5_version(version_string):

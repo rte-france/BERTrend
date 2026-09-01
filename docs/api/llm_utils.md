@@ -53,6 +53,32 @@ three ways, highest priority first:
 Invalid values log a warning and fall back to the global default. Reasoning effort
 is ignored for non-GPT-5 models.
 
+#### Connection management
+
+`OpenAI_Client` wraps a single synchronous OpenAI client backed by a **bounded HTTP
+connection pool**. `generate()`, `generate_from_history()` and `parse()` all reuse
+this one client (and therefore the same pool) rather than opening a new connection
+per call, which previously leaked sockets into `CLOSE-WAIT` in the queue workers.
+
+- Reuse one client for a batch of calls (e.g. describing many topics or analysing
+  many signals in a job) and release it when done. The client is a context manager:
+
+  ```python
+  with OpenAI_Client(...) as client:
+      client.parse(...)
+      client.parse(...)
+  # underlying HTTP connections are released on exit
+  ```
+
+  or call `client.close()` explicitly.
+- The pool is tuned via environment variables:
+  - `OPENAI_MAX_CONNECTIONS` — max simultaneous connections (default `20`).
+  - `OPENAI_MAX_KEEPALIVE_CONNECTIONS` — max idle keep-alive connections (default `10`).
+  - `OPENAI_KEEPALIVE_EXPIRY` — seconds an idle keep-alive socket is kept before being
+    reaped (default `30`).
+- `OPENAI_PARSE_TIMEOUT` — per-request timeout (seconds) for a single `parse()` call
+  (default `180`), bounding any single stalled structured-output request.
+
 ---
 
 ## Agent Utilities (`agent_utils.py`)
