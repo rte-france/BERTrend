@@ -1,0 +1,22 @@
+# Read the Docs configuration for BERTrend
+# https://docs.readthedocs.io/en/stable/config-file/v2.html
+version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.12"
+
+sphinx:
+  configuration: docs/conf.py
+  builder: html
+  # The build is currently warning-free; flip this to `true` if you want broken
+  # cross-references to fail the build.
+  fail_on_warning: false
+
+python:
+  install:
+    - requirements: docs/requirements.txt
+
+formats:
+  - htmlzip

@@ -306,7 +306,7 @@ BERTrend reads data as **JSON Lines** (`.jsonl`): one JSON object per line, each
 
 #### Minimal valid example
 
-```jsonl
+```json
 {"text": "Scientists have discovered a new method to store solar energy...", "timestamp": "2024-03-15 08:30:00", "url": "https://www.example.com/article-1", "title": "New solar storage breakthrough"}
 {"text": "The European grid operator announced new interconnection targets...", "timestamp": "2024-03-16 14:00:00", "url": "https://www.example.com/article-2", "title": "EU grid expansion plans"}
 ```

@@ -1,0 +1,2494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BERTrend architecture and functions</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #f5f6f8;
+    color: #1a1a1a;
+    padding: 24px 24px 64px;
+    line-height: 1.45;
+  }
+  h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #0f172a;
+    max-width: 1500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .subtitle {
+    max-width: 1500px;
+    margin: 0 auto 20px;
+    color: #64748b;
+    font-size: 13px;
+  }
+
+  /* ============ TABS ============ */
+  .tabs-input { display: none; }
+  .tabs-nav {
+    max-width: 1500px;
+    margin: 0 auto 20px;
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  .tabs-nav label {
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748b;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.2s;
+    position: relative;
+    top: 2px;
+    border-bottom: 2px solid transparent;
+  }
+  .tabs-nav label:hover { color: #0f172a; background: #f1f5f9; }
+  #tab-arch:checked ~ .tabs-nav label[for="tab-arch"],
+  #tab-func:checked ~ .tabs-nav label[for="tab-func"] {
+    color: #0f172a;
+    font-weight: 600;
+    background: white;
+    border-bottom-color: #0f172a;
+  }
+  .tab-content { display: none; }
+  #tab-arch:checked ~ #content-arch,
+  #tab-func:checked ~ #content-func,
+  #tab-erd:checked ~ #content-erd {
+    display: block;
+  }
+  #tab-erd:checked ~ .tabs-nav label[for="tab-erd"] {
+    color: #0f172a;
+    font-weight: 600;
+    background: white;
+    border-bottom-color: #0f172a;
+  }
+
+  /* ============ ARCHITECTURE TAB ============ */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    max-width: 1500px;
+    margin: 0 auto;
+    align-items: start;
+  }
+
+  .column {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+    border-top: 4px solid;
+  }
+  .column.dill { border-top-color: #3b82f6; }
+  .column.snapshot { border-top-color: #10b981; }
+  .column.interp { border-top-color: #f59e0b; }
+
+  .col-header {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .col-title { font-size: 17px; font-weight: 600; color: #0f172a; }
+  .col-badge {
+    font-size: 10px; font-weight: 600; padding: 3px 8px;
+    border-radius: 999px; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .col-badge.dill { background: #dbeafe; color: #1e40af; }
+  .col-badge.snapshot { background: #d1fae5; color: #065f46; }
+  .col-badge.interp { background: #fef3c7; color: #92400e; }
+
+  .col-path {
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 11px; color: #64748b; background: #f1f5f9;
+    padding: 6px 10px; border-radius: 6px; margin-bottom: 12px;
+    word-break: break-all;
+  }
+
+  .col-intro {
+    font-size: 12.5px; color: #334155;
+    margin-bottom: 16px; background: #f8fafc; border-radius: 6px;
+    padding: 12px 14px; border-left: 3px solid;
+  }
+  .col-intro.dill { border-left-color: #3b82f6; }
+  .col-intro.snapshot { border-left-color: #10b981; }
+  .col-intro.interp { border-left-color: #f59e0b; }
+  .col-intro strong {
+    display: block; margin-top: 8px; margin-bottom: 2px;
+    font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: 0.4px; color: #64748b;
+  }
+  .col-intro strong:first-child { margin-top: 0; }
+  .col-intro p { margin-bottom: 4px; }
+  .col-intro code {
+    font-family: "SF Mono", Consolas, monospace;
+    background: #e2e8f0; padding: 1px 5px; border-radius: 3px; font-size: 11px;
+  }
+
+  .group { margin-bottom: 16px; }
+  .group-title {
+    font-size: 11px; font-weight: 600; color: #64748b;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px dashed #e2e8f0;
+  }
+
+  details.item {
+    background: #fafbfc; border: 1px solid #e2e8f0;
+    border-radius: 8px; margin-bottom: 8px; overflow: hidden;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  details.item[open] {
+    background: white; border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  details.item summary {
+    padding: 10px 12px; cursor: pointer; list-style: none;
+    position: relative; padding-right: 30px;
+  }
+  details.item summary::-webkit-details-marker { display: none; }
+  details.item summary::after {
+    content: "▸"; position: absolute; right: 12px; top: 12px;
+    color: #94a3b8; font-size: 12px; transition: transform 0.2s;
+  }
+  details.item[open] summary::after { transform: rotate(90deg); }
+  details.item summary:hover { background: #f1f5f9; }
+  details.item[open] summary { border-bottom: 1px solid #e2e8f0; }
+
+  .item-name {
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 3px;
+  }
+  .item-type {
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 11px; color: #7c3aed; margin-bottom: 4px;
+  }
+  .item-desc { font-size: 11.5px; color: #475569; }
+  .item-warn {
+    font-size: 11px; color: #dc2626;
+    margin-top: 4px; font-style: italic;
+  }
+
+  .item-detail { padding: 12px 14px 14px; background: white; }
+  .detail-block { margin-bottom: 14px; }
+  .detail-block:last-child { margin-bottom: 0; }
+
+  .detail-label {
+    font-size: 10px; font-weight: 600; color: #64748b;
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px;
+  }
+  .detail-code {
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 11px; background: #0f172a; color: #e2e8f0;
+    padding: 10px 12px; border-radius: 6px; overflow-x: auto;
+    white-space: pre; line-height: 1.45;
+  }
+  .detail-code .kw { color: #93c5fd; }
+  .detail-code .str { color: #86efac; }
+  .detail-code .num { color: #fbbf24; }
+  .detail-code .comment { color: #64748b; font-style: italic; }
+  .detail-code .type { color: #c4b5fd; }
+
+  .fields-table {
+    width: 100%; border-collapse: collapse; font-size: 11.5px;
+  }
+  .fields-table th {
+    text-align: left; padding: 6px 8px; background: #f1f5f9;
+    color: #475569; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.4px; border-bottom: 1px solid #e2e8f0;
+  }
+  .fields-table td {
+    padding: 6px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top;
+  }
+  .fields-table tr:last-child td { border-bottom: none; }
+  .fields-table code {
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 11px; background: #f1f5f9; padding: 1px 4px;
+    border-radius: 3px; color: #0f172a;
+  }
+  .fields-table .col-type {
+    color: #7c3aed; font-family: "SF Mono", Consolas, monospace; font-size: 10.5px;
+  }
+
+  .links-section {
+    max-width: 1500px; margin: 40px auto 0; background: white;
+    border-radius: 12px; padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .links-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: #0f172a; }
+  .links-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .link {
+    padding: 10px 12px; background: #f8fafc; border-left: 3px solid #94a3b8;
+    border-radius: 4px; font-size: 12.5px; color: #334155;
+  }
+  .link.redund { border-left-color: #3b82f6; }
+  .link.derive { border-left-color: #f59e0b; }
+  .link.warn { border-left-color: #dc2626; }
+  .link code {
+    font-family: "SF Mono", Consolas, monospace;
+    background: #e2e8f0; padding: 1px 5px; border-radius: 3px; font-size: 11.5px;
+  }
+  .link-tag {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 2px 6px; border-radius: 4px; margin-right: 6px;
+    letter-spacing: 0.4px; text-transform: uppercase; vertical-align: middle;
+  }
+  .link-tag.redund { background: #dbeafe; color: #1e40af; }
+  .link-tag.derive { background: #fef3c7; color: #92400e; }
+  .link-tag.warn { background: #fee2e2; color: #991b1b; }
+
+  .hint {
+    max-width: 1500px; margin: 12px auto 0; font-size: 11.5px;
+    color: #64748b; text-align: center; font-style: italic;
+  }
+
+  /* ============ FUNCTIONS TAB ============ */
+  .func-legend {
+    max-width: 1500px; margin: 0 auto 24px; background: white;
+    border-radius: 12px; padding: 16px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+    font-size: 12px;
+  }
+  .func-legend-title {
+    font-size: 11px; font-weight: 600; color: #64748b;
+    text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; color: #475569; }
+
+  .func-categories {
+    max-width: 1500px; margin: 0 auto;
+    display: grid; gap: 20px;
+  }
+  .func-category {
+    background: white; border-radius: 12px; padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .func-cat-title {
+    font-size: 16px; font-weight: 600; color: #0f172a;
+    margin-bottom: 4px;
+  }
+  .func-cat-desc {
+    font-size: 12.5px; color: #64748b; margin-bottom: 16px;
+  }
+  .func-cat-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+
+  details.func {
+    background: #fafbfc; border: 1px solid #e2e8f0; border-radius: 8px;
+    overflow: hidden; transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  details.func[open] {
+    background: white; border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  details.func summary {
+    padding: 12px 14px; cursor: pointer; list-style: none;
+    position: relative; padding-right: 30px;
+  }
+  details.func summary::-webkit-details-marker { display: none; }
+  details.func summary::after {
+    content: "▸"; position: absolute; right: 14px; top: 14px;
+    color: #94a3b8; font-size: 12px; transition: transform 0.2s;
+  }
+  details.func[open] summary::after { transform: rotate(90deg); }
+  details.func summary:hover { background: #f1f5f9; }
+  details.func[open] summary { border-bottom: 1px solid #e2e8f0; }
+
+  .func-name {
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 13px; font-weight: 600; color: #0f172a;
+    margin-bottom: 6px;
+  }
+  .func-desc {
+    font-size: 12px; color: #475569; margin-bottom: 8px;
+  }
+  .func-io-line {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: #64748b;
+    flex-wrap: wrap;
+  }
+  .func-io-line + .func-io-line { margin-top: 4px; }
+  .func-io-label {
+    font-weight: 600; font-size: 10px; color: #64748b;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    min-width: 44px;
+  }
+
+  .badge {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 2px 7px; border-radius: 4px;
+    letter-spacing: 0.3px;
+    font-family: "SF Mono", Consolas, monospace;
+  }
+  .badge.dill { background: #dbeafe; color: #1e40af; }
+  .badge.snapshot { background: #d1fae5; color: #065f46; }
+  .badge.interp { background: #fef3c7; color: #92400e; }
+  .badge.none { background: #e5e7eb; color: #374151; }
+  .badge.arrow {
+    background: transparent; color: #94a3b8;
+    font-family: inherit; padding: 0 2px; font-weight: 500;
+  }
+
+  .func-detail { padding: 14px; background: white; }
+  .func-detail-block { margin-bottom: 14px; }
+  .func-detail-block:last-child { margin-bottom: 0; }
+
+  .func-io-detail {
+    background: #f8fafc; border-radius: 6px; padding: 10px 12px;
+    font-size: 11.5px; color: #334155; margin-bottom: 4px;
+  }
+  .func-io-detail .badge { margin-right: 6px; vertical-align: middle; }
+  .func-io-detail code {
+    font-family: "SF Mono", Consolas, monospace;
+    background: #e2e8f0; padding: 1px 4px; border-radius: 3px; font-size: 11px;
+  }
+
+/* ============ ERD TAB (relational schema) ============ */
+  .erd-legend {
+    max-width: 1500px; margin: 0 auto 16px; background: white;
+    border-radius: 12px; padding: 12px 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+    font-size: 12px;
+  }
+  .erd-legend-item { display: flex; align-items: center; gap: 6px; color: #475569; }
+  .erd-legend-key {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 4px; font-size: 11px; font-weight: 700;
+  }
+  .erd-legend-key.pk { background: #fef3c7; color: #92400e; }
+  .erd-legend-key.fk { background: #e0e7ff; color: #3730a3; }
+  .erd-legend-key.idx { background: #f3e8ff; color: #6b21a8; }
+  .erd-legend-zone { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 2px solid; }
+  .erd-legend-zone.dill { border-color: #3b82f6; background: #eff6ff; }
+  .erd-legend-zone.snapshot { border-color: #10b981; background: #ecfdf5; }
+  .erd-legend-zone.interp { border-color: #f59e0b; background: #fffbeb; }
+  .erd-legend-line { display: inline-block; width: 30px; height: 2px; }
+  .erd-legend-line.topic { background: #475569; }
+  .erd-legend-line.timestamp { background: #8b5cf6; }
+
+  .erd-canvas-wrap {
+    max-width: 1500px; margin: 0 auto; overflow-x: auto;
+    background: white; border-radius: 12px; padding: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .erd-canvas { position: relative; width: 1500px; height: 1300px; }
+  .erd-canvas svg.erd-links {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 3;
+  }
+  .erd-canvas svg.erd-links path { fill: none; }
+  /* Visible path (color + thin stroke) */
+  .erd-canvas svg.erd-links path.visible { stroke-width: 2; pointer-events: none; }
+  .erd-canvas svg.erd-links path.visible.topic { stroke: #475569; }
+  .erd-canvas svg.erd-links path.visible.timestamp { stroke: #8b5cf6; }
+  /* Hit-area invisible large pour capter le hover */
+  .erd-canvas svg.erd-links path.hit {
+    stroke: transparent; stroke-width: 16;
+    pointer-events: stroke; cursor: help;
+  }
+  .erd-canvas svg.erd-links circle.hub-dot {
+    fill: #475569;
+  }
+  .erd-canvas svg.erd-links circle.hub-dot.timestamp { fill: #8b5cf6; }
+  .erd-canvas svg.erd-links .arrow-label {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 11px; font-weight: 700; fill: #334155;
+  }
+  .erd-canvas svg.erd-links .arrow-label-bg {
+    fill: white; stroke: #cbd5e1; stroke-width: 0.8;
+  }
+  .erd-canvas svg.erd-links .arrow-label-bg.timestamp { stroke: #a78bfa; }
+
+  .erd-tbl {
+    position: absolute;
+    background: #fafbfc;
+    border: 1.5px solid;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    z-index: 2; overflow: hidden;
+    font-size: 11px;
+    cursor: pointer;
+    transition: opacity 0.18s, filter 0.18s, box-shadow 0.18s;
+  }
+  .erd-tbl.active {
+    box-shadow: 0 0 0 3px #0f172a, 0 6px 16px rgba(0,0,0,0.18);
+    z-index: 6;
+  }
+  .erd-canvas.has-selection .erd-tbl:not(.active):not(.related) {
+    opacity: 0.18;
+    filter: grayscale(70%);
+  }
+  .erd-canvas svg.erd-links .link {
+    transition: opacity 0.18s;
+  }
+  .erd-canvas.has-selection svg.erd-links .link:not(.related) {
+    opacity: 0.1;
+  }
+  .erd-tbl.dill { border-color: #3b82f6; }
+  .erd-tbl.snapshot { border-color: #10b981; }
+  .erd-tbl.interp { border-color: #f59e0b; }
+  .erd-tbl-head {
+    padding: 6px 10px;
+    font-family: "SF Mono", Consolas, monospace;
+    font-weight: 700; font-size: 12px; color: white; line-height: 20px;
+  }
+  .erd-tbl.dill .erd-tbl-head { background: #3b82f6; }
+  .erd-tbl.snapshot .erd-tbl-head { background: #10b981; }
+  .erd-tbl.interp .erd-tbl-head { background: #f59e0b; }
+  .erd-tbl-sub {
+    padding: 3px 10px 5px;
+    font-size: 10px; color: #64748b; background: rgba(0,0,0,0.02);
+    border-bottom: 1px solid #e2e8f0; font-style: italic;
+    line-height: 14px; height: 22px; box-sizing: border-box;
+  }
+  .erd-tbl-row {
+    display: flex; align-items: center;
+    padding: 0 10px; height: 24px; gap: 6px;
+    border-bottom: 1px solid #f1f5f9;
+    background: white; box-sizing: border-box;
+  }
+  .erd-tbl-row:last-child { border-bottom: none; }
+  .erd-tbl-key {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 16px; border-radius: 3px;
+    font-size: 9px; font-weight: 700; flex-shrink: 0;
+  }
+  .erd-tbl-key.pk { background: #fef3c7; color: #92400e; }
+  .erd-tbl-key.fk { background: #e0e7ff; color: #3730a3; }
+  .erd-tbl-key.idx { background: #f3e8ff; color: #6b21a8; }
+  .erd-tbl-key.empty { visibility: hidden; }
+  .erd-tbl-col {
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 11px; color: #0f172a; flex: 1;
+  }
+  .erd-tbl-col.pk { color: #92400e; font-weight: 700; }
+  .erd-tbl-col.fk { color: #3730a3; font-weight: 600; }
+  .erd-tbl-type {
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 10px; color: #7c3aed;
+  }
+  .erd-tbl-row[data-desc] { cursor: help; }
+  .erd-tbl-head[data-desc] { cursor: help; }
+  .erd-canvas svg.erd-links path[data-desc],
+  .erd-canvas svg.erd-links text[data-desc],
+  .erd-canvas svg.erd-links rect[data-desc] { cursor: help; }
+
+  /* Tooltip custom */
+  #erd-tooltip {
+    position: fixed; z-index: 9999;
+    background: white;
+    border: 1px solid #cbd5e1;
+    border-left: 3px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    padding: 10px 14px;
+    max-width: 360px;
+    font-size: 12px; color: #334155; line-height: 1.55;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.08s ease-out;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  #erd-tooltip.visible { opacity: 1; }
+  /* Special style when hovering a table header */
+  #erd-tooltip.zone-dill { border-left-color: #3b82f6; }
+  #erd-tooltip.zone-snapshot { border-left-color: #10b981; }
+  #erd-tooltip.zone-interp { border-left-color: #f59e0b; }
+  #erd-tooltip.is-head::before {
+    content: attr(data-head-title);
+    display: block;
+    font-weight: 700; color: #0f172a;
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 12.5px; margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  #erd-tooltip strong { color: #0f172a; font-weight: 700; }
+  #erd-tooltip em { color: #7c3aed; font-style: normal; font-weight: 600; }
+  #erd-tooltip code {
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 11px; background: #f1f5f9;
+    padding: 1px 5px; border-radius: 3px; color: #0f172a;
+  }
+
+  /* Usage-guide block below the schema */
+  .erd-usage {
+    max-width: 1500px; margin: 32px auto 0;
+    background: white; border-radius: 12px; padding: 22px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .erd-usage-title {
+    font-size: 15px; font-weight: 600; color: #0f172a;
+    margin-bottom: 14px;
+  }
+  .erd-usage-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .erd-usage-card {
+    background: #f8fafc; border-left: 3px solid #3b82f6;
+    border-radius: 6px; padding: 12px 14px;
+  }
+  .erd-usage-card-title {
+    font-size: 12.5px; font-weight: 700; color: #0f172a;
+    margin-bottom: 6px;
+  }
+  .erd-usage-card-body {
+    font-size: 12px; color: #475569; line-height: 1.5;
+  }
+  .erd-usage-card code {
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 11px; background: #e2e8f0;
+    padding: 1px 5px; border-radius: 3px; color: #0f172a;
+  }
+</style>
+</head>
+<body>
+
+<!-- ========= Tab radios (invisible, control which tab is shown) ========= -->
+<input type="radio" name="tabs" id="tab-arch" class="tabs-input" checked>
+<input type="radio" name="tabs" id="tab-func" class="tabs-input">
+<input type="radio" name="tabs" id="tab-erd" class="tabs-input">
+
+<h1>BERTrend architecture and functions</h1>
+
+<nav class="tabs-nav">
+  <label for="tab-arch">📊 Data architecture</label>
+  <label for="tab-func">⚙️ BERTrend functions</label>
+  <label for="tab-erd">🗂️ Relational schema</label>
+</nav>
+
+<!-- ============================================================ -->
+<!-- TAB 1 - ARCHITECTURE                                          -->
+<!-- ============================================================ -->
+<div class="tab-content" id="content-arch">
+
+<div class="hint">Click on each block to expand the exact format, an example, and the description of each field.</div>
+
+<div class="grid" style="margin-top:16px">
+
+  <!-- COLUMN 1 - .DILL -->
+  <div class="column dill">
+    <div class="col-header">
+      <div class="col-title">📦 bertrend.dill</div>
+      <div class="col-badge dill">1 file</div>
+    </div>
+    <div class="col-path">&lt;watch&gt;/bertrend.dill</div>
+
+    <div class="col-intro dill">
+      <strong>Origin</strong>
+      <p>Produced by <code>bertrend.save_model(path)</code> at the end of each training/update pass. Serialized via the <code>dill</code> library.</p>
+      <strong>Role</strong>
+      <p>Single, complete container of the watch state. Opened via <code>BERTrend.restore_model(Path)</code>.</p>
+      <strong>Contains</strong>
+      <p>All global topics, all merge/emergence events, raw texts and embeddings grouped by period, the config, and <em>the last trained BERTopic</em>.</p>
+      <strong>Does not contain</strong>
+      <p>The BERTopic instances of previous periods. The size of topic <code>-1</code> per period. The noise/weak/strong classification. The LLM interpretations.</p>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Raw data per period</div>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">doc_groups</div>
+          <div class="item-type">dict[Timestamp, list[str]]</div>
+          <div class="item-desc">Texts ingested at each period. Full articles or paragraphs depending on <code>split_by_paragraph</code>.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Format</div>
+            <div class="detail-code">{
+    <span class="type">Timestamp</span>: [<span class="type">str</span>, <span class="type">str</span>, ...],   <span class="comment"># one entry = 1 article OR 1 paragraph</span>
+    ...
+}</div>
+          </div>
+          <div class="detail-block">
+            <div class="detail-label">Concrete example</div>
+            <div class="detail-code">{
+    <span class="type">Timestamp</span>(<span class="str">'2026-02-06'</span>): [
+        <span class="str">"Every month, Toluna Harris..."</span>,
+        <span class="str">"The barometer is published..."</span>,
+        ...
+    ],
+    <span class="type">Timestamp</span>(<span class="str">'2026-02-13'</span>): [...],
+    ...
+}</div>
+          </div>
+          <div class="detail-block">
+            <div class="detail-label">Notes</div>
+            <table class="fields-table">
+              <tr><th>Point</th><th>Detail</th></tr>
+              <tr><td>Dict length</td><td>= number of periods (also via <code>bertrend.get_periods()</code>)</td></tr>
+              <tr><td>Nature of texts</td><td>Full article if <code>split_by_paragraph="no"</code>; paragraph if <code>"yes"</code> (default)</td></tr>
+              <tr><td>How to infer mode</td><td>Ratio <code>Count / Document_Count</code> in merged_df</td></tr>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">emb_groups</div>
+          <div class="item-type">dict[Timestamp, np.ndarray]</div>
+          <div class="item-desc">Embeddings matching <code>doc_groups</code>.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Format</div>
+            <div class="detail-code">{
+    <span class="type">Timestamp</span>: <span class="type">np.ndarray</span> of shape (N, D),
+    ...
+}</div>
+          </div>
+          <div class="detail-block">
+            <div class="detail-label">Notes</div>
+            <table class="fields-table">
+              <tr><th>Attribute</th><th>Typical value</th></tr>
+              <tr><td>Number of rows N</td><td>= <code>len(doc_groups[ts])</code></td></tr>
+              <tr><td>Dimension D</td><td>384 (MiniLM), 768 (bert-base), 1024 (e5-large — default on the BERTrend server)</td></tr>
+              <tr><td>Role</td><td>Cross-period comparison (centroid similarity)</td></tr>
+            </table>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Global topics and events</div>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">merged_df</div>
+          <div class="item-type">DataFrame (N_topics, 10)</div>
+          <div class="item-desc">Central table — one row per global topic.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Columns (10)</div>
+            <table class="fields-table">
+              <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+              <tr><td><code>Topic</code></td><td class="col-type">int</td><td>Unique ID of the global topic</td></tr>
+              <tr><td><code>Count</code></td><td class="col-type">int</td><td>Total number of <strong>segments</strong> (cumulative)</td></tr>
+              <tr><td><code>Document_Count</code></td><td class="col-type">int</td><td>Total number of <strong>unique articles</strong></td></tr>
+              <tr><td><code>Representation</code></td><td class="col-type">list[str]</td><td>Keywords — last period only</td></tr>
+              <tr><td><code>Documents</code></td><td class="col-type">mixed list</td><td><strong>Heterogeneous format</strong>: <code>str</code> for the topic's initial period, <code>tuple(Timestamp, list[str])</code> for each later merge. See the "Notes" block.</td></tr>
+              <tr><td><code>Embedding</code></td><td class="col-type">np.ndarray</td><td>Topic centroid (mean of its docs' embeddings)</td></tr>
+              <tr><td><code>DocEmbeddings</code></td><td class="col-type">list[ndarray]</td><td>Embeddings of each doc in the topic (initial period only)</td></tr>
+              <tr><td><code>Sources</code></td><td class="col-type">list[str]</td><td>Contributing sources</td></tr>
+              <tr><td><code>URLs</code></td><td class="col-type">list[str]</td><td>Article URLs</td></tr>
+              <tr><td><code>Timestamp</code></td><td class="col-type">Timestamp</td><td>Topic emergence date (only set for newly emerged topics, not for those from the 1st pass)</td></tr>
+            </table>
+          </div>
+          <div class="detail-block">
+            <div class="detail-label">⚠ Column <code>Documents</code>: mixed format</div>
+            <div class="detail-code"><span class="comment"># Topic 2 on nemo_Trump (heavily merged):</span>
+merged_df.iloc[<span class="num">2</span>][<span class="str">"Documents"</span>] = [
+    <span class="str">"text_p1_A"</span>, <span class="str">"text_p1_B"</span>, ...              <span class="comment"># 42 strings from the initial period</span>
+    (<span class="type">Timestamp</span>(<span class="str">"2026-02-03"</span>), [<span class="str">"text1"</span>, ...]),  <span class="comment"># tuple for the 1st merge</span>
+    (<span class="type">Timestamp</span>(<span class="str">"2026-02-06"</span>), [<span class="str">"text1"</span>, ...]),  <span class="comment"># tuple for the 2nd merge</span>
+    ...                                              <span class="comment"># 153 tuples in total</span>
+]
+<span class="comment"># To iterate safely:</span>
+<span class="kw">for</span> item <span class="kw">in</span> row[<span class="str">"Documents"</span>]:
+    <span class="kw">if</span> <span class="kw">isinstance</span>(item, <span class="type">str</span>):
+        ...   <span class="comment"># doc from the initial period (no timestamp)</span>
+    <span class="kw">else</span>:
+        ts, docs = item   <span class="comment"># later merge</span></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">all_merge_histories_df</div>
+          <div class="item-type">DataFrame (N_merges, 18)</div>
+          <div class="item-desc">Merge log. <code>Topic2 → Topic1</code>.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Key columns</div>
+            <table class="fields-table">
+              <tr><th>Column</th><th>Description</th></tr>
+              <tr><td><code>Timestamp</code></td><td>Merge date</td></tr>
+              <tr><td><code>Topic1</code></td><td>Global topic that absorbs</td></tr>
+              <tr><td><code>Topic2</code></td><td>Local topic being absorbed</td></tr>
+              <tr><td><code>Similarity</code></td><td>Cosine, ≥ <code>min_similarity</code></td></tr>
+              <tr><td><code>Representation1/2</code></td><td>Keywords on both sides</td></tr>
+              <tr><td><code>Count1/2</code>, <code>Document_Count1/2</code></td><td>Sizes before merge</td></tr>
+              <tr><td><code>Embedding1/2</code></td><td>Centroids before merge</td></tr>
+              <tr><td><code>Source1/2</code>, <code>URLs1/2</code>, <code>Documents1/2</code></td><td>Metadata</td></tr>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">all_new_topics_df</div>
+          <div class="item-type">DataFrame (N_emerg, 10)</div>
+          <div class="item-desc">Emergence log (birth of global topics).</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Notes</div>
+            <p style="font-size:12px;color:#475569">These topics also end up in <code>merged_df</code>. This is the log of the <em>moment</em> of emergence.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Popularity history</div>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">topic_sizes</div>
+          <div class="item-type">defaultdict[int, dict]</div>
+          <div class="item-desc">Time series per global topic.</div>
+          <div class="item-warn">⚠ Empty by default — call <code>bertrend.calculate_signal_popularity()</code></div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Format</div>
+            <div class="detail-code">{
+    <span class="type">topic_id</span>: {
+        <span class="str">"Timestamps"</span>:       [<span class="type">Timestamp</span>, ...],
+        <span class="str">"Popularity"</span>:       [<span class="type">float</span>, ...],
+        <span class="str">"Docs_Count"</span>:       [<span class="type">int</span>, ...],
+        <span class="str">"Paragraphs_Count"</span>: [<span class="type">int</span>, ...],
+        <span class="str">"Source_Diversity"</span>: [<span class="type">int</span>, ...],
+        <span class="str">"Representation"</span>:   <span class="type">str</span>,
+        <span class="str">"Representations"</span>:  [<span class="type">str</span>, ...],
+        <span class="str">"Documents"</span>:        [(<span class="type">Timestamp</span>, [<span class="type">str</span>]), ...],
+        <span class="str">"Sources"</span>:          [(<span class="type">Timestamp</span>, [<span class="type">str</span>]), ...],
+    },
+    ...
+}</div>
+          </div>
+          <div class="detail-block">
+            <div class="detail-label">Popularity formula</div>
+            <table class="fields-table">
+              <tr><th>Case</th><th>Formula</th></tr>
+              <tr><td>Birth</td><td><code>Popularity[0] = Document_Count</code></td></tr>
+              <tr><td>New activity</td><td><code>Popularity += num_new_articles</code></td></tr>
+              <tr><td>Inactivity (n periods)</td><td><code>Popularity *= exp(-decay_factor × n^decay_power)</code></td></tr>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">topic_last_popularity</div>
+          <div class="item-type">dict[int, float]</div>
+          <div class="item-desc">Last known popularity per topic.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Note</div>
+            <p style="font-size:12px;color:#475569">Populated by <code>calculate_signal_popularity()</code>. Matches the last element of <code>topic_sizes[topic]["Popularity"]</code>.</p>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">topic_last_update</div>
+          <div class="item-type">dict[int, Timestamp]</div>
+          <div class="item-desc">Last update date per topic.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Usage</div>
+            <p style="font-size:12px;color:#475569">Used to compute <code>n</code> in the decay formula.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Topic modeling model</div>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">last_topic_model</div>
+          <div class="item-type">bertopic.BERTopic</div>
+          <div class="item-desc">A single BERTopic — the one from the last period.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Useful methods</div>
+            <table class="fields-table">
+              <tr><th>Call</th><th>Content</th></tr>
+              <tr><td><code>.get_topic_info()</code></td><td>1 row per local topic</td></tr>
+              <tr><td><code>.get_topic(id)</code></td><td>Keywords + c-TF-IDF scores</td></tr>
+              <tr><td><code>.get_representative_docs(id)</code></td><td>Representative docs</td></tr>
+              <tr><td><code>.topic_embeddings_</code></td><td>Embeddings of local topics</td></tr>
+              <tr><td><code>.doc_info_df</code></td><td>1 row per document</td></tr>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">last_topic_model_timestamp</div>
+          <div class="item-type">pd.Timestamp</div>
+          <div class="item-desc">Date of that last model.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Example</div>
+            <div class="detail-code"><span class="type">Timestamp</span>(<span class="str">'2026-04-13 00:00:00'</span>)</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">topic_model</div>
+          <div class="item-type">BERTopicModel</div>
+          <div class="item-desc">Config template used to create each BERTopic.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Role</div>
+            <p style="font-size:12px;color:#475569">Wrapper holding the BERTopic hyperparameters. Used to instantiate an identical BERTopic at every period.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Config and metadata</div>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">config</div>
+          <div class="item-type">dict (6 keys)</div>
+          <div class="item-desc">Watch hyperparameters (file <code>bertrend_default_config.toml</code>).</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Default values (bertrend_default_config.toml)</div>
+            <div class="detail-code">{
+    <span class="str">"granularity"</span>:                  <span class="num">2</span>,      <span class="comment"># number of days per period</span>
+    <span class="str">"min_similarity"</span>:               <span class="num">0.7</span>,    <span class="comment"># cosine threshold for merging</span>
+    <span class="str">"decay_factor"</span>:                 <span class="num">0.01</span>,   <span class="comment"># Popularity decay amplitude</span>
+    <span class="str">"decay_power"</span>:                  <span class="num">2</span>,      <span class="comment"># decay power</span>
+    <span class="str">"signal_classif_lower_bound"</span>:   <span class="num">10</span>,     <span class="comment"># lower percentile ("Q1")</span>
+    <span class="str">"signal_classif_upper_bound"</span>:   <span class="num">75</span>,     <span class="comment"># upper percentile ("Q3")</span>
+}</div>
+          </div>
+          <div class="detail-block">
+            <div class="detail-label">⚠ Do NOT confuse with the BERTopic config</div>
+            <p style="font-size:12px;color:#475569"><code>zeroshot_min_similarity</code>, <code>language</code>, UMAP/HDBSCAN hyperparameters live in <code>bertopic_default_config.toml</code> and are carried by <code>topic_model.config</code>, not by <code>bertrend.config</code>.</p>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">config_file</div>
+          <div class="item-type">Path</div>
+          <div class="item-desc">Path to the TOML config.</div>
+          <div class="item-warn">⚠ May be a PosixPath even on Windows.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Windows fix</div>
+            <div class="detail-code"><span class="kw">import</span> pathlib
+pathlib.PosixPath = pathlib.WindowsPath
+<span class="kw">try</span>:
+    <span class="kw">import</span> pathlib._local
+    pathlib._local.PosixPath = pathlib.WindowsPath
+<span class="kw">except</span> <span class="kw">ImportError</span>: <span class="kw">pass</span></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">merge_df_size_over_time</div>
+          <div class="item-type">list[tuple[Timestamp, int]]</div>
+          <div class="item-desc">Size of merged_df after each merge, indexed by timestamp.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Example</div>
+            <div class="detail-code">[
+    (<span class="type">Timestamp</span>(<span class="str">"2026-01-31"</span>), <span class="num">124</span>),
+    (<span class="type">Timestamp</span>(<span class="str">"2026-02-03"</span>), <span class="num">182</span>),
+    (<span class="type">Timestamp</span>(<span class="str">"2026-02-06"</span>), <span class="num">229</span>),
+    ...
+]
+<span class="comment"># length = num_periods - 1 (no value for the 1st period)</span></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">_is_fitted</div>
+          <div class="item-type">bool</div>
+          <div class="item-desc">Internal flag — True if trained.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Usage</div>
+            <p style="font-size:12px;color:#475569">Checked by several methods. Do not edit manually.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- COLUMN 2 - SNAPSHOTS -->
+  <div class="column snapshot">
+    <div class="col-header">
+      <div class="col-title">📅 YYYY-MM-DD/</div>
+      <div class="col-badge snapshot">1 per period</div>
+    </div>
+    <div class="col-path">&lt;watch&gt;/2026-04-13/</div>
+
+    <div class="col-intro snapshot">
+      <strong>Origin</strong>
+      <p>Produced by <code>bertrend.train_topic_models(..., save_topic_models=True)</code> at each period.</p>
+      <strong>Role</strong>
+      <p>Archive of a period's BERTopic in a light, fast-to-load format. Lets you replay per-period analyses.</p>
+      <strong>Contains</strong>
+      <p>The full structure of a BERTopic at that date: local topics (including <code>-1</code>), keywords, topic embeddings, doc→topic mapping, config.</p>
+      <strong>Does not contain</strong>
+      <p>Links to global topics. Cross-period history. The BERTrend config (only the BERTopic config).</p>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Files</div>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">config.json</div>
+          <div class="item-type">JSON</div>
+          <div class="item-desc">BERTopic config at that date.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Typical content</div>
+            <div class="detail-code">{
+    <span class="str">"embedding_model"</span>: <span class="str">"paraphrase-multilingual-MiniLM-L12-v2"</span>,
+    <span class="str">"min_topic_size"</span>: <span class="num">10</span>,
+    <span class="str">"top_n_words"</span>: <span class="num">10</span>,
+    <span class="str">"umap_model"</span>: {...},
+    <span class="str">"hdbscan_model"</span>: {<span class="str">"min_cluster_size"</span>: <span class="num">10</span>, ...},
+    ...
+}</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">topic_info_df.pkl</div>
+          <div class="item-type">pickle → DataFrame (8 columns)</div>
+          <div class="item-desc">One row per local topic. May include <code>-1</code> (outliers) but not always.</div>
+          <div class="item-warn">⚑ Info missing from the .dill when <code>-1</code> is present.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Columns (8)</div>
+            <table class="fields-table">
+              <tr><th>Column</th><th>Description</th></tr>
+              <tr><td><code>Topic</code></td><td>Local topic ID (can be -1)</td></tr>
+              <tr><td><code>Count</code></td><td>Number of segments (paragraphs) in the topic</td></tr>
+              <tr><td><code>Document_Count</code></td><td>Number of unique articles (via <code>document_id.nunique()</code>)</td></tr>
+              <tr><td><code>Representation</code></td><td>Top c-TF-IDF keywords (list[str])</td></tr>
+              <tr><td><code>Name</code></td><td>Auto-generated label <code>id_kw1_kw2</code></td></tr>
+              <tr><td><code>Representative_Docs</code></td><td>Representative docs (list[str])</td></tr>
+              <tr><td><code>Sources</code></td><td>Source of each segment (list[str])</td></tr>
+              <tr><td><code>URLs</code></td><td>URL of each segment (list[str])</td></tr>
+            </table>
+          </div>
+          <div class="detail-block">
+            <div class="detail-label">⚠ Topic -1 is NOT always present</div>
+            <p style="font-size:12px;color:#475569">On small corpora, BERTopic may create no outliers (no row with Topic=-1). Verified on <code>nemo_Trump/2026-07-15</code>: 4 topics (0-3), no -1.</p>
+          </div>
+          <div class="detail-block">
+            <div class="detail-label">Load</div>
+            <div class="detail-code"><span class="kw">import</span> pandas <span class="kw">as</span> pd
+df = pd.read_pickle(<span class="str">"2026-04-13/topic_info_df.pkl"</span>)</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">doc_info_df.pkl</div>
+          <div class="item-type">pickle → DataFrame (11 columns)</div>
+          <div class="item-desc">One row per <strong>segment</strong> ingested (= paragraph if <code>split_by_paragraph="yes"</code>, else = article). Used e.g. by <code>plot_topics_for_model</code>.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Columns (11)</div>
+            <table class="fields-table">
+              <tr><th>Column</th><th>Description</th></tr>
+              <tr><td><code>Paragraph</code></td><td>The segment's text (column renamed from BERTopic's <code>Document</code>)</td></tr>
+              <tr><td><code>Topic</code></td><td>ID of the assigned local topic (-1 = outlier)</td></tr>
+              <tr><td><code>Name</code></td><td>Auto-generated topic label (e.g. <code>0_paris_hidalgo</code>)</td></tr>
+              <tr><td><code>Representation</code></td><td>Top topic keywords</td></tr>
+              <tr><td><code>Representative_Docs</code></td><td>Representative docs of the topic</td></tr>
+              <tr><td><code>Top_n_words</code></td><td>Keywords joined by spaces</td></tr>
+              <tr><td><code>Probability</code></td><td>HDBSCAN assignment confidence</td></tr>
+              <tr><td><code>Representative_document</code></td><td>Bool: is this doc representative?</td></tr>
+              <tr><td><code>document_id</code></td><td>ID of the source article (multiple segments can share the same document_id)</td></tr>
+              <tr><td><code>source</code></td><td>Source RSS feed / website</td></tr>
+              <tr><td><code>url</code></td><td>Article URL</td></tr>
+            </table>
+          </div>
+          <div class="detail-block">
+            <div class="detail-label">⚠ Warning</div>
+            <p style="font-size:12px;color:#475569">The text column is named <code>Paragraph</code>, not <code>Document</code>. The rename happens at fitting time (see <code>_train_by_period</code> in <code>BERTrend.py</code>).</p>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">topic_embeddings.safetensors</div>
+          <div class="item-type">safetensors</div>
+          <div class="item-desc">Local-topic centroids (single tensor).</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Format and loading</div>
+            <div class="detail-code"><span class="kw">from</span> safetensors.torch <span class="kw">import</span> load_file
+tensors = load_file(<span class="str">"topic_embeddings.safetensors"</span>)
+<span class="comment"># tensors["topic_embeddings"]: shape (N_topics, D), dtype=torch.float32</span></div>
+          </div>
+          <div class="detail-block">
+            <div class="detail-label">Dimension D depends on the embedding model</div>
+            <table class="fields-table">
+              <tr><th>Model</th><th>D</th></tr>
+              <tr><td><code>all-MiniLM-L6-v2</code></td><td>384</td></tr>
+              <tr><td><code>paraphrase-multilingual-MiniLM-L12-v2</code></td><td>384</td></tr>
+              <tr><td><code>base</code> models (bert-base, etc.)</td><td>768</td></tr>
+              <tr><td><code>intfloat/multilingual-e5-large</code> (BERTrend server default)</td><td>1024</td></tr>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">topics.json</div>
+          <div class="item-type">JSON</div>
+          <div class="item-desc">Full JSON structure (redundant).</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Content</div>
+            <p style="font-size:12px;color:#475569">Portable BERTopic format (<code>save_pretrained()</code>). Lets you reload the model without the <code>.pkl</code> files.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Load a snapshot</div>
+      <details class="item">
+        <summary>
+          <div class="item-name">bertrend.restore_topic_models(path)</div>
+          <div class="item-type">→ dict[Timestamp, BERTopic]</div>
+          <div class="item-desc">Loads every BERTopic from the dated folders.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Example</div>
+            <div class="detail-code">topic_models = bertrend.restore_topic_models(MODEL_PATH)
+<span class="comment"># {Timestamp('2026-02-06'): BERTopic, ...}</span>
+fig = viz.plot_num_topics(topic_models)</div>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- COLUMN 3 - INTERPRETATION -->
+  <div class="column interp">
+    <div class="col-header">
+      <div class="col-title">🧠 interpretation/</div>
+      <div class="col-badge interp">Derived analyses</div>
+    </div>
+    <div class="col-path">&lt;watch&gt;/interpretation/YYYY-MM-DD/</div>
+
+    <div class="col-intro interp">
+      <strong>Origin</strong>
+      <p>Post-training pipeline. Classification via <code>_classify_signals()</code>, which applies Q1/Q3 thresholds. <code>.jsonl</code> files via the <code>analyze_signal()</code> LLM call.</p>
+      <strong>Role</strong>
+      <p>Make signals actionable — classify each topic and generate analysis text.</p>
+      <strong>Contains</strong>
+      <p>At a given date: classification of every known topic + optional LLM interpretation.</p>
+      <strong>Does not contain</strong>
+      <p>Raw data (embeddings, texts, histories). These files are analytical projections.</p>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Signal classification</div>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">strong_signals.parquet</div>
+          <div class="item-type">Parquet → DataFrame</div>
+          <div class="item-desc">Topics classified as strong (<code>Popularity ≥ Q3</code>, where Q3 = <strong>75<sup>th</sup> percentile</strong> by default, not the classical quartile).</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Columns (12)</div>
+            <table class="fields-table">
+              <tr><th>Column</th><th>Description</th></tr>
+              <tr><td><code>Topic</code></td><td>ID (references <code>merged_df.Topic</code>)</td></tr>
+              <tr><td><code>Representation</code></td><td>Keywords joined by <code>_</code></td></tr>
+              <tr><td><code>Latest_Popularity</code></td><td>Popularity at the date</td></tr>
+              <tr><td><code>Docs_Count</code></td><td>Cumulative articles</td></tr>
+              <tr><td><code>Paragraphs_Count</code></td><td>Cumulative segments</td></tr>
+              <tr><td><code>Source_Diversity</code></td><td>Number of distinct sources</td></tr>
+              <tr><td><code>Latest_Timestamp</code></td><td>Last update</td></tr>
+              <tr><td><code>Documents</code></td><td>Document history (list[str])</td></tr>
+              <tr><td><code>Sources</code></td><td>Contributing sources (list[str])</td></tr>
+              <tr><td><code>URLs</code></td><td>Article URLs (list[str])</td></tr>
+              <tr><td><code>LLM Title</code></td><td><strong>Human-readable title</strong> generated by LLM (short summary)</td></tr>
+              <tr><td><code>LLM Description</code></td><td><strong>~50-word description</strong> generated by LLM</td></tr>
+            </table>
+          </div>
+          <div class="detail-block">
+            <div class="detail-label">⚠ LLM interpretation tiers</div>
+            <p style="font-size:12px;color:#475569">The <code>LLM Title</code>/<code>LLM Description</code> columns are generated for <strong>almost every topic</strong> (broad coverage, 1 call per topic). Deep interpretation (timeline + foresight) lives in the <code>.jsonl</code> files and only covers ~5-10 topics per snapshot.</p>
+          </div>
+          <div class="detail-block">
+            <div class="detail-label">Load</div>
+            <div class="detail-code">df = pd.read_parquet(<span class="str">"strong_signals.parquet"</span>)</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">weak_signals.parquet</div>
+          <div class="item-type">Parquet → DataFrame</div>
+          <div class="item-desc">Weak topics (<code>Q1 ≤ Popularity &lt; Q3</code> — Q1 = <strong>10<sup>th</sup> percentile</strong> by default).</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Notes</div>
+            <p style="font-size:12px;color:#475569">Same schema (12 columns, including <code>LLM Title</code> and <code>LLM Description</code>). The most interesting file for monitoring: topics on the rise but not yet established.</p>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">noise.parquet</div>
+          <div class="item-type">Parquet → DataFrame</div>
+          <div class="item-desc">Noise topics (<code>Popularity &lt; Q1</code>).</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Notes</div>
+            <p style="font-size:12px;color:#475569">Same schema (12 columns) — usually the largest file. The Q1/Q3 thresholds used here are the keys <code>signal_classif_lower_bound</code> (10) and <code>signal_classif_upper_bound</code> (75) in <code>bertrend.config</code> — these are <strong>percentiles</strong>, not the statistical quartiles (25/75).</p>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="group">
+      <div class="group-title">LLM interpretations</div>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">strong_signals_interpretation.jsonl</div>
+          <div class="item-type">JSON Lines</div>
+          <div class="item-desc">1 row = 1 topic + LLM interpretation.</div>
+          <div class="item-warn">⚑ Often empty on the server side.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Row format (actual, verified structure)</div>
+            <div class="detail-code">{
+    <span class="str">"topic"</span>:    <span class="num">5</span>,             <span class="comment"># int, references merged_df.Topic</span>
+    <span class="str">"summary"</span>:  <span class="str">"..."</span>,          <span class="comment"># str containing serialized JSON:</span>
+                              <span class="comment"># { "topic_summary_by_time_period": [{"title", ...}, ...] }</span>
+    <span class="str">"analysis"</span>: <span class="str">"..."</span>,          <span class="comment"># str containing serialized JSON:</span>
+                              <span class="comment"># { "potential_implications": { "long_term_implications": [...], ... }, ... }</span>
+}</div>
+          </div>
+          <div class="detail-block">
+            <div class="detail-label">Load and parse the 2 stringified fields</div>
+            <div class="detail-code"><span class="kw">import</span> pandas <span class="kw">as</span> pd, json
+
+df = pd.read_json(<span class="str">"strong_signals_interpretation.jsonl"</span>, lines=<span class="kw">True</span>)
+df[<span class="str">"summary_parsed"</span>]  = df[<span class="str">"summary"</span>].apply(json.loads)
+df[<span class="str">"analysis_parsed"</span>] = df[<span class="str">"analysis"</span>].apply(json.loads)</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="item">
+        <summary>
+          <div class="item-name">weak_signals_interpretation.jsonl</div>
+          <div class="item-type">JSON Lines</div>
+          <div class="item-desc">Same format for weak signals.</div>
+        </summary>
+        <div class="item-detail">
+          <div class="detail-block">
+            <div class="detail-label">Notes</div>
+            <p style="font-size:12px;color:#475569">The richest one in practice — LLM interpretation adds the most value on weak signals.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+</div>
+
+<div class="links-section">
+  <div class="links-title">Cross-references and redundancies</div>
+  <div class="links-grid">
+    <div class="link redund">
+      <span class="link-tag redund">Redundant</span>
+      <code>last_topic_model</code> (.dill) ≈ the snapshot of the last period. Same content, different format.
+    </div>
+    <div class="link redund">
+      <span class="link-tag redund">Redundant</span>
+      <code>merged_df["Documents"]</code> and <code>doc_groups</code> overlap — same texts indexed differently.
+    </div>
+    <div class="link derive">
+      <span class="link-tag derive">Derived</span>
+      <code>*.parquet</code> produced by <code>_classify_signals()</code> from <code>topic_sizes</code>. Recomputable.
+    </div>
+    <div class="link derive">
+      <span class="link-tag derive">Derived</span>
+      <code>*.jsonl</code> produced by the <code>analyze_signal()</code> LLM call. Recomputable with an API key.
+    </div>
+    <div class="link warn">
+      <span class="link-tag warn">Lost without snapshot</span>
+      Topic <code>-1</code> size and per-doc→local-topic mapping at T. The .dill does not track them.
+    </div>
+    <div class="link warn">
+      <span class="link-tag warn">Watch out</span>
+      <code>topic_sizes</code> can be empty on disk. Re-run <code>calculate_signal_popularity()</code>.
+    </div>
+  </div>
+</div>
+
+</div>
+<!-- ============================================================ -->
+<!-- TAB 2 - FUNCTIONS                                             -->
+<!-- ============================================================ -->
+<div class="tab-content" id="content-func">
+
+<div class="func-legend">
+  <div class="func-legend-title">Badge legend</div>
+  <div class="legend-item"><span class="badge dill">.dill</span> reads / writes the BERTrend object</div>
+  <div class="legend-item"><span class="badge snapshot">snapshot</span> reads / writes a dated folder</div>
+  <div class="legend-item"><span class="badge interp">interpretation</span> reads / writes an interpretation/ file</div>
+  <div class="legend-item"><span class="badge none">other</span> in-memory object outside the 3 zones</div>
+</div>
+
+<div class="func-categories">
+
+<!-- ================= CAT 1: LOAD / SAVE ================= -->
+<div class="func-category">
+  <div class="func-cat-title">🔌 Load, save, snapshots</div>
+  <div class="func-cat-desc">Move between disk and in-memory Python objects, save a pipeline state.</div>
+  <div class="func-cat-grid">
+
+    <details class="func">
+      <summary>
+        <div class="func-name">BERTrend.restore_model(path)</div>
+        <div class="func-desc">Loads the <code>.dill</code> into memory and returns a ready-to-use <code>BERTrend</code> object.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">Path</span>
+          <span class="badge arrow">→</span>
+          <span class="badge dill">bertrend.dill</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">BERTrend</span>
+          <span class="badge arrow">(in-memory object)</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Signature</div>
+          <div class="detail-code"><span class="kw">@classmethod</span>
+<span class="kw">def</span> restore_model(cls, models_path: <span class="type">Path</span>) -> <span class="type">BERTrend</span></div>
+        </div>
+        <div class="func-detail-block">
+          <div class="detail-label">Location in the repo</div>
+          <p style="font-size:12px;color:#475569"><code>bertrend/BERTrend.py</code> line 756</p>
+        </div>
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code"><span class="kw">from</span> pathlib <span class="kw">import</span> Path
+<span class="kw">from</span> bertrend.BERTrend <span class="kw">import</span> BERTrend
+
+bertrend = BERTrend.restore_model(Path(<span class="str">r"data/nemo_Trump"</span>))
+<span class="kw">print</span>(bertrend.merged_df.shape)</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">bertrend.save_model(models_path)</div>
+        <div class="func-desc">Saves the current BERTrend object to a <code>bertrend.dill</code>.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">BERTrend object</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge dill">writes bertrend.dill</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">bertrend.save_model(Path(<span class="str">r"data/my_model/"</span>))</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">bertrend.restore_topic_models(path)</div>
+        <div class="func-desc">Loads every BERTopic from the dated folders. Handy for visualizations that consume a dict-per-period.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge snapshot">all YYYY-MM-DD/ folders</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">dict[Timestamp, BERTopic]</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">topic_models = bertrend.restore_topic_models(MODEL_PATH)
+<span class="kw">from</span> bertrend.trend_analysis <span class="kw">import</span> visualizations <span class="kw">as</span> viz
+fig = viz.plot_num_topics(topic_models)
+fig.show()</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">bertrend.restore_topic_model(period, path)</div>
+        <div class="func-desc">Loads the BERTopic for a specific period.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge snapshot">1 YYYY-MM-DD/ folder</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">BERTopic</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">tm = bertrend.restore_topic_model(
+    period=pd.Timestamp(<span class="str">"2026-04-13"</span>),
+    models_path=MODEL_PATH,
+)
+<span class="kw">print</span>(tm.get_topic_info().head())</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">BERTrend.save_topic_model(period, topic_model, models_path)</div>
+        <div class="func-desc">Writes a BERTopic for a given period to disk (folder <code>YYYY-MM-DD/</code> with config.json, topic_info_df.pkl, doc_info_df.pkl, topic_embeddings.safetensors, topics.json). Called automatically by <code>train_topic_models</code> when <code>save_topic_models=True</code>.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">Timestamp, BERTopic, Path</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge snapshot">writes 1 YYYY-MM-DD/ folder</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Signature</div>
+          <div class="detail-code"><span class="kw">@classmethod</span>
+<span class="kw">def</span> save_topic_model(
+    cls,
+    period: <span class="type">Timestamp</span>,
+    topic_model: <span class="type">BERTopic</span>,
+    models_path: <span class="type">Path</span> = MODELS_DIR,
+) -> <span class="kw">None</span></div>
+        </div>
+        <div class="func-detail-block">
+          <div class="detail-label">Note</div>
+          <p style="font-size:12px;color:#475569">Useful in exploration if you're recreating a missing snapshot. In production, never called directly.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">bertrend.save_signal_evolution_data(window_size, start, end)</div>
+        <div class="func-desc">Full pipeline: iterates over all periods in <code>[start, end]</code>, computes Q1/Q3, classifies signals, and saves <code>noise/weak/strong_dfs_over_time.pkl</code> + <code>metadata.pkl</code>. Used to see the <strong>evolution</strong> of the classification over time (retrospective).</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">window_size: int, start, end: Timestamp</span>
+          <span class="badge dill">topic_sizes</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">Path (<code>retrospective_{N}_days/</code>)</span>
+          <span class="badge arrow">pickle files</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">save_path = bertrend.save_signal_evolution_data(
+    window_size=<span class="num">30</span>,
+    start_timestamp=periods[<span class="num">0</span>],
+    end_timestamp=periods[-<span class="num">1</span>],
+)
+<span class="kw">print</span>(save_path)   <span class="comment"># .../retrospective_30_days/</span></div>
+        </div>
+      </div>
+    </details>
+
+  </div>
+</div>
+
+<!-- ================= CAT 2: BUILD AND UPDATE ================= -->
+<div class="func-category">
+  <div class="func-cat-title">🏗️ Model building and updating</div>
+  <div class="func-cat-desc">Functions called at training / during incremental ingestion. In exploration, you don't touch them — the post-training state is already in the <code>.dill</code>.</div>
+  <div class="func-cat-grid">
+
+    <details class="func">
+      <summary>
+        <div class="func-name">bertrend.train_topic_models(grouped_data, embedding_model, embeddings, ...)</div>
+        <div class="func-desc">Trains one BERTopic per period and fills the BERTrend object (<code>doc_groups</code>, <code>emb_groups</code>, <code>last_topic_model</code>). Loops and calls <code>merge_models_with</code> at each new period.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">grouped_data, embeddings</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge dill">fills .dill</span>
+          <span class="badge snapshot">writes snapshots (if save_topic_models=True)</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Note</div>
+          <p style="font-size:12px;color:#475569">Not used during exploration. Documented to explain the upstream pipeline.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">bertrend.merge_models_with(new_model, timestamp, min_similarity=None)</div>
+        <div class="func-desc">Merges a new BERTopic (period T) with the last trained BERTopic (T-1). Called <strong>in a loop</strong> by <code>train_topic_models</code>. Feeds <code>merged_df</code>, <code>all_merge_histories_df</code>, <code>all_new_topics_df</code>.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">new BERTopic + Timestamp</span>
+          <span class="badge dill">last_topic_model, doc_groups, emb_groups</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge dill">merged_df (updated)</span>
+          <span class="badge dill">all_merge_histories_df (append)</span>
+          <span class="badge dill">all_new_topics_df (append)</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Note</div>
+          <p style="font-size:12px;color:#475569">There is <strong>no</strong> <code>merge_all_models()</code> method. Merging is incremental at each period.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">train_new_data(reference_timestamp, new_data, path, embedding_service, granularity, language)</div>
+        <div class="func-desc"><strong>Production entry point</strong> for incremental ingestion: restores the previous BERTrend, embeds the new articles, trains a BERTopic on that new period, merges, saves. Module-level function (not an instance method).</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">Timestamp + DataFrame of new articles</span>
+          <span class="badge dill">existing .dill (or created if absent)</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge dill">updated .dill</span>
+          <span class="badge snapshot">new snapshot</span>
+          <span class="badge arrow">→ BERTrend object</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Import</div>
+          <div class="detail-code"><span class="kw">from</span> bertrend.BERTrend <span class="kw">import</span> train_new_data</div>
+        </div>
+        <div class="func-detail-block">
+          <div class="detail-label">Location in the repo</div>
+          <p style="font-size:12px;color:#475569"><code>bertrend/BERTrend.py</code> line 988 (module-level function, not inside the class)</p>
+        </div>
+      </div>
+    </details>
+
+  </div>
+</div>
+
+<!-- ================= CAT 3: POPULARITY / CLASSIFICATION ================= -->
+<div class="func-category">
+  <div class="func-cat-title">🧮 Popularity, thresholds, signal classification</div>
+  <div class="func-cat-desc">Populate <code>topic_sizes</code>, compute percentiles, and classify topics as noise / weak / strong.</div>
+  <div class="func-cat-grid">
+
+    <details class="func">
+      <summary>
+        <div class="func-name">bertrend.calculate_signal_popularity()</div>
+        <div class="func-desc">Populates <code>topic_sizes</code>, <code>topic_last_popularity</code>, <code>topic_last_update</code> from the merge/emergence events. Call after <code>restore_model</code> if these attributes are empty.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge dill">all_merge_histories_df</span>
+          <span class="badge dill">doc_groups</span>
+          <span class="badge dill">config</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge dill">topic_sizes</span>
+          <span class="badge dill">topic_last_popularity</span>
+          <span class="badge dill">topic_last_update</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Signature</div>
+          <div class="detail-code"><span class="kw">def</span> calculate_signal_popularity(
+    self,
+    decay_factor: <span class="type">float</span> | <span class="kw">None</span> = <span class="kw">None</span>,
+    decay_power: <span class="type">float</span> | <span class="kw">None</span> = <span class="kw">None</span>,
+) -> <span class="kw">None</span></div>
+        </div>
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code"><span class="kw">if</span> <span class="kw">len</span>(bertrend.topic_sizes) == <span class="num">0</span>:
+    bertrend.calculate_signal_popularity()
+<span class="kw">print</span>(<span class="kw">len</span>(bertrend.topic_sizes))</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">bertrend.classify_signals(window_size, current_date)</div>
+        <div class="func-desc"><strong>Recommended public wrapper</strong>: computes Q1/Q3 and classifies in a single call. Returns the 3 ready-to-use DataFrames. Prefer it over chaining the 2 private methods manually.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">window_size: int, current_date: Timestamp</span>
+          <span class="badge dill">topic_sizes</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">tuple(noise_df, weak_df, strong_df)</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">noise_df, weak_df, strong_df = bertrend.classify_signals(
+    window_size=<span class="num">30</span>,
+    current_date=pd.Timestamp(<span class="str">"2026-04-13"</span>),
+)
+<span class="kw">print</span>(<span class="kw">f</span><span class="str">"Weak: {len(weak_df)}, Strong: {len(strong_df)}"</span>)</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">bertrend._compute_popularity_values_and_thresholds(window_size, current_date)</div>
+        <div class="func-desc">Internal: computes the Q1 (10<sup>th</sup> percentile) and Q3 (75<sup>th</sup> percentile) thresholds within a time window. Called automatically by <code>classify_signals</code>.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge dill">topic_sizes</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">tuple(window_start, window_end, pop_values, q1, q3)</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">ws, we, pops, q1, q3 = (
+    bertrend._compute_popularity_values_and_thresholds(
+        window_size=<span class="num">30</span>,
+        current_date=pd.Timestamp(<span class="str">"2026-04-13"</span>),
+    )
+)
+<span class="kw">print</span>(<span class="kw">f</span><span class="str">"Q1={q1:.2f}, Q3={q3:.2f}"</span>)</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">bertrend._classify_signals(window_start, window_end, q1, q3)</div>
+        <div class="func-desc">Internal: classifies topics into 3 DataFrames according to their Popularity vs Q1/Q3. Produces the content of the <code>.parquet</code> files. Called by <code>classify_signals</code>.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge dill">topic_sizes</span>
+          <span class="badge none">Q1, Q3</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge interp">noise_df</span>
+          <span class="badge interp">weak_df</span>
+          <span class="badge interp">strong_df</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">noise_df, weak_df, strong_df = bertrend._classify_signals(
+    window_start=ws, window_end=we, q1=q1, q3=q3,
+)</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">bertrend.get_periods()</div>
+        <div class="func-desc">Returns the list of periods covered by the watch. Based on the keys of <code>doc_groups</code>.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge dill">doc_groups</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">list[Timestamp]</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">periods = <span class="kw">sorted</span>(bertrend.get_periods())
+<span class="kw">print</span>(<span class="kw">f</span><span class="str">"Watch: {periods[0].date()} → {periods[-1].date()}"</span>)
+<span class="kw">print</span>(<span class="kw">f</span><span class="str">"Number of periods: {len(periods)}"</span>)</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">detect_weak_signals_zeroshot(topic_models, zeroshot_topic_list, granularity, ...)</div>
+        <div class="func-desc"><strong>Alternative mode</strong>: tracks a predefined list of subjects (instead of automatic discovery). Applies the same decay formula to the zeroshot topics present in each BERTopic. Useful when you already know what you're looking for.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge snapshot">dict[Timestamp, BERTopic]</span>
+          <span class="badge none">list[str] of topics to watch</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">dict[str, dict[Timestamp, dict]]</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Import</div>
+          <div class="detail-code"><span class="kw">from</span> bertrend.trend_analysis.weak_signals <span class="kw">import</span> detect_weak_signals_zeroshot</div>
+        </div>
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">topic_models = bertrend.restore_topic_models(MODEL_PATH)
+trends = detect_weak_signals_zeroshot(
+    topic_models=topic_models,
+    zeroshot_topic_list=[<span class="str">"energy"</span>, <span class="str">"nuclear"</span>, <span class="str">"wind"</span>],
+    granularity=<span class="num">7</span>,
+)</div>
+        </div>
+        <div class="func-detail-block">
+          <div class="detail-label">Note</div>
+          <p style="font-size:12px;color:#475569">Requires <code>zeroshot_topic_list</code> to have been passed to BERTopic at training time, so these topics show up in <code>topic_info_df</code>.</p>
+        </div>
+      </div>
+    </details>
+
+  </div>
+</div>
+
+<!-- ================= CAT 4: TREND VISUALIZATIONS ================= -->
+<div class="func-category">
+  <div class="func-cat-title">📈 Visualizations — cross-period trends</div>
+  <div class="func-cat-desc">Module <code>bertrend.trend_analysis.visualizations</code>. Global view of the watch: topic evolution over time, popularity, merges.</div>
+  <div class="func-cat-grid">
+
+    <details class="func">
+      <summary>
+        <div class="func-name">plot_num_topics(topic_models)</div>
+        <div class="func-desc">Bar chart: number of local topics per period.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge snapshot">dict[Timestamp, BERTopic]</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">plotly.Figure</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">topic_models = bertrend.restore_topic_models(MODEL_PATH)
+fig = viz.plot_num_topics(topic_models)
+fig.show()</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">plot_size_outliers(topic_models)</div>
+        <div class="func-desc">Bar chart: size of topic <code>-1</code> (outliers) per period.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge snapshot">dict[Timestamp, BERTopic]</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">plotly.Figure</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">fig = viz.plot_size_outliers(topic_models)
+fig.show()</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">plot_topics_for_model(selected_model)</div>
+        <div class="func-desc">Stacked bar chart: which topics talk to which sources.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge snapshot">BERTopic (doc_info_df)</span>
+          <span class="badge dill">or last_topic_model</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">plotly.Figure</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">fig = viz.plot_topics_for_model(bertrend.last_topic_model)
+fig.show()</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">create_topic_size_evolution_figure(topic_sizes, topic_ids=None)</div>
+        <div class="func-desc">Line chart: popularity of each topic over time.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge dill">topic_sizes</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">plotly.Figure</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">top10 = bertrend.merged_df.nlargest(<span class="num">10</span>, <span class="str">"Document_Count"</span>)[<span class="str">"Topic"</span>].tolist()
+fig = viz.create_topic_size_evolution_figure(bertrend.topic_sizes, topic_ids=top10)
+fig.show()</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">plot_topic_size_evolution(fig, current_date, window_start, window_end, all_pop, q1, q3)</div>
+        <div class="func-desc">Enriches a line chart with the Q1/Q3 bands (noise / weak signal / strong signal).</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">Plotly Figure</span>
+          <span class="badge dill">Q1/Q3 thresholds (via _compute...)</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">plotly.Figure (modified in place)</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">ws, we, pops, q1, q3 = bertrend._compute_popularity_values_and_thresholds(
+    window_size=<span class="num">60</span>, current_date=periods[-<span class="num">1</span>]
+)
+fig = viz.create_topic_size_evolution_figure(bertrend.topic_sizes, topic_ids=top10)
+viz.plot_topic_size_evolution(fig, periods[-<span class="num">1</span>], ws, we, pops, q1, q3)
+fig.show()</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">plot_newly_emerged_topics(all_new_topics_df)</div>
+        <div class="func-desc">Scatter: new topics appearing at each period.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge dill">all_new_topics_df</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">plotly.Figure</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">fig = viz.plot_newly_emerged_topics(bertrend.all_new_topics_df)
+fig.show()</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">create_sankey_diagram_plotly(all_merge_histories_df, search_term=None, max_pairs=None)</div>
+        <div class="func-desc">Sankey diagram: flow of merges <code>Topic2 → Topic1</code>.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge dill">all_merge_histories_df</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">plotly.Figure</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code">fig = viz.create_sankey_diagram_plotly(
+    bertrend.all_merge_histories_df,
+    max_pairs=<span class="num">50</span>,
+)
+fig.show()</div>
+        </div>
+      </div>
+    </details>
+
+  </div>
+</div>
+
+<!-- ================= CAT 5: TOPIC_ANALYSIS VISUALIZATIONS ================= -->
+<div class="func-category">
+  <div class="func-cat-title">📉 Visualizations — classical BERTopic analysis</div>
+  <div class="func-cat-desc">Module <code>bertrend.topic_analysis.visualizations</code>. BERTopic-style views (per period, per doc, temporal stability). Some require a precomputed <code>TempTopic</code> object.</div>
+  <div class="func-cat-grid">
+
+    <details class="func">
+      <summary>
+        <div class="func-name">plot_topics_over_time(topics_over_time, dynamic_topics_list, topic_model, ...)</div>
+        <div class="func-desc">Wrapper around <code>BERTopic.visualize_topics_over_time()</code> with an option to draw a vertical line at a <code>time_split</code>.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">topics_over_time (BERTopic DataFrame)</span>
+          <span class="badge none">list or range of topics</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">plotly.Figure or None</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Import</div>
+          <div class="detail-code"><span class="kw">from</span> bertrend.topic_analysis.visualizations <span class="kw">import</span> plot_topics_over_time</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">plot_docs_repartition_over_time(df, freq)</div>
+        <div class="func-desc">Bar chart: number of documents per time bucket (<code>freq</code> in the pandas sense, e.g. <code>"W"</code>, <code>"M"</code>).</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">DataFrame with a <code>timestamp</code> column</span>
+          <span class="badge none">freq: str</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">plotly.Figure</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code"><span class="kw">from</span> bertrend.topic_analysis.visualizations <span class="kw">import</span> plot_docs_repartition_over_time
+fig = plot_docs_repartition_over_time(df_articles, freq=<span class="str">"W"</span>)
+fig.show()</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">plot_remaining_docs_repartition_over_time(df_base, df_remaining, freq)</div>
+        <div class="func-desc">Stacked bar chart: compares the temporal distribution of 2 DataFrames (e.g. train / test).</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">2 DataFrames + freq</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">plotly.Figure</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Import</div>
+          <div class="detail-code"><span class="kw">from</span> bertrend.topic_analysis.visualizations <span class="kw">import</span> plot_remaining_docs_repartition_over_time</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">plot_topic_evolution(temptopic, granularity, topics_to_show=None, ...)</div>
+        <div class="func-desc">Plots the evolution of a topic in UMAP space. Requires an already trained <code>TempTopic</code> object.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">TempTopic + granularity</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">plotly.Figure</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Note</div>
+          <p style="font-size:12px;color:#475569">Requires an upstream TempTopic pipeline — not covered by the standard <code>.dill</code>.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">plot_temporal_stability_metrics(temptopic, metric, ...)</div>
+        <div class="func-desc">Plots temporal stability scores of topics (<code>metric='topic_stability'</code> or <code>'representation_stability'</code>).</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">TempTopic + metric: str</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">plotly.Figure</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Note</div>
+          <p style="font-size:12px;color:#475569">Requires TempTopic. Flags topics whose keywords change a lot / very little over time.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">plot_overall_topic_stability(temptopic, ...)</div>
+        <div class="func-desc">Aggregated stability score per topic (bar chart). A stable topic = keywords that stay similar from one period to the next.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">TempTopic</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">plotly.Figure</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Note</div>
+          <p style="font-size:12px;color:#475569">Requires TempTopic. Calls <code>temptopic.calculate_overall_topic_stability()</code> if <code>overall_stability_df</code> is missing.</p>
+        </div>
+      </div>
+    </details>
+
+  </div>
+</div>
+
+<!-- ================= CAT 6: TOPIC-FOCUSED ANALYSIS ================= -->
+<div class="func-category">
+  <div class="func-cat-title">🎯 Topic-focused analysis</div>
+  <div class="func-cat-desc">Zoom on ONE specific topic: pick representative docs, LLM description, LLM trend analysis. All LLM functions require an API key in <code>.env</code>.</div>
+  <div class="func-cat-grid">
+
+    <details class="func">
+      <summary>
+        <div class="func-name">get_most_representative_docs(topic_model, df, topics, mode=..., top_n_docs=3)</div>
+        <div class="func-desc"><strong>Non-LLM</strong>. Returns the N most representative docs of a topic. 3 modes: <code>cluster_probability</code> (via HDBSCAN), <code>ctfidf_representation</code> (via c-TF-IDF), or by paragraph grouping (if <code>df_split</code> provided).</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge snapshot">BERTopic</span>
+          <span class="badge none">DataFrame + list of assigned topics</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">pd.DataFrame</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Import</div>
+          <div class="detail-code"><span class="kw">from</span> bertrend.topic_analysis.representative_docs <span class="kw">import</span> get_most_representative_docs</div>
+        </div>
+        <div class="func-detail-block">
+          <div class="detail-label">Purpose</div>
+          <p style="font-size:12px;color:#475569">Often used <em>before</em> calling <code>generate_topic_description</code> to feed the LLM prompt.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">generate_topic_description(topic_model, topic_number, filtered_docs, language_code="fr")</div>
+        <div class="func-desc"><strong>LLM</strong>. Generates a human-readable title + description of a topic from its top 10 keywords and 3 most representative docs. Uses the <code>TOPIC_DESCRIPTION_PROMPT</code> prompt.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge snapshot">BERTopic</span>
+          <span class="badge none">topic_number + filtered docs + API key</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">TopicDescription (Pydantic) or None</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Import</div>
+          <div class="detail-code"><span class="kw">from</span> bertrend.topic_analysis.topic_description <span class="kw">import</span> generate_topic_description</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">get_topic_description(topic_representation, docs_text, language_code="fr")</div>
+        <div class="func-desc"><strong>LLM</strong>. Low-level version: takes the keywords string and a concatenated docs string directly. Called internally by <code>generate_topic_description</code>.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">str (keywords)</span>
+          <span class="badge none">str (concatenated docs)</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">TopicDescription (Pydantic) or None</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Note</div>
+          <p style="font-size:12px;color:#475569">Useful if you build the prompt yourself. Generally, prefer <code>generate_topic_description</code>.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">analyze_signal(bertrend, topic_number, current_date, maximum_analysed_periods=…)</div>
+        <div class="func-desc"><strong>LLM</strong>. Temporal analysis of a topic: multi-period summary + short/long-term implications, drivers. Uses <code>all_merge_histories_df</code> to reconstruct the semantic history.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge dill">full BERTrend object</span>
+          <span class="badge none">topic_number: int, current_date: Timestamp, API key</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">tuple(TopicSummaryList, SignalAnalysis)</span>
+          <span class="badge arrow">— 2 Pydantic objects</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Actual signature</div>
+          <div class="detail-code"><span class="kw">def</span> analyze_signal(
+    bertrend,
+    topic_number: <span class="type">int</span>,
+    current_date: <span class="type">Timestamp</span>,
+    maximum_analysed_periods: <span class="type">int</span> = MAXIMUM_ANALYZED_PERIODS,
+) -&gt; <span class="type">tuple</span>[TopicSummaryList, SignalAnalysis]</div>
+        </div>
+        <div class="func-detail-block">
+          <div class="detail-label">Location in the repo</div>
+          <p style="font-size:12px;color:#475569"><code>bertrend/trend_analysis/weak_signals.py</code></p>
+        </div>
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code"><span class="kw">from</span> bertrend.trend_analysis.weak_signals <span class="kw">import</span> analyze_signal
+
+summaries, analysis = analyze_signal(
+    bertrend=bertrend,
+    topic_number=<span class="num">42</span>,
+    current_date=pd.Timestamp(<span class="str">"2026-04-13"</span>),
+)
+<span class="kw">print</span>(summaries.model_dump_json(indent=<span class="num">2</span>))
+<span class="kw">print</span>(analysis.potential_implications.long_term_implications)</div>
+        </div>
+      </div>
+    </details>
+
+  </div>
+</div>
+
+<!-- ================= CAT 7: PREPROCESSING ================= -->
+<div class="func-category">
+  <div class="func-cat-title">📥 Data preprocessing (upstream)</div>
+  <div class="func-cat-desc">Module <code>bertrend.utils.data_loading</code>. Utilities applied before training to transform articles into BERTrend inputs.</div>
+  <div class="func-cat-grid">
+
+    <details class="func">
+      <summary>
+        <div class="func-name">load_data(file_path, language)</div>
+        <div class="func-desc">Loads a file (csv, parquet, json, jsonl, xlsx) and prepares it for ingestion.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">disk file (source)</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">pd.DataFrame</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code"><span class="kw">from</span> bertrend.utils.data_loading <span class="kw">import</span> load_data
+df = load_data(Path(<span class="str">"articles.jsonl"</span>), language=<span class="str">"French"</span>)</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">split_data(df, min_chars=100, split_by_paragraph="yes", embedding_model_name=None)</div>
+        <div class="func-desc">Splits articles according to the strategy: <code>"no"</code>, <code>"yes"</code> (paragraphs), <code>"enhanced"</code> (via the embedding tokenizer). Filters segments shorter than <code>min_chars</code>.</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">pd.DataFrame of articles</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">pd.DataFrame (with more rows)</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code"><span class="kw">from</span> bertrend.utils.data_loading <span class="kw">import</span> split_data
+df_split = split_data(df, min_chars=<span class="num">100</span>, split_by_paragraph=<span class="str">"yes"</span>)
+<span class="kw">print</span>(<span class="kw">f</span><span class="str">"{len(df)} articles -> {len(df_split)} paragraphs"</span>)</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="func">
+      <summary>
+        <div class="func-name">group_by_days(df, day_granularity)</div>
+        <div class="func-desc">Groups a DataFrame into time periods (N-day windows).</div>
+        <div class="func-io-line">
+          <span class="func-io-label">Input</span>
+          <span class="badge none">pd.DataFrame (with a timestamp column)</span>
+        </div>
+        <div class="func-io-line">
+          <span class="func-io-label">Output</span>
+          <span class="badge none">dict[Timestamp, DataFrame]</span>
+        </div>
+      </summary>
+      <div class="func-detail">
+        <div class="func-detail-block">
+          <div class="detail-label">Example</div>
+          <div class="detail-code"><span class="kw">from</span> bertrend.utils.data_loading <span class="kw">import</span> group_by_days
+grouped = group_by_days(df_split, day_granularity=<span class="num">7</span>)</div>
+        </div>
+      </div>
+    </details>
+
+  </div>
+</div>
+
+</div>
+</div>
+<!-- END FUNCTIONS TAB -->
+
+<!-- ============================================================ -->
+<!-- TAB 3 - RELATIONAL SCHEMA                                    -->
+<!-- ============================================================ -->
+<div class="tab-content" id="content-erd">
+
+<div class="erd-legend">
+  <div class="erd-legend-item"><span class="erd-legend-key pk">PK</span> Primary Key</div>
+  <div class="erd-legend-item"><span class="erd-legend-key fk">FK</span> Foreign Key</div>
+  <div class="erd-legend-item"><span class="erd-legend-key idx">IX</span> Dict key</div>
+  <div class="erd-legend-item"><span class="erd-legend-zone dill"></span> .dill</div>
+  <div class="erd-legend-item"><span class="erd-legend-zone snapshot"></span> snapshot</div>
+  <div class="erd-legend-item"><span class="erd-legend-zone interp"></span> interpretation</div>
+  <div class="erd-legend-item"><span class="erd-legend-line topic"></span> Topic link</div>
+  <div class="erd-legend-item"><span class="erd-legend-line timestamp"></span> Timestamp link</div>
+  <div class="erd-legend-item" style="margin-left:auto;font-style:italic;color:#94a3b8;font-size:11px">
+    Dots • = convergence • Click a table = focus
+  </div>
+</div>
+
+<div style="max-width:1500px;margin:0 auto 16px;background:#f8fafc;border-left:3px solid #94a3b8;border-radius:6px;padding:12px 16px;font-size:12px;color:#475569;line-height:1.6">
+  <code style="background:#e2e8f0;padding:1px 5px;border-radius:3px">Topic1</code> is the existing global topic that <strong>absorbs a merge</strong> (lives in <code style="background:#e2e8f0;padding:1px 5px;border-radius:3px">merged_df</code>). <code style="background:#e2e8f0;padding:1px 5px;border-radius:3px">Topic2</code> is the local topic of the new period that gets <strong>absorbed</strong> (lives in the snapshot's <code style="background:#e2e8f0;padding:1px 5px;border-radius:3px">topic_info_df</code>). So the 2 arrows from <code style="background:#e2e8f0;padding:1px 5px;border-radius:3px">all_merge_histories_df</code> point to 2 different tables.
+</div>
+
+<div class="erd-canvas-wrap">
+  <div class="erd-canvas">
+    <div class="erd-tbl dill" id="tbl-merged_df" data-tid="merged_df" style="left:500px;top:430px;width:400px;"><div class="erd-tbl-head" data-desc="Central table: 1 row = 1 global topic tracked from birth to today. Does <strong>NOT</strong> contain outliers (topic -1 of the local BERTopics).">merged_df</div><div class="erd-tbl-sub">PIVOT — global topics</div><div class="erd-tbl-row" data-desc="Unique ID of the global topic. <strong>Generated sequentially</strong> at each emergence. <strong>Never reused</strong>."><span class="erd-tbl-key pk">PK</span><span class="erd-tbl-col pk">Topic</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Total number of <strong>segments</strong> (paragraphs if split_by_paragraph=yes) attached to the topic. <strong>Cumulative</strong> over its lifetime."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Count</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Total number of <strong>unique articles</strong>. <strong>Always ≤ Count</strong>. The gap = redundancy from paragraph splitting."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Document_Count</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Top keywords — but <strong>only from the last period</strong> where the topic was touched. <strong>No history</strong> here (see all_merge_histories_df for history)."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Representation</span><span class="erd-tbl-type">list[str]</span></div><div class="erd-tbl-row" data-desc="<strong>Heterogeneous format</strong>: list containing both <code>str</code> values (docs from the initial period, no timestamp) and <code>tuple(Timestamp, list[str])</code> values (docs added on later merges). <strong>Heaviest column in RAM</strong>. See the Architecture tab for a safe iteration pattern."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Documents</span><span class="erd-tbl-type">mixed list</span></div><div class="erd-tbl-row" data-desc="Embeddings of the topic's individual docs (initial period only — not re-stored on later merges). For embeddings of every period, use emb_groups."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">DocEmbeddings</span><span class="erd-tbl-type">list[ndarray]</span></div><div class="erd-tbl-row" data-desc="<strong>Centroid</strong> of the topic (weighted mean of all its docs' embeddings). <strong>NOT</strong> the individual doc embeddings — for those, use emb_groups."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Embedding</span><span class="erd-tbl-type">np.ndarray</span></div><div class="erd-tbl-row" data-desc="Sources and URLs of the articles that make up the topic. <strong>Not deduplicated</strong> per period."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Sources / URLs</span><span class="erd-tbl-type">list[str]</span></div><div class="erd-tbl-row" data-desc="Topic <strong>emergence</strong> date. Populated <strong>only for newly emerged topics</strong> (appearing on a pass after the 1st). Empty for topics from the 1st pass."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Timestamp</span><span class="erd-tbl-type">Timestamp</span></div></div><div class="erd-tbl dill" id="tbl-all_merge_histories" data-tid="all_merge_histories" style="left:30px;top:200px;width:320px;"><div class="erd-tbl-head" data-desc="Log of merge events: at each period, which local topics were absorbed by which existing global topic.">all_merge_histories_df</div><div class="erd-tbl-sub">Merge log</div><div class="erd-tbl-row" data-desc="Merge date. Matches a <strong>key</strong> of <code>doc_groups</code>/<code>emb_groups</code>."><span class="erd-tbl-key fk">FK</span><span class="erd-tbl-col fk">Timestamp</span><span class="erd-tbl-type">Timestamp</span></div><div class="erd-tbl-row" data-desc="ID of the EXISTING global topic that absorbs the merge. References <code>merged_df.Topic</code>."><span class="erd-tbl-key fk">FK</span><span class="erd-tbl-col fk">Topic1</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="ID of the LOCAL topic (from the BERTopic trained at this period) being <strong>absorbed</strong>. References topic_info_df.Topic from the snapshot at the same Timestamp."><span class="erd-tbl-key fk">FK</span><span class="erd-tbl-col fk">Topic2</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Cosine similarity of centroids Embedding1 vs Embedding2. Always <strong>≥ min_similarity</strong> (0.7 by default) — otherwise no merge."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Similarity</span><span class="erd-tbl-type">float</span></div><div class="erd-tbl-row" data-desc="Keywords of the 2 topics <strong>AT THE MOMENT of the merge</strong>. Useful to reconstruct a global topic's semantic history."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Representation1 / 2</span><span class="erd-tbl-type">list[str]</span></div><div class="erd-tbl-row" data-desc="Centroids of the 2 topics <strong>BEFORE merge</strong>."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Embedding1 / 2</span><span class="erd-tbl-type">ndarray</span></div><div class="erd-tbl-row" data-desc="Sizes (segments and unique articles) of the 2 topics <strong>BEFORE merge</strong>."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Count1/2, Doc_Count1/2</span><span class="erd-tbl-type">int</span></div></div><div class="erd-tbl dill" id="tbl-all_new_topics" data-tid="all_new_topics" style="left:30px;top:470px;width:320px;"><div class="erd-tbl-head" data-desc="Log of global topic births: when a local topic doesn't resemble ANY existing topic (Similarity < min_similarity with all of them), it becomes a new global topic.">all_new_topics_df</div><div class="erd-tbl-sub">Emergence log</div><div class="erd-tbl-row" data-desc="Birth date of the global topic. Matches a <strong>key</strong> of <code>doc_groups</code>/<code>emb_groups</code>."><span class="erd-tbl-key fk">FK</span><span class="erd-tbl-col fk">Timestamp</span><span class="erd-tbl-type">Timestamp</span></div><div class="erd-tbl-row" data-desc="ID of the newly created global topic. Generated by np.arange(max(Topic)+1, ...). Immediately added to merged_df."><span class="erd-tbl-key fk">FK</span><span class="erd-tbl-col fk">Topic</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Initial number of segments at emergence."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Count</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Initial number of unique articles."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Document_Count</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Topic's initial keywords at birth."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Representation</span><span class="erd-tbl-type">list[str]</span></div><div class="erd-tbl-row" data-desc="Initial centroid of the new topic."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Embedding</span><span class="erd-tbl-type">ndarray</span></div></div><div class="erd-tbl dill" id="tbl-topic_sizes" data-tid="topic_sizes" style="left:340px;top:790px;width:340px;"><div class="erd-tbl-head" data-desc="Time series per global topic. <strong>EMPTY by default</strong> on disk — you must call bertrend.calculate_signal_popularity() after restore_model() to populate it.">topic_sizes</div><div class="erd-tbl-sub">Dict keyed by topic</div><div class="erd-tbl-row" data-desc="Dict key = global topic (references merged_df.Topic)."><span class="erd-tbl-key idx">IX</span><span class="erd-tbl-col ">topic_id (key)</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Dates where the topic has a measurement point (either new activity or a decay point)."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Timestamps</span><span class="erd-tbl-type">list[Timestamp]</span></div><div class="erd-tbl-row" data-desc="<strong>Hybrid</strong> metric: <strong>grows by addition</strong> on each new activity (like a cumulative count), then <strong>decays by exp(-decay_factor × n^decay_power)</strong> during inactivity. On continuously active topics, ≈ Docs_Count; on dormant topics, drops gradually."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Popularity</span><span class="erd-tbl-type">list[float]</span></div><div class="erd-tbl-row" data-desc="Cumulative unique articles (<em>monotonically increasing</em>). To get the addition at date i: Docs_Count[i] - Docs_Count[i-1]."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Docs_Count</span><span class="erd-tbl-type">list[int]</span></div><div class="erd-tbl-row" data-desc="Cumulative segments (<em>monotonically increasing</em>)."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Paragraphs_Count</span><span class="erd-tbl-type">list[int]</span></div><div class="erd-tbl-row" data-desc="Cumulative count of distinct sources touching this topic."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Source_Diversity</span><span class="erd-tbl-type">list[int]</span></div></div><div class="erd-tbl dill" id="tbl-topic_last" data-tid="topic_last" style="left:700px;top:790px;width:340px;"><div class="erd-tbl-head" data-desc="Last popularity (float) and last update date (Timestamp) for each topic. Populated at the same time as topic_sizes.">topic_last_popularity / _update</div><div class="erd-tbl-sub">Dicts — last value per topic</div><div class="erd-tbl-row" data-desc="Key = global topic (references merged_df.Topic)."><span class="erd-tbl-key idx">IX</span><span class="erd-tbl-col ">topic_id (key)</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="For topic_last_popularity: last Popularity value. For topic_last_update: Timestamp of the last update. Used by the decay formula."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">value</span><span class="erd-tbl-type">float / Timestamp</span></div></div><div class="erd-tbl dill" id="tbl-doc_groups" data-tid="doc_groups" style="left:30px;top:920px;width:150px;"><div class="erd-tbl-head" data-desc="Raw material: texts ingested at each period, including those that will end up as outliers. Order preserved.">doc_groups</div><div class="erd-tbl-sub">Dict per period</div><div class="erd-tbl-row" data-desc="One key per period (= one ingestion pass). Also available via bertrend.get_periods()."><span class="erd-tbl-key idx">IX</span><span class="erd-tbl-col ">Timestamp (key)</span><span class="erd-tbl-type">Timestamp</span></div><div class="erd-tbl-row" data-desc="Ordered list of texts ingested that period. Full articles OR paragraphs, depending on split_by_paragraph. Order aligned with emb_groups[T]."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">value</span><span class="erd-tbl-type">list[str]</span></div></div><div class="erd-tbl dill" id="tbl-emb_groups" data-tid="emb_groups" style="left:185px;top:920px;width:150px;"><div class="erd-tbl-head" data-desc="Individual DOC-level embeddings — the only place in the .dill where you find them. <strong>Required</strong> for UMAP visualizations at the doc level.">emb_groups</div><div class="erd-tbl-sub">Dict per period</div><div class="erd-tbl-row" data-desc="Same keys as doc_groups."><span class="erd-tbl-key idx">IX</span><span class="erd-tbl-col ">Timestamp (key)</span><span class="erd-tbl-type">Timestamp</span></div><div class="erd-tbl-row" data-desc="Matrix of shape (N, D). emb_groups[T][i] = embedding of the text doc_groups[T][i]. <strong>Index-based correspondence</strong>."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">value</span><span class="erd-tbl-type">ndarray</span></div></div><div class="erd-tbl snapshot" id="tbl-topic_info_df" data-tid="topic_info_df" style="left:830px;top:30px;width:320px;"><div class="erd-tbl-head" data-desc="Complete state of the local topics of a BERTopic at a given date. Contains topic -1 (outliers) <strong>when BERTopic created any</strong> — frequent but not guaranteed on small corpora.">topic_info_df.pkl</div><div class="erd-tbl-sub">Local BERTopic topics</div><div class="erd-tbl-row" data-desc="ID local to this BERTopic (not merged_df). -1 = outliers if present, 0 and up = clusters. Only reachable globally via all_merge_histories.Topic2."><span class="erd-tbl-key pk">PK</span><span class="erd-tbl-col pk">Topic</span><span class="erd-tbl-type">int (local)</span></div><div class="erd-tbl-row" data-desc="Number of entries (segments) assigned to this local topic. Sum = total docs of the period."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Count</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Auto-generated label '0_paris_hidalgo_maire'. Combines the ID and the top keywords."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Name</span><span class="erd-tbl-type">str</span></div><div class="erd-tbl-row" data-desc="Top c-TF-IDF keywords for this local topic at this period."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Representation</span><span class="erd-tbl-type">list[str]</span></div><div class="erd-tbl-row" data-desc="3 documents judged <strong>most representative</strong> by BERTopic. <strong>The best human way</strong> to understand a topic."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Representative_Docs</span><span class="erd-tbl-type">list[str]</span></div></div><div class="erd-tbl snapshot" id="tbl-doc_info_df" data-tid="doc_info_df" style="left:830px;top:240px;width:320px;"><div class="erd-tbl-head" data-desc="1 row per <strong>segment</strong> ingested at this period (paragraph if split_by_paragraph=yes). Lets you know which segment went into which local topic (<strong>including outliers</strong> if present). <strong>11 actual columns</strong> (Paragraph, Topic, Name, Representation, Representative_Docs, Top_n_words, Probability, Representative_document, document_id, source, url) — only the most useful are shown.">doc_info_df.pkl</div><div class="erd-tbl-sub">Ingested segments</div><div class="erd-tbl-row" data-desc="The segment text (paragraph). ⚠ Note: the column is named <code>Paragraph</code>, NOT <code>Document</code> (rename happens at fitting time)."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Paragraph</span><span class="erd-tbl-type">str</span></div><div class="erd-tbl-row" data-desc="ID of the source document (article). Multiple segments share the same document_id when split_by_paragraph=yes. Used to deduplicate and compute Document_Count."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">document_id</span><span class="erd-tbl-type">str</span></div><div class="erd-tbl-row" data-desc="Assigned LOCAL topic (references topic_info_df.Topic of the same snapshot). -1 for outliers."><span class="erd-tbl-key fk">FK</span><span class="erd-tbl-col fk">Topic</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="HDBSCAN assignment confidence (0 to 1). A <strong>low value = poorly assigned doc</strong>, interpret with care."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Probability</span><span class="erd-tbl-type">float</span></div><div class="erd-tbl-row" data-desc="Name of the source RSS feed / site. Useful to detect source biases."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">source</span><span class="erd-tbl-type">str</span></div></div><div class="erd-tbl snapshot" id="tbl-topic_embeddings" data-tid="topic_embeddings" style="left:1290px;top:30px;width:195px;"><div class="erd-tbl-head" data-desc="Safetensors matrix of the local-topic centroids of a BERTopic. Safe binary format, fast to load.">topic_embeddings</div><div class="erd-tbl-sub">Local-topic centroids</div><div class="erd-tbl-row" data-desc="Row index. BERTopic convention: row_index = Topic + 1 (because Topic=-1 occupies row 0)."><span class="erd-tbl-key idx">IX</span><span class="erd-tbl-col ">row_index</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Vector of dimension D (384 or 768). <strong>Centroid</strong> of the corresponding local topic."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">value</span><span class="erd-tbl-type">ndarray</span></div></div><div class="erd-tbl snapshot" id="tbl-config_json" data-tid="config_json" style="left:1290px;top:180px;width:195px;"><div class="erd-tbl-head" data-desc="JSON files describing the BERTopic config (embedding model, UMAP/HDBSCAN hyperparams, etc.) and the serialized topic structure.">config.json / topics.json</div><div class="erd-tbl-sub">BERTopic config</div><div class="erd-tbl-row" data-desc="Variable content: embedding_model, min_topic_size, umap/hdbscan/vectorizer/ctfidf params."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">(free JSON)</span><span class="erd-tbl-type">object</span></div></div><div class="erd-tbl interp" id="tbl-strong_signals" data-tid="strong_signals" style="left:1080px;top:430px;width:380px;"><div class="erd-tbl-head" data-desc="Topics classified as STRONG SIGNALS by _classify_signals at an analysis date. Filtered on Popularity ≥ Q3 of the window's values. 12 actual columns.">strong_signals.parquet</div><div class="erd-tbl-sub">Strong signals (Pop ≥ Q3)</div><div class="erd-tbl-row" data-desc="References <code>merged_df.Topic</code>. Global topic classified as a strong signal at Latest_Timestamp."><span class="erd-tbl-key fk">FK</span><span class="erd-tbl-col fk">Topic</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Keywords joined by '_' (e.g. 'paris_hidalgo_maire')."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Representation</span><span class="erd-tbl-type">str</span></div><div class="erd-tbl-row" data-desc="Popularity at the analysis date. Basis for classification (compared against Q1 and Q3)."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Latest_Popularity</span><span class="erd-tbl-type">float</span></div><div class="erd-tbl-row" data-desc="Cumulative unique articles / segments up to the analysis date."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Docs_Count / Paragraphs_Count</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Number of distinct sources that contributed to the topic."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Source_Diversity</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Last period where the topic was active."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Latest_Timestamp</span><span class="erd-tbl-type">Timestamp</span></div><div class="erd-tbl-row" data-desc="History of documents, sources, and URLs contributing to the topic."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">Documents / Sources / URLs</span><span class="erd-tbl-type">list[str]</span></div><div class="erd-tbl-row" data-desc="<strong>Human-readable title</strong> generated by LLM from keywords and representative docs. Covers almost every topic (1 LLM call per topic)."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">LLM Title</span><span class="erd-tbl-type">str</span></div><div class="erd-tbl-row" data-desc="<strong>~50-word description</strong> generated by LLM. Used everywhere for human display of a topic (e.g. veille_compare.display_label)."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">LLM Description</span><span class="erd-tbl-type">str</span></div></div><div class="erd-tbl interp" id="tbl-weak_signals" data-tid="weak_signals" style="left:1080px;top:740px;width:380px;"><div class="erd-tbl-head" data-desc="Topics classified as WEAK SIGNALS: subjects on the rise but not yet established. The <strong>most interesting</strong> file for strategic monitoring.">weak_signals.parquet</div><div class="erd-tbl-sub">Weak (Q1 ≤ Pop < Q3)</div><div class="erd-tbl-row" data-desc="References <code>merged_df.Topic</code>."><span class="erd-tbl-key fk">FK</span><span class="erd-tbl-col fk">Topic</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Same columns as strong_signals.parquet."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">(same schema)</span><span class="erd-tbl-type">...</span></div></div><div class="erd-tbl interp" id="tbl-noise" data-tid="noise" style="left:1080px;top:880px;width:380px;"><div class="erd-tbl-head" data-desc="Topics classified as NOISE: low popularity within the analyzed window. Usually the biggest file — many topics emerge and fade without making history.">noise.parquet</div><div class="erd-tbl-sub">Noise (Pop < Q1)</div><div class="erd-tbl-row" data-desc="References <code>merged_df.Topic</code>."><span class="erd-tbl-key fk">FK</span><span class="erd-tbl-col fk">Topic</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="Same columns as strong_signals.parquet."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">(same schema)</span><span class="erd-tbl-type">...</span></div></div><div class="erd-tbl interp" id="tbl-interp_jsonl" data-tid="interp_jsonl" style="left:1080px;top:1020px;width:380px;"><div class="erd-tbl-head" data-desc="LLM interpretations generated by analyze_signal() for each topic classified as weak/strong. <strong>Actual structure: 3 fields</strong> (topic, summary, analysis). The last two contain JSON <strong>serialized as a string</strong> — you need json.loads() to reach the sub-keys.">*_interpretation.jsonl</div><div class="erd-tbl-sub">LLM interpretations</div><div class="erd-tbl-row" data-desc="Global topic ID. References <code>merged_df.Topic</code>."><span class="erd-tbl-key fk">FK</span><span class="erd-tbl-col fk">topic</span><span class="erd-tbl-type">int</span></div><div class="erd-tbl-row" data-desc="String containing serialized JSON with { topic_summary_by_time_period: [{title, ...}, ...] }. Use json.loads() to parse."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">summary</span><span class="erd-tbl-type">str (JSON)</span></div><div class="erd-tbl-row" data-desc="String containing serialized JSON with { potential_implications: {long_term_implications, short_term_implications, ...}, ... }. Use json.loads() to parse."><span class="erd-tbl-key empty"></span><span class="erd-tbl-col ">analysis</span><span class="erd-tbl-type">str (JSON)</span></div></div>
+    <svg class="erd-links" viewBox="0 0 1500 1300" preserveAspectRatio="none"><defs>
+  <marker id="arrow-topic" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
+  </marker>
+  <marker id="arrow-timestamp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b5cf6"/>
+  </marker>
+</defs><path class="link hit topic" d="M 350 290 L 400 290 L 400 496" data-edges="all_merge_histories|merged_df" data-desc="FK to merged_df.Topic. Topic1 = global topic that <strong>absorbs a merge</strong>. Topic (of all_new_topics_df) = ID of the new global topic created at an emergence. Both point to the same Topic column of merged_df."></path><path class="link visible topic" d="M 350 290 L 400 290 L 400 496" data-edges="all_merge_histories|merged_df"></path><circle class="link hub-dot topic" cx="400" cy="290" r="3" data-edges="all_merge_histories|merged_df"></circle><path class="link hit topic" d="M 350 560 L 400 560 L 400 496" data-edges="all_new_topics|merged_df" data-desc="FK to merged_df.Topic. Topic1 = global topic that <strong>absorbs a merge</strong>. Topic (of all_new_topics_df) = ID of the new global topic created at an emergence. Both point to the same Topic column of merged_df."></path><path class="link visible topic" d="M 350 560 L 400 560 L 400 496" data-edges="all_new_topics|merged_df"></path><circle class="link hub-dot topic" cx="400" cy="560" r="3" data-edges="all_new_topics|merged_df"></circle><path class="link hit topic" d="M 400 496 L 500 496" data-edges="all_merge_histories|merged_df,all_new_topics|merged_df" data-desc="FK to merged_df.Topic. Topic1 = global topic that <strong>absorbs a merge</strong>. Topic (of all_new_topics_df) = ID of the new global topic created at an emergence. Both point to the same Topic column of merged_df."></path><path class="link visible topic" d="M 400 496 L 500 496" marker-end="url(#arrow-topic)" data-edges="all_merge_histories|merged_df,all_new_topics|merged_df"></path><path class="link hit topic" d="M 1080 496 L 1060 496" data-edges="strong_signals|merged_df" data-desc="FK to merged_df.Topic. The 4 interpretation files (strong/weak/noise.parquet and *.jsonl) all reference global topics that exist in merged_df, at a given analysis date."></path><path class="link visible topic" d="M 1080 496 L 1060 496" data-edges="strong_signals|merged_df"></path><circle class="link hub-dot topic" cx="1060" cy="496" r="3" data-edges="strong_signals|merged_df"></circle><path class="link hit topic" d="M 1080 806 L 1060 806 L 1060 496" data-edges="weak_signals|merged_df" data-desc="FK to merged_df.Topic. The 4 interpretation files (strong/weak/noise.parquet and *.jsonl) all reference global topics that exist in merged_df, at a given analysis date."></path><path class="link visible topic" d="M 1080 806 L 1060 806 L 1060 496" data-edges="weak_signals|merged_df"></path><circle class="link hub-dot topic" cx="1060" cy="806" r="3" data-edges="weak_signals|merged_df"></circle><path class="link hit topic" d="M 1080 946 L 1060 946 L 1060 496" data-edges="noise|merged_df" data-desc="FK to merged_df.Topic. The 4 interpretation files (strong/weak/noise.parquet and *.jsonl) all reference global topics that exist in merged_df, at a given analysis date."></path><path class="link visible topic" d="M 1080 946 L 1060 946 L 1060 496" data-edges="noise|merged_df"></path><circle class="link hub-dot topic" cx="1060" cy="946" r="3" data-edges="noise|merged_df"></circle><path class="link hit topic" d="M 1080 1086 L 1060 1086 L 1060 496" data-edges="interp_jsonl|merged_df" data-desc="FK to merged_df.Topic. The 4 interpretation files (strong/weak/noise.parquet and *.jsonl) all reference global topics that exist in merged_df, at a given analysis date."></path><path class="link visible topic" d="M 1080 1086 L 1060 1086 L 1060 496" data-edges="interp_jsonl|merged_df"></path><circle class="link hub-dot topic" cx="1060" cy="1086" r="3" data-edges="interp_jsonl|merged_df"></circle><path class="link hit topic" d="M 1060 496 L 900 496" data-edges="strong_signals|merged_df,weak_signals|merged_df,noise|merged_df,interp_jsonl|merged_df" data-desc="FK to merged_df.Topic. The 4 interpretation files (strong/weak/noise.parquet and *.jsonl) all reference global topics that exist in merged_df, at a given analysis date."></path><path class="link visible topic" d="M 1060 496 L 900 496" marker-end="url(#arrow-topic)" data-edges="strong_signals|merged_df,weak_signals|merged_df,noise|merged_df,interp_jsonl|merged_df"></path><path class="link hit topic" d="M 510 790 L 510 730 L 700 730" data-edges="topic_sizes|merged_df" data-desc="FK to merged_df.Topic. The dict key of topic_sizes and topic_last_popularity/update is a topic_id that matches a global Topic in merged_df."></path><path class="link visible topic" d="M 510 790 L 510 730 L 700 730" data-edges="topic_sizes|merged_df"></path><circle class="link hub-dot topic" cx="510" cy="730" r="3" data-edges="topic_sizes|merged_df"></circle><path class="link hit topic" d="M 870 790 L 870 730 L 700 730" data-edges="topic_last|merged_df" data-desc="FK to merged_df.Topic. The dict key of topic_sizes and topic_last_popularity/update is a topic_id that matches a global Topic in merged_df."></path><path class="link visible topic" d="M 870 790 L 870 730 L 700 730" data-edges="topic_last|merged_df"></path><circle class="link hub-dot topic" cx="870" cy="730" r="3" data-edges="topic_last|merged_df"></circle><path class="link hit topic" d="M 700 730 L 700 652" data-edges="topic_sizes|merged_df,topic_last|merged_df" data-desc="FK to merged_df.Topic. The dict key of topic_sizes and topic_last_popularity/update is a topic_id that matches a global Topic in merged_df."></path><path class="link visible topic" d="M 700 730 L 700 652" marker-end="url(#arrow-topic)" data-edges="topic_sizes|merged_df,topic_last|merged_df"></path><path class="link hit timestamp" d="M 350 266 L 430 266 L 430 760" data-edges="all_merge_histories|doc_groups,all_merge_histories|emb_groups" data-desc="FK to the keys of doc_groups and emb_groups. The Timestamp of an event matches a key of these dicts, letting you retrieve the texts/embeddings of the period."></path><path class="link visible timestamp" d="M 350 266 L 430 266 L 430 760" data-edges="all_merge_histories|doc_groups,all_merge_histories|emb_groups"></path><circle class="link hub-dot timestamp" cx="430" cy="266" r="3" data-edges="all_merge_histories|doc_groups,all_merge_histories|emb_groups"></circle><path class="link hit timestamp" d="M 350 536 L 430 536 L 430 760" data-edges="all_new_topics|doc_groups,all_new_topics|emb_groups" data-desc="FK to the keys of doc_groups and emb_groups. The Timestamp of an event matches a key of these dicts, letting you retrieve the texts/embeddings of the period."></path><path class="link visible timestamp" d="M 350 536 L 430 536 L 430 760" data-edges="all_new_topics|doc_groups,all_new_topics|emb_groups"></path><circle class="link hub-dot timestamp" cx="430" cy="536" r="3" data-edges="all_new_topics|doc_groups,all_new_topics|emb_groups"></circle><circle class="link hub-dot timestamp" cx="430" cy="760" r="3" data-edges="all_merge_histories|doc_groups,all_merge_histories|emb_groups,all_new_topics|doc_groups,all_new_topics|emb_groups"></circle><path class="link hit timestamp" d="M 430 760 L 105 760 L 105 890 L 105 920" data-edges="all_merge_histories|doc_groups,all_new_topics|doc_groups" data-desc="FK to the keys of doc_groups and emb_groups. The Timestamp of an event matches a key of these dicts, letting you retrieve the texts/embeddings of the period."></path><path class="link visible timestamp" d="M 430 760 L 105 760 L 105 890 L 105 920" marker-end="url(#arrow-timestamp)" data-edges="all_merge_histories|doc_groups,all_new_topics|doc_groups"></path><path class="link hit timestamp" d="M 430 760 L 260 760 L 260 890 L 260 920" data-edges="all_merge_histories|emb_groups,all_new_topics|emb_groups" data-desc="FK to the keys of doc_groups and emb_groups. The Timestamp of an event matches a key of these dicts, letting you retrieve the texts/embeddings of the period."></path><path class="link visible timestamp" d="M 430 760 L 260 760 L 260 890 L 260 920" marker-end="url(#arrow-timestamp)" data-edges="all_merge_histories|emb_groups,all_new_topics|emb_groups"></path><path class="link hit topic" d="M 350 314 L 380 314 L 380 15 L 800 15 L 800 200" data-edges="all_merge_histories|topic_info_df,all_merge_histories|doc_info_df" data-desc="<strong>Topic2</strong> = ID of the <em>local topic</em> absorbed during a merge. That same ID serves as the <strong>PK in topic_info_df</strong> (1 row = 1 local topic) AND as an <strong>FK in doc_info_df</strong> (1 row = 1 document assigned to that topic)."></path><path class="link visible topic" d="M 350 314 L 380 314 L 380 15 L 800 15 L 800 200" data-edges="all_merge_histories|topic_info_df,all_merge_histories|doc_info_df"></path><path class="link hit topic" d="M 800 200 L 800 96 L 830 96" data-edges="all_merge_histories|topic_info_df" data-desc="<strong>Topic2</strong> = ID of the <em>local topic</em> absorbed during a merge. That same ID serves as the <strong>PK in topic_info_df</strong> (1 row = 1 local topic) AND as an <strong>FK in doc_info_df</strong> (1 row = 1 document assigned to that topic)."></path><path class="link visible topic" d="M 800 200 L 800 96 L 830 96" marker-end="url(#arrow-topic)" data-edges="all_merge_histories|topic_info_df"></path><path class="link hit topic" d="M 800 200 L 800 330 L 830 330" data-edges="all_merge_histories|doc_info_df" data-desc="<strong>Topic2</strong> = ID of the <em>local topic</em> absorbed during a merge. That same ID serves as the <strong>PK in topic_info_df</strong> (1 row = 1 local topic) AND as an <strong>FK in doc_info_df</strong> (1 row = 1 document assigned to that topic)."></path><path class="link visible topic" d="M 800 200 L 800 330 L 830 330" marker-end="url(#arrow-topic)" data-edges="all_merge_histories|doc_info_df"></path><path class="link hit topic" d="M 1290 96 L 1150 96" data-edges="topic_embeddings|topic_info_df" data-desc="BERTopic convention: row row_index of the topic_embeddings matrix matches the topic with ID (row_index - 1) in topic_info_df, because Topic=-1 (outliers) occupies row 0."></path><path class="link visible topic" d="M 1290 96 L 1150 96" marker-end="url(#arrow-topic)" data-edges="topic_embeddings|topic_info_df"></path><rect class="link arrow-label-bg" x="400.75" y="473" width="98.5" height="18" rx="4" data-edges="all_merge_histories|merged_df,all_new_topics|merged_df" data-desc="FK to merged_df.Topic. Topic1 = global topic that <strong>absorbs a merge</strong>. Topic (of all_new_topics_df) = ID of the new global topic created at an emergence. Both point to the same Topic column of merged_df."></rect><text class="link arrow-label" x="450.0" y="486" text-anchor="middle" data-edges="all_merge_histories|merged_df,all_new_topics|merged_df" data-desc="FK to merged_df.Topic. Topic1 = global topic that <strong>absorbs a merge</strong>. Topic (of all_new_topics_df) = ID of the new global topic created at an emergence. Both point to the same Topic column of merged_df.">Topic → Topic</text><rect class="link arrow-label-bg" x="930.75" y="473" width="98.5" height="18" rx="4" data-edges="strong_signals|merged_df,weak_signals|merged_df,noise|merged_df,interp_jsonl|merged_df" data-desc="FK to merged_df.Topic. The 4 interpretation files (strong/weak/noise.parquet and *.jsonl) all reference global topics that exist in merged_df, at a given analysis date."></rect><text class="link arrow-label" x="980.0" y="486" text-anchor="middle" data-edges="strong_signals|merged_df,weak_signals|merged_df,noise|merged_df,interp_jsonl|merged_df" data-desc="FK to merged_df.Topic. The 4 interpretation files (strong/weak/noise.parquet and *.jsonl) all reference global topics that exist in merged_df, at a given analysis date.">Topic → Topic</text><rect class="link arrow-label-bg" x="731.0" y="707" width="118.0" height="18" rx="4" data-edges="topic_sizes|merged_df,topic_last|merged_df" data-desc="FK to merged_df.Topic. The dict key of topic_sizes and topic_last_popularity/update is a topic_id that matches a global Topic in merged_df."></rect><text class="link arrow-label" x="790" y="720" text-anchor="middle" data-edges="topic_sizes|merged_df,topic_last|merged_df" data-desc="FK to merged_df.Topic. The dict key of topic_sizes and topic_last_popularity/update is a topic_id that matches a global Topic in merged_df.">topic_id → Topic</text><rect class="link arrow-label-bg timestamp" x="126.75" y="737" width="111.5" height="18" rx="4" data-edges="all_merge_histories|doc_groups,all_merge_histories|emb_groups,all_new_topics|doc_groups,all_new_topics|emb_groups" data-desc="FK to the keys of doc_groups and emb_groups. The Timestamp of an event matches a key of these dicts, letting you retrieve the texts/embeddings of the period."></rect><text class="link arrow-label" x="182.5" y="750" text-anchor="middle" data-edges="all_merge_histories|doc_groups,all_merge_histories|emb_groups,all_new_topics|doc_groups,all_new_topics|emb_groups" data-desc="FK to the keys of doc_groups and emb_groups. The Timestamp of an event matches a key of these dicts, letting you retrieve the texts/embeddings of the period.">Timestamp → key</text><rect class="link arrow-label-bg" x="537.5" y="20" width="105.0" height="18" rx="4" data-edges="all_merge_histories|topic_info_df,all_merge_histories|doc_info_df" data-desc="<strong>Topic2</strong> = ID of the <em>local topic</em> absorbed during a merge. That same ID serves as the <strong>PK in topic_info_df</strong> (1 row = 1 local topic) AND as an <strong>FK in doc_info_df</strong> (1 row = 1 document assigned to that topic)."></rect><text class="link arrow-label" x="590.0" y="33" text-anchor="middle" data-edges="all_merge_histories|topic_info_df,all_merge_histories|doc_info_df" data-desc="<strong>Topic2</strong> = ID of the <em>local topic</em> absorbed during a merge. That same ID serves as the <strong>PK in topic_info_df</strong> (1 row = 1 local topic) AND as an <strong>FK in doc_info_df</strong> (1 row = 1 document assigned to that topic).">Topic2 → Topic</text><rect class="link arrow-label-bg" x="1170.75" y="73" width="98.5" height="18" rx="4" data-edges="topic_embeddings|topic_info_df" data-desc="BERTopic convention: row row_index of the topic_embeddings matrix matches the topic with ID (row_index - 1) in topic_info_df, because Topic=-1 (outliers) occupies row 0."></rect><text class="link arrow-label" x="1220.0" y="86" text-anchor="middle" data-edges="topic_embeddings|topic_info_df" data-desc="BERTopic convention: row row_index of the topic_embeddings matrix matches the topic with ID (row_index - 1) in topic_info_df, because Topic=-1 (outliers) occupies row 0.">row = Topic+1</text></svg>
+  </div>
+</div>
+
+<div class="erd-usage">
+  <div class="erd-usage-title">📌 Usage guide — which source for which need</div>
+
+  <div class="erd-usage-grid">
+    <div class="erd-usage-card">
+      <div class="erd-usage-card-title">Analyze global topics</div>
+      <div class="erd-usage-card-body">
+        <strong>Source:</strong> <code>merged_df</code> (.dill)<br>
+        One row = one global topic. Dominant subjects, sizes, recent keywords, semantic centroids. Everything answering "what are the big subjects of my watch over its whole duration".
+      </div>
+    </div>
+    <div class="erd-usage-card">
+      <div class="erd-usage-card-title">Retrieve a global topic's documents</div>
+      <div class="erd-usage-card-body">
+        <strong>Source:</strong> <code>merged_df["Documents"]</code> (.dill)<br>
+        List of <code>[(timestamp, [texts])]</code>. Warning: outliers (Topic = -1 of local BERTopics) are NOT inside — they never join a global topic.
+      </div>
+    </div>
+    <div class="erd-usage-card">
+      <div class="erd-usage-card-title">Individual-doc-level embeddings</div>
+      <div class="erd-usage-card-body">
+        <strong>Source:</strong> <code>emb_groups</code> (.dill) — mandatory<br>
+        <strong>The only place</strong> that holds each doc's embedding. <code>merged_df.Embedding</code> only stores the topic centroid. Required for doc-level UMAP, doc-to-doc similarity, semantic search.
+      </div>
+    </div>
+    <div class="erd-usage-card">
+      <div class="erd-usage-card-title">Docs per period, chronological order</div>
+      <div class="erd-usage-card-body">
+        <strong>Source:</strong> <code>doc_groups</code> (.dill)<br>
+        Dict <code>{period: [texts]}</code>. Contains ALL docs (including future outliers). Order preserved, aligned by index with <code>emb_groups</code>.
+      </div>
+    </div>
+    <div class="erd-usage-card">
+      <div class="erd-usage-card-title">A doc's local topic at period T</div>
+      <div class="erd-usage-card-body">
+        <strong>Source:</strong> <code>doc_info_df.pkl</code> of the T snapshot<br>
+        The <code>Topic</code> column gives the local ID (-1 for outliers). <strong>Positional correspondence</strong> with <code>doc_groups[T]</code>.
+      </div>
+    </div>
+    <div class="erd-usage-card">
+      <div class="erd-usage-card-title">Isolate outliers at a period</div>
+      <div class="erd-usage-card-body">
+        <strong>Source:</strong> <code>doc_info_df.pkl</code> of the snapshot — filter <code>Topic == -1</code><br>
+        Impossible from the .dill alone: outliers leave no trace in the event logs.
+      </div>
+    </div>
+    <div class="erd-usage-card">
+      <div class="erd-usage-card-title">Popularity history of a topic</div>
+      <div class="erd-usage-card-body">
+        <strong>Source:</strong> <code>topic_sizes[topic_id]</code> (.dill)<br>
+        Series <code>Timestamps</code>, <code>Popularity</code>, <code>Docs_Count</code>, <code>Paragraphs_Count</code>. EMPTY until <code>calculate_signal_popularity()</code> is called after <code>restore_model</code>.
+      </div>
+    </div>
+    <div class="erd-usage-card">
+      <div class="erd-usage-card-title">Weak/strong signal detection</div>
+      <div class="erd-usage-card-body">
+        <strong>Source:</strong> <code>interpretation/YYYY-MM-DD/*.parquet</code><br>
+        Classification already computed (Popularity vs Q1/Q3). <code>weak_signals.parquet</code> is <strong>the most interesting</strong>. Recomputable from <code>topic_sizes</code> via <code>_classify_signals</code>.
+      </div>
+    </div>
+    <div class="erd-usage-card">
+      <div class="erd-usage-card-title">Understand a topic's history (merges)</div>
+      <div class="erd-usage-card-body">
+        <strong>Source:</strong> <code>all_merge_histories_df</code> filtered on <code>Topic1 == id</code><br>
+        Each row = one merge. <code>Representation2</code> gives the keywords of the absorbed local topic — lets you follow semantic drift.
+      </div>
+    </div>
+    <div class="erd-usage-card">
+      <div class="erd-usage-card-title">LLM interpretation of a topic</div>
+      <div class="erd-usage-card-body">
+        <strong>Source:</strong> <code>*_interpretation.jsonl</code> (interpretation/)<br>
+        Summary, drivers, short/long-term implications generated by LLM. <strong>Often empty on the server side</strong> — recomputable via <code>analyze_signal()</code> with an API key.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="erd-tooltip"></div>
+
+<script>
+(function() {
+  const canvas = document.querySelector('#content-erd .erd-canvas');
+  if (!canvas) return;
+  const tables = canvas.querySelectorAll('.erd-tbl');
+  const links = canvas.querySelectorAll('svg.erd-links .link');
+
+  // ==== Tooltip custom ====
+  const tooltip = document.getElementById('erd-tooltip');
+  function showTooltip(evt, target) {
+    const html = target.getAttribute('data-desc');
+    const isHead = target.classList && target.classList.contains('erd-tbl-head');
+    tooltip.className = '';   // reset all classes
+    tooltip.classList.add('visible');
+    if (isHead) {
+      const tbl = target.closest('.erd-tbl');
+      const zone = tbl ? [...tbl.classList].find(c =>
+        ['dill', 'snapshot', 'interp'].includes(c)) : null;
+      if (zone) tooltip.classList.add('zone-' + zone);
+      tooltip.classList.add('is-head');
+      tooltip.setAttribute('data-head-title', target.textContent.trim());
+    } else {
+      tooltip.removeAttribute('data-head-title');
+    }
+    tooltip.innerHTML = (isHead ? '' : '') + html;
+    positionTooltip(evt);
+  }
+  function hideTooltip() {
+    tooltip.classList.remove('visible');
+  }
+  function positionTooltip(evt) {
+    const pad = 16;
+    let x = evt.clientX + pad;
+    let y = evt.clientY + pad;
+    const rect = tooltip.getBoundingClientRect();
+    if (x + rect.width > window.innerWidth - 10) x = evt.clientX - rect.width - pad;
+    if (y + rect.height > window.innerHeight - 10) y = evt.clientY - rect.height - pad;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+  }
+  canvas.addEventListener('mouseover', evt => {
+    const t = evt.target.closest('[data-desc]');
+    if (t) showTooltip(evt, t);
+  });
+  canvas.addEventListener('mousemove', evt => {
+    if (tooltip.classList.contains('visible')) positionTooltip(evt);
+  });
+  canvas.addEventListener('mouseout', evt => {
+    const to = evt.relatedTarget;
+    if (!to || !to.closest || !to.closest('[data-desc]')) hideTooltip();
+  });
+
+  function clear() {
+    canvas.classList.remove('has-selection');
+    tables.forEach(t => t.classList.remove('active', 'related'));
+    links.forEach(l => l.classList.remove('related'));
+  }
+
+  function select(tid) {
+    canvas.classList.add('has-selection');
+    // data-edges = list of edges "a|b,c|d,..." represented by this link.
+    // A path is related if at least one edge touches tid.
+    // We propagate the relation only via the other endpoint of these matching edges.
+    const relatedTids = new Set([tid]);
+    links.forEach(l => {
+      const edgesStr = l.getAttribute('data-edges') || '';
+      const edges = edgesStr.split(',').filter(Boolean).map(e => e.split('|'));
+      let touches = false;
+      for (const [a, b] of edges) {
+        if (a === tid) { relatedTids.add(b); touches = true; }
+        else if (b === tid) { relatedTids.add(a); touches = true; }
+      }
+      if (touches) l.classList.add('related');
+      else l.classList.remove('related');
+    });
+    // Mark related tables
+    tables.forEach(t => {
+      const ttid = t.getAttribute('data-tid');
+      if (ttid === tid) {
+        t.classList.add('active');
+        t.classList.remove('related');
+      } else if (relatedTids.has(ttid)) {
+        t.classList.add('related');
+        t.classList.remove('active');
+      } else {
+        t.classList.remove('active', 'related');
+      }
+    });
+  }
+
+  tables.forEach(t => {
+    t.addEventListener('click', e => {
+      e.stopPropagation();
+      const tid = t.getAttribute('data-tid');
+      if (t.classList.contains('active')) {
+        clear();
+      } else {
+        select(tid);
+      }
+    });
+  });
+
+  // Click elsewhere = deselect
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.erd-tbl')) clear();
+  });
+})();
+</script>
+
+</div>
+<!-- END ERD TAB -->
+
+</body>
+</html>

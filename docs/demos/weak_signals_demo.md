@@ -148,11 +148,11 @@ present.
 
 For large datasets, batch runs, or reproducing published results, it is often
 easier to drive BERTrend directly from Python rather than through the Streamlit
-app. The notebooks in [`getting_started/`](../../getting_started) show the full
+app. The notebooks in [`getting_started/`](https://github.com/rte-france/BERTrend/tree/main/getting_started) show the full
 retrospective-analysis pipeline end to end:
 
-- [`bertrend_quickstart.ipynb`](../../getting_started/bertrend_quickstart.ipynb)
-- [`explore_bertrend_model.ipynb`](../../getting_started/explore_bertrend_model.ipynb)
+- [`bertrend_quickstart.ipynb`](https://github.com/rte-france/BERTrend/blob/main/getting_started/bertrend_quickstart.ipynb)
+- [`explore_bertrend_model.ipynb`](https://github.com/rte-france/BERTrend/blob/main/getting_started/explore_bertrend_model.ipynb)
 
 The core steps are:
 
