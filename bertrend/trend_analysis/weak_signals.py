@@ -343,6 +343,7 @@ def analyze_signal(
     current_date: Timestamp,
     maximum_analysed_periods: int = MAXIMUM_ANALYZED_PERIODS,
     reasoning_effort: str | None = None,
+    openai_client: OpenAI_Client | None = None,
 ) -> tuple[TopicSummaryList, SignalAnalysis]:
     """Analyze a signal (topic) over time via LLM.
 
@@ -350,6 +351,11 @@ def analyze_signal(
     falls back to the env var OPENAI_REASONING_EFFORT_SIGNAL_ANALYSIS, then to the
     global default (OPENAI_REASONING_EFFORT, "low"). This is a heavier,
     analysis-oriented task, so consider "medium"/"high" for deeper reasoning.
+
+    openai_client lets callers pass a shared, reusable client (recommended when
+    analysing many signals in a loop, e.g. the queue worker) to avoid opening a
+    new HTTP connection pool per call. When None, a temporary client is created
+    and closed for this call.
     """
     topic_merge_rows = bertrend.all_merge_histories_df[
         bertrend.all_merge_histories_df["Topic1"] == topic_number
@@ -383,8 +389,11 @@ def analyze_signal(
 
         language = bertrend.topic_model.config["global"]["language"]
 
+        client = None
         try:
-            openai_client = OpenAI_Client(
+            # Reuse the caller's client when provided; otherwise create (and
+            # close) one for this call.
+            client = openai_client or OpenAI_Client(
                 api_key=LLM_CONFIG["api_key"],
                 base_url=LLM_CONFIG["base_url"],
                 model=LLM_CONFIG["model"],
@@ -404,7 +413,7 @@ def analyze_signal(
                 topic_number=topic_number,
                 content_summary=content_summary,
             )
-            summaries = openai_client.parse(
+            summaries = client.parse(
                 system_prompt=LLM_CONFIG["system_prompt"],
                 user_prompt=summary_prompt,
                 temperature=LLM_CONFIG["temperature"],
@@ -424,7 +433,7 @@ def analyze_signal(
                 prompt_type="weak_signal",
                 summary_from_first_prompt=summaries.model_dump_json(),
             )
-            weak_signal_analysis = openai_client.parse(
+            weak_signal_analysis = client.parse(
                 system_prompt=LLM_CONFIG["system_prompt"],
                 user_prompt=weak_signal_prompt,
                 temperature=LLM_CONFIG["temperature"],
@@ -438,6 +447,10 @@ def analyze_signal(
             error_msg = f"An error occurred while generating the analysis: {str(e)}"
             logger.error(error_msg)
             return None, None
+        finally:
+            # Only close a client we created here; never close the caller's.
+            if openai_client is None and client is not None:
+                client.close()
 
     else:
         error_msg = f"No data available for topic {topic_number} within the specified date range. Please enter a valid topic number."

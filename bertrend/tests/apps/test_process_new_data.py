@@ -247,7 +247,7 @@ class TestGenerateLLMInterpretation:
         """Test handling of analyze_signal failures."""
 
         # Setup mock to fail for some topics
-        def mock_analyze_signal_side_effect(bertrend, topic, timestamp):
+        def mock_analyze_signal_side_effect(bertrend, topic, timestamp, **kwargs):
             if topic == 2:
                 return None, None  # Simulate failure
             mock_summary = Mock()
@@ -288,7 +288,7 @@ class TestGenerateLLMInterpretation:
         """Test exception handling during topic processing."""
 
         # Setup mock to raise exception for some topics
-        def mock_analyze_signal_side_effect(bertrend, topic, timestamp):
+        def mock_analyze_signal_side_effect(bertrend, topic, timestamp, **kwargs):
             if topic == 2:
                 raise Exception("Processing error")
             mock_summary = Mock()
@@ -634,7 +634,7 @@ class TestParallelProcessing:
         # Setup mock with variable delay to test race conditions
         import time
 
-        def mock_analyze_signal_with_delay(bertrend, topic, timestamp):
+        def mock_analyze_signal_with_delay(bertrend, topic, timestamp, **kwargs):
             # Simulate variable processing time
             delay = 0.1 if topic % 2 == 0 else 0.05
             time.sleep(delay)

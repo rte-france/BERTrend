@@ -14,7 +14,7 @@ import typer
 from jsonlines import jsonlines
 from loguru import logger
 
-from bertrend import FEED_BASE_PATH, load_toml_config
+from bertrend import FEED_BASE_PATH, LLM_CONFIG, load_toml_config
 from bertrend.BERTopicModel import BERTopicModel
 from bertrend.BERTrend import BERTrend, train_new_data
 from bertrend.bertrend_apps.prospective_demo import (
@@ -32,6 +32,7 @@ from bertrend.bertrend_apps.prospective_demo import (
 from bertrend.bertrend_apps.prospective_demo.llm_utils import (
     generate_bertrend_topic_description,
 )
+from bertrend.llm_utils.openai_client import OpenAI_Client
 from bertrend.services.embedding_service import EmbeddingService
 from bertrend.trend_analysis.weak_signals import analyze_signal
 from bertrend.utils.data_loading import (
@@ -167,6 +168,7 @@ def generate_llm_interpretation(
     output_path: Path,
     top_k: int = DEFAULT_TOP_K,
     max_workers: int = 5,
+    openai_client: OpenAI_Client | None = None,
 ):
     """
     Generate detailed analysis for the top k topics using parallel processing.
@@ -179,6 +181,11 @@ def generate_llm_interpretation(
         output_path: Path to save the results
         top_k: Number of top topics to analyze
         max_workers: Maximum number of concurrent workers for parallel processing
+        openai_client: Shared OpenAI client reused across topics to avoid opening
+            a new HTTP connection pool per signal analysis. The threads spawned
+            here share this single client (the underlying sync client is
+            thread-safe). When None, each analysis creates its own temporary
+            client.
     """
 
     # Get topics sorted by popularity
@@ -191,7 +198,12 @@ def generate_llm_interpretation(
     def process_topic(topic):
         """Process a single topic and return the result or None if failed"""
         try:
-            summary, analysis = analyze_signal(bertrend, topic, reference_timestamp)
+            summary, analysis = analyze_signal(
+                bertrend,
+                topic,
+                reference_timestamp,
+                openai_client=openai_client,
+            )
             if not summary or not analysis:
                 logger.warning(f"Skipping topic {topic} as analysis of signal failed.")
                 return None
@@ -312,61 +324,79 @@ def train_new_model_for_period(
         user_name, model_id, reference_timestamp
     )
     interpretation_path.mkdir(parents=True, exist_ok=True)
-    for df, df_name in zip(
-        [noise_topics_df, weak_signal_topics_df, strong_signal_topics_df],
-        [NOISE, WEAK_SIGNALS, STRONG_SIGNALS],
-    ):
-        if not df.empty:
-            # enrich signal description with LLM-based topic description
-            df[[LLM_TOPIC_TITLE_COLUMN, LLM_TOPIC_DESCRIPTION_COLUMN]] = df.apply(
-                lambda row: pd.Series(
-                    generate_bertrend_topic_description(
-                        topic_words=row["Representation"],
-                        topic_number=row["Topic"],
-                        texts=row["Documents"],
-                        language_code=language_code,
+
+    # Create a single OpenAI client shared by every LLM call of this job (topic
+    # descriptions and signal interpretations). Reusing one client keeps a single
+    # bounded HTTP connection pool for the whole run instead of opening (and
+    # leaking) a new pool per topic/signal, which is the root cause of the
+    # CLOSE-WAIT socket build-up observed in the queue workers.
+    openai_client = OpenAI_Client(
+        api_key=LLM_CONFIG["api_key"],
+        base_url=LLM_CONFIG["base_url"],
+        model=LLM_CONFIG["model"],
+    )
+    try:
+        for df, df_name in zip(
+            [noise_topics_df, weak_signal_topics_df, strong_signal_topics_df],
+            [NOISE, WEAK_SIGNALS, STRONG_SIGNALS],
+        ):
+            if not df.empty:
+                # enrich signal description with LLM-based topic description
+                df[[LLM_TOPIC_TITLE_COLUMN, LLM_TOPIC_DESCRIPTION_COLUMN]] = df.apply(
+                    lambda row: pd.Series(
+                        generate_bertrend_topic_description(
+                            topic_words=row["Representation"],
+                            topic_number=row["Topic"],
+                            texts=row["Documents"],
+                            language_code=language_code,
+                            openai_client=openai_client,
+                        )
+                    ),
+                    axis=1,
+                )
+
+                # Add documents URL
+                df = pd.merge(
+                    df,
+                    bertrend.merged_df[["Topic", URLS_COLUMN]],
+                    on="Topic",
+                    how="left",
+                )
+                df[URLS_COLUMN] = df[URLS_COLUMN].apply(
+                    lambda x: list(set(x))
+                )  # Removes duplicates within each list
+
+                # FIXME: for some unknown reasons, a few elements in the Documents column are not a str but a
+                #  timestamp (the identifier of current model); this generates errors when trying to serialize the
+                #  df to parquet. The code snippet below is a workaround to avoid this issue.
+                df["Documents"] = df["Documents"].apply(
+                    lambda l: [x if isinstance(x, str) else "" for x in l]
+                )
+
+                output_path = interpretation_path / f"{df_name}.parquet"
+                df.to_parquet(output_path)
+                logger.success(
+                    f"[U:{user_name}|M:{model_id}|TS:{reference_timestamp}] {df_name} saved to: {output_path}"
+                )
+
+                # Do not generate LLM interpretation for NOISE
+                if df_name != NOISE:
+                    # Obtain detailed LLM-based interpretion for signals
+                    logger.info(
+                        f"[U:{user_name}|M:{model_id}|TS:{reference_timestamp}] Generating LLM interpretation for {df_name}"
                     )
-                ),
-                axis=1,
-            )
-
-            # Add documents URL
-            df = pd.merge(
-                df,
-                bertrend.merged_df[["Topic", URLS_COLUMN]],
-                on="Topic",
-                how="left",
-            )
-            df[URLS_COLUMN] = df[URLS_COLUMN].apply(
-                lambda x: list(set(x))
-            )  # Removes duplicates within each list
-
-            # FIXME: for some unknown reasons, a few elements in the Documents column are not a str but a
-            #  timestamp (the identifier of current model); this generates errors when trying to serialize the
-            #  df to parquet. The code snippet below is a workaround to avoid this issue.
-            df["Documents"] = df["Documents"].apply(
-                lambda l: [x if isinstance(x, str) else "" for x in l]
-            )
-
-            output_path = interpretation_path / f"{df_name}.parquet"
-            df.to_parquet(output_path)
-            logger.success(
-                f"[U:{user_name}|M:{model_id}|TS:{reference_timestamp}] {df_name} saved to: {output_path}"
-            )
-
-            # Do not generate LLM interpretation for NOISE
-            if df_name != NOISE:
-                # Obtain detailed LLM-based interpretion for signals
-                logger.info(
-                    f"[U:{user_name}|M:{model_id}|TS:{reference_timestamp}] Generating LLM interpretation for {df_name}"
-                )
-                generate_llm_interpretation(
-                    bertrend,
-                    reference_timestamp=reference_timestamp,
-                    df=df,
-                    df_name=df_name,
-                    output_path=interpretation_path,
-                )
+                    generate_llm_interpretation(
+                        bertrend,
+                        reference_timestamp=reference_timestamp,
+                        df=df,
+                        df_name=df_name,
+                        output_path=interpretation_path,
+                        openai_client=openai_client,
+                    )
+    finally:
+        # Always release the shared client's HTTP connection pool at the end of
+        # the job so no sockets are left dangling.
+        openai_client.close()
 
 
 def regenerate_models(
