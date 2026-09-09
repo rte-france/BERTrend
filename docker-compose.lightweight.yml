@@ -11,7 +11,12 @@
 #
 # Usage:
 #   EMBEDDING_SERVICE_URL=https://your-embedding-host:6464 \
+#   BERTREND_CLIENT_SECRET=your-secret \
 #     docker compose -f docker-compose.lightweight.yml up -d
+#
+# If the embedding server sits on an intranet behind an HTTP proxy, add its host
+# to NO_PROXY/no_proxy on the host before running: unlike the full stack, that
+# server is no longer a compose service, so proxy traffic is not bypassed for it.
 #
 # Use the standard docker-compose.yml instead if you also want to run the
 # embedding server locally.
@@ -63,7 +68,10 @@ services:
       - NLTK_DATA=/app/nltk_data
       # BERTrend base dir
       - BERTREND_BASE_DIR=/bertrend/
-      - BERTREND_CLIENT_SECRET=${BERTREND_CLIENT_SECRET:-}
+      # Credentials used to authenticate against the external embedding server.
+      # An empty value is NOT caught at startup (the client only rejects None), it
+      # surfaces later as a 401 on /token, so require it here.
+      - BERTREND_CLIENT_SECRET=${BERTREND_CLIENT_SECRET:?Set BERTREND_CLIENT_SECRET to the client secret of your external embedding server}
       # Use an externally-running embedding server (REQUIRED).
       - EMBEDDING_SERVICE_URL=${EMBEDDING_SERVICE_URL:?Set EMBEDDING_SERVICE_URL to the URL of your external embedding server}
       - EMBEDDING_SERVICE_USE_LOCAL=false
@@ -71,6 +79,10 @@ services:
       # The scheduler fires jobs by calling back to this app's FastAPI service
       # (BERTREND_APPS_SERVICE_URL), which enqueues them to RabbitMQ for the workers.
       - RABBITMQ_HOST=rabbitmq
+      # Must match the RABBITMQ_DEFAULT_USER/PASS given to the broker below,
+      # otherwise the workers fall back to guest/guest and fail to authenticate.
+      - RABBITMQ_USER=${RABBITMQ_USER:-guest}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
       - SCHEDULER_SERVICE_TYPE=apscheduler
       - SCHEDULER_SERVICE_URL=http://scheduler:8000/
       - BERTREND_APPS_SERVICE_URL=http://bertrend:8881/
@@ -152,8 +164,8 @@ services:
       - HTTPS_PROXY=${HTTPS_PROXY:-}
       - http_proxy=${http_proxy:-}
       - https_proxy=${https_proxy:-}
-      - NO_PROXY=$NO_PROXY,bertrend,rabbitmq  # reach the app service without the proxy
-      - no_proxy=$no_proxy,bertrend,rabbitmq
+      - NO_PROXY=${NO_PROXY:-},bertrend,rabbitmq  # reach the app service without the proxy
+      - no_proxy=${no_proxy:-},bertrend,rabbitmq
       - TZ=Europe/Paris
       - PYTHONUNBUFFERED=1
       - LOG_LEVEL=INFO
@@ -165,6 +177,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+      # Without start_interval the first probe only runs at t=interval (180s), so the
+      # bertrend service -- which waits on `scheduler: service_healthy` -- would be
+      # blocked for 3 minutes even though the scheduler is up in seconds.
+      # Requires Docker Engine >= 25.0.
+      start_interval: 5s
     restart: unless-stopped
     logging:
       driver: "json-file"

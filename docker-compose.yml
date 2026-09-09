@@ -112,6 +112,10 @@ services:
       # The scheduler fires jobs by calling back to this app's FastAPI service
       # (BERTREND_APPS_SERVICE_URL), which enqueues them to RabbitMQ for the workers.
       - RABBITMQ_HOST=rabbitmq
+      # Must match the RABBITMQ_DEFAULT_USER/PASS given to the broker below,
+      # otherwise the workers fall back to guest/guest and fail to authenticate.
+      - RABBITMQ_USER=${RABBITMQ_USER:-guest}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
       - SCHEDULER_SERVICE_TYPE=apscheduler
       - SCHEDULER_SERVICE_URL=http://scheduler:8000/
       - BERTREND_APPS_SERVICE_URL=http://bertrend:8881/
