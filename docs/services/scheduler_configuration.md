@@ -13,7 +13,7 @@ This document explains how to run the APScheduler service both locally and in Do
 
 ## 1. Switching between crontab and APScheduler
 
-Configuration is via environment variables (see `.env_template`):
+Configuration is via environment variables (see `.env.template`):
 
 - `SCHEDULER_SERVICE_TYPE=crontab` or `apscheduler`
 - `SCHEDULER_SERVICE_URL=http://scheduler:8000/` (when using the service)
