@@ -38,14 +38,57 @@ export HOST_UID=$(id -u)
 export HOST_GID=$(id -g)
 
 # Locations mounted into the container (defaults mirror docker-compose.lightweight.yml).
-export HF_HOME=${HF_HOME:-"${HOME}/.cache/huggingface"}
-export BERTREND_BASE_DIR=${BERTREND_BASE_DIR:-".bertrend"}
+#
+# CAREFUL: Docker Compose resolves ${VAR} from the *shell environment first* and
+# only falls back to .env. So `export VAR=${VAR:-default}` does not "provide a
+# default" -- when VAR is absent from the shell it exports the default and thereby
+# SHADOWS whatever .env sets. That silently mounted ./.bertrend instead of the
+# BERTREND_BASE_DIR from .env, so the demos came up against an empty data dir.
+# Resolve from the shell, then .env, then the built-in default instead.
+env_file_value() {
+    [ -f .env ] || return 0
+    sed -n "s/^[[:space:]]*$1=//p" .env | tail -n 1 | sed -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'\$/\1/"
+}
+resolve_var() {
+    # resolve_var VAR_NAME DEFAULT -- echoes shell value, else .env value, else default.
+    local current
+    eval "current=\${$1:-}"
+    if [ -n "$current" ]; then
+        echo "$current"
+        return 0
+    fi
+    current=$(env_file_value "$1" || true)
+    echo "${current:-$2}"
+}
+
+export HF_HOME=$(resolve_var HF_HOME "${HOME}/.cache/huggingface")
+export BERTREND_BASE_DIR=$(resolve_var BERTREND_BASE_DIR ".bertrend")
+
+# Streamlit secrets (the prospective demo's login passwords). They are gitignored,
+# so they are neither in the repo tarball nor in the `bertrend` wheel the image
+# installs -- without this bind-mount the demo dies with
+# StreamlitSecretNotFoundError. /.streamlit is the container user's HOME/.streamlit,
+# which is the location streamlit reports in that error.
+export STREAMLIT_SECRETS_FILE=$(resolve_var STREAMLIT_SECRETS_FILE \
+    "$(pwd)/bertrend/bertrend_apps/prospective_demo/.streamlit/secrets.toml")
 
 echo "Using:"
 echo "  HOST_UID=$HOST_UID"
 echo "  HOST_GID=$HOST_GID"
 echo "  HF_HOME=$HF_HOME"
 echo "  BERTREND_BASE_DIR=$BERTREND_BASE_DIR"
+echo "  STREAMLIT_SECRETS_FILE=$STREAMLIT_SECRETS_FILE"
+
+# A missing bind-mount source is created by Docker as a *directory*, which would
+# turn the secrets file into a folder on the host and keep the demo broken.
+if [ ! -f "$STREAMLIT_SECRETS_FILE" ]; then
+    echo "error: no streamlit secrets file at $STREAMLIT_SECRETS_FILE" >&2
+    echo "       The prospective demo (port 8081) needs it for login. Create it with:" >&2
+    echo "         [passwords]" >&2
+    echo "         someuser = \"somepassword\"" >&2
+    echo "       or point STREAMLIT_SECRETS_FILE at an existing file." >&2
+    exit 1
+fi
 
 # The lightweight compose requires an external embedding server URL.
 if [ -z "${EMBEDDING_SERVICE_URL:-}" ] && ! grep -qE '^[[:space:]]*EMBEDDING_SERVICE_URL=' .env 2>/dev/null; then

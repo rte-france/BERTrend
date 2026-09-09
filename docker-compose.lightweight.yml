@@ -54,6 +54,25 @@ services:
     volumes:
       - ${BERTREND_BASE_DIR:-.bertrend}:/bertrend
       - ${HF_HOME:-.cache/huggingface}:/app/.cache/huggingface
+      # Streamlit secrets for the prospective demo's login (st.secrets["passwords"]).
+      # They are gitignored, so they are absent both from the repo tarball and from
+      # the `bertrend` wheel the image installs -- without this the demo raises
+      # StreamlitSecretNotFoundError. /.streamlit is the container user's
+      # HOME/.streamlit, the path streamlit names in that error, so mounting here
+      # covers every streamlit app in the container regardless of its working dir.
+      - ${STREAMLIT_SECRETS_FILE:-./bertrend/bertrend_apps/prospective_demo/.streamlit/secrets.toml}:/.streamlit/secrets.toml:ro
+    # Supply the API keys / secrets / SMTP settings that live in .env but are not
+    # listed in `environment:` below (SEMANTIC_SCHOLAR_API_KEY, NEWSCATCHER_API_KEY,
+    # BERTREND_SECRET_KEY, SMTP_*, GMAIL_*, ...). Compose applies env_file BEFORE
+    # `environment:`, so every container-specific value below still wins -- which
+    # matters, because a host .env legitimately points at host-facing addresses
+    # (RABBITMQ_HOST=<host>, BERTREND_BASE_DIR=/DSIA/..., *_SERVICE_URL=http://<host>)
+    # that would break container-to-container traffic if they leaked in.
+    # NB. deliberately NOT bind-mounted to /app/.env: run_demos.sh sources a .env
+    # found there and exports it, which would defeat that precedence.
+    env_file:
+      - path: ${BERTREND_ENV_FILE:-.env}
+        required: false
     environment:
       - HTTP_PROXY=${HTTP_PROXY:-}
       - HTTPS_PROXY=${HTTPS_PROXY:-}
@@ -68,8 +87,15 @@ services:
       - HF_HOME=/app/.cache/huggingface
       # Set UV_CACHE_DIR to a location where the user has write permissions
       - UV_CACHE_DIR=/app/.cache/uv
-      # Set NLTK_DATA to a location where the user has write permissions
-      - NLTK_DATA=/app/nltk_data
+      # NLTK corpora are baked into the image at this root-owned, read-only path
+      # (kept in sync with `ENV NLTK_DATA` in the Dockerfile). NLTK refuses to use
+      # a world- or group-writable data dir, which the old /app/nltk_data was.
+      - NLTK_DATA=/usr/local/share/nltk_data
+      # Egress goes through an HTTP proxy, so NLTK refuses fetches whose IP it
+      # cannot pin (CWE-918). Nothing needs downloading any more, but a stray
+      # nltk.download() still probes its index; allow it rather than have that
+      # probe print a "Security Violation" on every service start.
+      - NLTK_ALLOW_PROXIED_URLOPEN=1
       # BERTrend base dir
       - BERTREND_BASE_DIR=/bertrend/
       # Credentials used to authenticate against the external embedding server.

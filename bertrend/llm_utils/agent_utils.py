@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
-from agents import Agent, RunConfig, Runner
+from agents import Agent, RunConfig, Runner, set_tracing_disabled
 from agents.extensions.models.litellm_model import LitellmModel
 from dotenv import load_dotenv
 from loguru import logger
@@ -17,7 +17,13 @@ from loguru import logger
 # Load environment variables at module import
 load_dotenv(override=True)
 
-# Disable tracing
+# Disable the OpenAI Agents SDK tracing globally: it exports run data (prompts,
+# tool calls, outputs) to OpenAI's tracing backend and adds runtime overhead.
+# Done at import time so any Runner call is covered even if it forgets to pass
+# ``run_config_no_tracing`` below.
+set_tracing_disabled(True)
+
+# Disable tracing (per-run belt-and-braces, on top of the global switch above)
 run_config_no_tracing = RunConfig(tracing_disabled=True)
 
 

@@ -29,21 +29,60 @@ ARG HOST_UID=1000
 ARG HOST_GID=1000
 ARG BERTREND_BASE_DIR=/bertrend/
 
-# Create NLTK data directory and ensure app directory has appropriate permissions
-RUN mkdir -p /app/nltk_data && \
-    chmod -R 777 /app/nltk_data && \
-    chmod -R 777 /app && \
+# Ensure app directory has appropriate permissions. /.streamlit is the container
+# user's HOME/.streamlit -- where the secrets file is bind-mounted at runtime.
+# NB. no /app/nltk_data: NLTK refuses to use a world- or group-writable data
+# directory, so the corpora are baked into a root-owned one further down.
+RUN chmod -R 777 /app && \
     mkdir -p /.streamlit && \
     chmod -R 777 /.streamlit
 
 COPY supervisord.conf run_demos.sh /app/
 
-# Install BERTrend
-RUN uv pip install --no-cache-dir --system -U bertrend && \
+# Install BERTrend from THIS checkout, not from PyPI.
+#
+# The image used to do `uv pip install -U bertrend`, which meant a deployment ran
+# whatever was last published to PyPI rather than the branch being deployed --
+# every un-released change was silently absent from the running container.
+#
+# Split in two layers so an ordinary code change does not reinstall torch & co:
+#   1. dependencies, pinned from uv.lock -- only invalidated by pyproject/uv.lock
+#   2. the project itself, installed with --no-deps
+# Staged in /src rather than /app on purpose: run_demos.sh resolves BERTREND_HOME
+# via `python -c "import bertrend"` with cwd=/app, and for `python -c` sys.path[0]
+# is the cwd -- a source copy at /app/bertrend would shadow the installed package
+# and point every supervisord program at the build material instead.
+COPY pyproject.toml uv.lock README.md LICENSE.md AUTHORS.txt /src/
+RUN uv export --project /src --frozen --no-dev --no-emit-project --no-hashes \
+        --format requirements-txt -o /tmp/requirements.txt && \
+    uv pip install --no-cache-dir --system -r /tmp/requirements.txt && \
+    rm /tmp/requirements.txt
+
+COPY bertrend /src/bertrend
+RUN uv pip install --no-cache-dir --system --no-deps /src && \
     chmod -R a+w /usr/local/lib/python3.13/site-packages/ # Workaround for packages (such as numba which use caching in __pycache__ (requires writing rights)
 
-# Expose Streamlit ports for all three demos
-EXPOSE 8081 8083 8084
+# Pre-download the NLTK corpora the code needs: `stopwords` (bertrend.utils, on
+# every service start) and `punkt`/`punkt_tab` (the extractive summarizer).
+# Baking them in fixes two runtime failures seen in the container:
+#   - "NLTK will not authorize the non-private download directory
+#     '/app/nltk_data': it (or an ancestor) is world- or group-writable" -- that
+#     dir is chmod 777 because the container runs as an arbitrary HOST_UID, and
+#     NLTK refuses to use a world-writable data dir at all.
+#   - "refusing a proxied fetch ... SSRF protection cannot be enforced
+#     (CWE-918)" -- egress goes through an HTTP proxy, so NLTK cannot pin the
+#     validated IP. NLTK_ALLOW_PROXIED_URLOPEN=1 opts into that here at build
+#     time, where the proxy is the trusted corporate one.
+# The target is root-owned and read-only, which is exactly what NLTK wants.
+ENV NLTK_DATA=/usr/local/share/nltk_data
+RUN NLTK_ALLOW_PROXIED_URLOPEN=1 python -c "\
+import nltk; \
+[nltk.download(pkg, download_dir='/usr/local/share/nltk_data', raise_on_error=True) \
+ for pkg in ('stopwords', 'punkt', 'punkt_tab')]" && \
+    chmod -R a-w,a+rX /usr/local/share/nltk_data
+
+# Expose the Streamlit demos and the FastAPI services
+EXPOSE 8081 8083 8084 8091 8881 8886 8887
 
 # Set the entrypoint
 ENTRYPOINT ["/app/run_demos.sh"]
