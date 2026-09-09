@@ -3,6 +3,7 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 import hashlib
+import os
 from datetime import datetime
 
 import requests
@@ -77,7 +78,11 @@ def parse_jobs(data):
 
 class JobDashboard:
     def __init__(self):
-        self.api_url = "http://dsia.rte-france.com:8882/jobs"
+        # Overridden in Docker to reach the scheduler over the compose
+        # network; the default keeps the previous standalone behaviour.
+        self.api_url = os.getenv(
+            "SCHEDULER_JOBS_URL", "http://dsia.rte-france.com:8882/jobs"
+        )
         self.all_jobs = []
         self.filtered_jobs = []
 
@@ -281,4 +286,4 @@ async def main_page():
     await refresh_all()
 
 
-ui.run(title="BERTrend Job Viewer", port=8885)
+ui.run(title="BERTrend Job Viewer", port=8885, show=False)

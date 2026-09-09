@@ -5,3 +5,5 @@ sqlalchemy>=2.0.23
 pydantic>=2.5.0
 requests>=2.31.0
 loguru
+# Job Viewer dashboard (dashboard_scheduling.py)
+nicegui[highcharts]>=3.8.0

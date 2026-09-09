@@ -44,9 +44,13 @@ services:
       scheduler:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8083:8083"  # Topic Analysis demo
-      - "127.0.0.1:8084:8084"  # Weak Signals demo
-      - "127.0.0.1:8081:8081"  # Prospective demo
+      - "8081:8081"  # Prospective demo ("bertrend service")
+      - "8083:8083"  # Topic Analysis demo
+      - "8084:8084"  # Weak Signals demo
+      - "8091:8091"  # Queue monitoring dashboard
+      - "8881:8881"  # bertrend_apps FastAPI service (data scraping)
+      - "8886:8886"  # Summary service
+      - "8887:8887"  # Article scoring service
     volumes:
       - ${BERTREND_BASE_DIR:-.bertrend}:/bertrend
       - ${HF_HOME:-.cache/huggingface}:/app/.cache/huggingface
@@ -118,7 +122,7 @@ services:
     image: rabbitmq:4.2-management
     container_name: bertrend_rabbitmq
     ports:
-      - "127.0.0.1:15672:15672"  # management UI (optional)
+      - "15672:15672"  # management UI
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
@@ -155,7 +159,7 @@ services:
       rabbitmq:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8882:8000"  # scheduler API / docs (optional)
+      - "8882:8000"  # scheduler API / docs (the 8885 Job Viewer calls this)
     volumes:
       # Persist the APScheduler SQLite job store (host dir should be owned by HOST_UID).
       # The scheduler resolves its store as Path.home()/".bertrend"/"db" (see
@@ -187,6 +191,52 @@ services:
       # bertrend service -- which waits on `scheduler: service_healthy` -- would be
       # blocked for 3 minutes even though the scheduler is up in seconds.
       # Requires Docker Engine >= 25.0.
+      start_interval: 5s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # NiceGUI dashboard over the scheduler API (port 8885). It reuses the scheduler
+  # image -- dashboard_scheduling.py lives in that source tree and needs only
+  # requests + nicegui -- so it is a second entrypoint into the same build rather
+  # than an image of its own. No `build:` here on purpose: the scheduler service
+  # builds bertrend-scheduler:latest, and depends_on guarantees it exists first.
+  job_viewer:
+    image: bertrend-scheduler:latest
+    container_name: bertrend-job-viewer
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    command: ["python", "/app/bertrend/services/scheduling/dashboard_scheduling.py"]
+    depends_on:
+      scheduler:
+        condition: service_healthy
+    ports:
+      - "8885:8885"  # Job Viewer UI
+    # NiceGUI may write scratch state next to the working directory, and /app is
+    # root-owned in the image while this runs as HOST_UID.
+    working_dir: /tmp
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
+      - NO_PROXY=${NO_PROXY:-},bertrend,rabbitmq,scheduler,job_viewer
+      - no_proxy=${no_proxy:-},bertrend,rabbitmq,scheduler,job_viewer
+      - TZ=Europe/Paris
+      - PYTHONUNBUFFERED=1
+      # Reach the scheduler over the compose network instead of the public
+      # hostname the script defaults to.
+      - SCHEDULER_JOBS_URL=http://scheduler:8000/jobs
+    # The scheduler image's own HEALTHCHECK probes :8000, which this container
+    # does not listen on -- override it to probe the dashboard's own port.
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import requests; requests.get('http://localhost:8885/')" ]
+      interval: 180s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
       start_interval: 5s
     restart: unless-stopped
     logging:
