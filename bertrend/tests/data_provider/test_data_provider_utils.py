@@ -25,6 +25,9 @@ def mock_provider():
     ) as mock_providers:
         mock_class = MagicMock()
         mock_instance = mock_class.return_value
+        # Providers are used as context managers so that their HTTP session is
+        # released; DataProvider.__enter__ returns self, so mirror that here.
+        mock_instance.__enter__.return_value = mock_instance
         mock_providers.get.return_value = mock_class
         yield mock_instance
 
@@ -38,6 +41,8 @@ def test_scrape(mock_provider, tmp_path):
     assert results == [{"title": "test"}]
     mock_provider.get_articles.assert_called_once()
     mock_provider.store_articles.assert_called_once()
+    # The provider must be closed, otherwise its Goose3 HTTP session leaks.
+    mock_provider.__exit__.assert_called_once()
 
 
 def test_auto_scrape(mock_provider, tmp_path):
@@ -54,6 +59,8 @@ def test_auto_scrape(mock_provider, tmp_path):
     assert results == [{"title": "test"}]
     mock_provider.get_articles_batch.assert_called_once()
     mock_provider.store_articles.assert_called_once()
+    # The provider must be closed, otherwise its Goose3 HTTP session leaks.
+    mock_provider.__exit__.assert_called_once()
 
 
 def test_generate_query_file(tmp_path):

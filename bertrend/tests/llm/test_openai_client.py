@@ -217,9 +217,7 @@ def test_parse_includes_reasoning_for_gpt5(mock_api_key):
     """Test parse passes a reasoning effort when using a GPT-5 model."""
     client = OpenAI_Client(api_key="test_api_key", model="gpt-5")
 
-    mock_response = Mock(
-        output_parsed=_TestResponseModel(answer="Ok", confidence=0.5)
-    )
+    mock_response = Mock(output_parsed=_TestResponseModel(answer="Ok", confidence=0.5))
 
     with patch.object(
         client.llm_client.responses, "parse", return_value=mock_response
@@ -236,9 +234,7 @@ def test_parse_custom_reasoning_effort_for_gpt5(mock_api_key):
     """A per-task reasoning_effort overrides the default for GPT-5 models."""
     client = OpenAI_Client(api_key="test_api_key", model="gpt-5")
 
-    mock_response = Mock(
-        output_parsed=_TestResponseModel(answer="Ok", confidence=0.5)
-    )
+    mock_response = Mock(output_parsed=_TestResponseModel(answer="Ok", confidence=0.5))
 
     with patch.object(
         client.llm_client.responses, "parse", return_value=mock_response
@@ -259,9 +255,7 @@ def test_parse_invalid_reasoning_effort_falls_back(mock_api_key):
 
     client = OpenAI_Client(api_key="test_api_key", model="gpt-5")
 
-    mock_response = Mock(
-        output_parsed=_TestResponseModel(answer="Ok", confidence=0.5)
-    )
+    mock_response = Mock(output_parsed=_TestResponseModel(answer="Ok", confidence=0.5))
 
     with patch.object(
         client.llm_client.responses, "parse", return_value=mock_response
