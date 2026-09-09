@@ -1,8 +1,29 @@
-### BERTrend Development Guidelines
+# BERTrend Development Guidelines
 
-This document provides project-specific information for developers working on BERTrend.
+## Git Workflow
 
-#### 1. Build/Configuration Instructions
+- **Never push.** Do not run `git push` (nor `git push --force`, nor push tags) under any circumstance. Committing
+  locally is fine; publishing is the maintainer's decision.
+- **Never open a pull request.** Do not run `gh pr create` or otherwise open, edit, or merge a pull request. Leave the
+  work on a local branch and report what is ready.
+- **One single line per commit message.** A commit message is exactly one line — a short, imperative description of
+  the change — followed by the human author's `Signed-off-by:` trailer. Nothing else: no body, no bullet list, no
+  `Co-authored-by:` trailer.
+- **Never mention the LLM.** No reference of any kind to the model, agent, or assistant that co-authored the code —
+  not in the commit message, not in trailers, not in code comments, not in documentation.
+- **Branch naming convention.** Create a branch for the change (never commit directly on `main`) and prefix its name
+  with the type of work, followed by a short kebab-case description:
+  - `feat/` — new feature (e.g. `feat/creation-tools`)
+  - `fix/` — bug fix (e.g. `fix/per-unit-comparison`)
+  - `refactor/` — restructuring with no behavior change
+  - `docs/` — documentation only
+  - `test/` — tests only
+  - `chore/` — tooling, dependencies, CI
+- Never commit real secrets in `.env`/`.env.*` files. When adding a new environment variable, document it (with a
+  comment) in `.env.template` rather than only setting it locally.
+
+
+## Build/Configuration Instructions
 
 BERTrend uses `uv` for environment management and `python-dotenv` for configuration.
 
@@ -25,7 +46,7 @@ BERTrend uses `uv` for environment management and `python-dotenv` for configurat
 - **Config Files**:
     - Default configurations for BERTopic, BERTrend, and Services are located in `bertrend/config/` as `.toml` files.
 
-#### 2. Testing Information
+## Testing Information
 
 - **Test Runner**: The project uses `pytest`.
 - **Running Tests**:
@@ -47,11 +68,6 @@ BERTrend uses `uv` for environment management and `python-dotenv` for configurat
   import os
   from unittest.mock import patch
 
-
-  @patch.dict(os.environ, {"BERTREND_BASE_DIR": "test_data"})
-  def test_environment_setup():
-      import bertrend
-
       assert bertrend.BASE_PATH == Path("test_data")
       assert bertrend.DATA_PATH.exists()
 
@@ -60,7 +76,7 @@ BERTrend uses `uv` for environment management and `python-dotenv` for configurat
       assert 1 + 1 == 2
   ```
 
-#### 3. Project Structure
+## Project Structure
 
 The BERTrend project is organized into two main packages and several supporting directories:
 
@@ -85,7 +101,7 @@ The BERTrend project is organized into two main packages and several supporting 
     - `docs/`: Technical documentation and design plans.
     - `getting_started/`: Jupyter notebooks and guides for new users.
 
-#### 4. Additional Development Information
+## 4. Additional Development Information
 
 - **Code Style**:
     - Follow the existing style: `ruff` is used for linting and formatting (see `pyproject.toml`).
