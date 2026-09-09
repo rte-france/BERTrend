@@ -15,7 +15,6 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # Use ARG to allow build-time variables
 ARG HOST_UID=1000
 ARG HOST_GID=1000
-ARG HF_HOME
 
 # Create cache directories and ensure they are writable by any user
 RUN mkdir -p /app/.cache/huggingface /app/.cache/uv && \
@@ -36,11 +35,9 @@ WORKDIR /bertrend/services/embedding_server/
 # Install minimum requirements as host user
 RUN uv pip install --no-cache-dir --system -r requirements.txt
 
-# Ensure the virtual environment's bin directory is in the PATH
-ENV PATH=/opt/venv/bin:$PATH
-
 # Expose the embedding server port
 EXPOSE 6464
 
-# Use the entrypoint script with absolute path
-CMD ["uv", "run", "/bertrend/services/embedding_server/start.py"]
+# Run with the system interpreter the requirements were installed into above.
+# (start.py resolves ../key.pem and ../cert.pem relative to the WORKDIR set above.)
+CMD ["python", "/bertrend/services/embedding_server/start.py"]
