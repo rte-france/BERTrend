@@ -18,6 +18,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . /app/bertrend/services/scheduling
 
+# Give the container user a name: the scheduler and job_viewer also run as an
+# arbitrary numeric HOST_UID with no /etc/passwd entry, which makes
+# getpass.getuser() raise "OSError: No username set in the environment".
+# Nothing here imports torch (the caller that tripped over it in the app image),
+# so this is precautionary -- kept identical to the other two Dockerfiles.
+ENV USER=bertrend \
+    LOGNAME=bertrend
+
 # Expose port
 EXPOSE 8000
 

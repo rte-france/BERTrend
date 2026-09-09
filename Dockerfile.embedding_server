@@ -35,6 +35,14 @@ WORKDIR /bertrend/services/embedding_server/
 # Install minimum requirements as host user
 RUN uv pip install --no-cache-dir --system -r requirements.txt
 
+# Give the container user a name. It runs as an arbitrary numeric HOST_UID with
+# no /etc/passwd entry, so getpass.getuser() raises "OSError: No username set in
+# the environment". torch calls it at import time to name its inductor cache dir,
+# and this image installs sentence_transformers, which pulls torch in.
+# The value only builds cache paths; it does not change the runtime uid.
+ENV USER=bertrend \
+    LOGNAME=bertrend
+
 # Expose the embedding server port
 EXPOSE 6464
 

@@ -81,6 +81,18 @@ import nltk; \
  for pkg in ('stopwords', 'punkt', 'punkt_tab')]" && \
     chmod -R a-w,a+rX /usr/local/share/nltk_data
 
+# Give the container user a name. It runs as an arbitrary numeric HOST_UID that
+# has no /etc/passwd entry, so getpass.getuser() -- which checks LOGNAME/USER
+# first and only then falls back to pwd.getpwuid(os.getuid()) -- raised
+# "OSError: No username set in the environment". torch calls it at import time
+# to name its inductor cache dir, so *any* module importing torch died:
+#   torch/_inductor/runtime/cache_dir_utils.py -> default_cache_dir()
+#     -> getpass.getuser()
+# which took down the prospective demo (8081) via bertopic -> sentence_transformers.
+# The value is only used to build cache paths; it does not change the runtime uid.
+ENV USER=bertrend \
+    LOGNAME=bertrend
+
 # Expose the Streamlit demos and the FastAPI services
 EXPOSE 8081 8083 8084 8091 8881 8886 8887
 
