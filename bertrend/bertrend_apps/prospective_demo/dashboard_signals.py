@@ -13,12 +13,21 @@ from bertrend.bertrend_apps.prospective_demo import (
     URLS_COLUMN,
     WEAK_SIGNALS,
     get_model_interpretation_path,
+    get_user_models_path,
 )
 from bertrend.bertrend_apps.prospective_demo.dashboard_common import (
     choose_id_and_ts,
     get_df_topics,
 )
 from bertrend.bertrend_apps.prospective_demo.i18n import translate
+from bertrend.bertrend_apps.prospective_demo.topic_feedback import (
+    PROMOTED_TOPIC,
+    TopicFeedback,
+    apply_topic_feedback,
+    get_topic_feedback_icon,
+    load_topic_feedback,
+    order_topic_ids,
+)
 from bertrend.demos.demos_utils.icons import (
     NOISE_ICON,
     STRONG_SIGNAL_ICON,
@@ -78,26 +87,39 @@ def signal_analysis():
         URLS_COLUMN: st.column_config.LinkColumn(),
     }
 
-    dfs_topics = get_df_topics(model_interpretation_path)
+    feedback = load_topic_feedback(
+        get_user_models_path(st.session_state.username, model_id)
+    )
+    raw_topics = get_df_topics(model_interpretation_path)
+    # Feedback applied once for source exploration (selectbox options / ordering).
+    # Table display applies it separately after a popularity sort in
+    # _prepare_topics_for_display — pass raw frames there to avoid a redundant pass.
+    dfs_topics = {
+        category: apply_topic_feedback(topics, feedback)
+        for category, topics in raw_topics.items()
+    }
 
     col1, col2 = st.columns(COLS_RATIO)
     with col1:
         # Display dataframes for weak_signals, strong, etc
         display_translated_signal_categories(
-            dfs_topics[NOISE],
-            dfs_topics[WEAK_SIGNALS],
-            dfs_topics[STRONG_SIGNALS],
+            raw_topics[NOISE],
+            raw_topics[WEAK_SIGNALS],
+            raw_topics[STRONG_SIGNALS],
             reference_ts,
             columns=columns,
             column_config=column_config,
+            feedback=feedback,
         )
 
     with col2:
-        explore_topic_sources(dfs_topics)
+        explore_topic_sources(dfs_topics, feedback)
 
 
 @st.fragment
-def explore_topic_sources(dfs_topics):
+def explore_topic_sources(
+    dfs_topics: dict[str, pd.DataFrame], feedback: dict[int, TopicFeedback]
+):
     st.write(f"**{translate('explore_sources_by_topic')}**")
     selected_signal_type = st.pills(
         translate("signal_type"),
@@ -114,20 +136,17 @@ def explore_topic_sources(dfs_topics):
         st.warning(f"{WARNING_ICON} {translate('no_data')}")
     else:
         selected_df = selected_df.sort_values(by=["Latest_Popularity"], ascending=False)
-        options = selected_df["Topic"].tolist()
+        options = order_topic_ids(selected_df["Topic"].tolist(), feedback)
         topic_id = st.selectbox(
             index=None,
             label=translate("topic_selection"),
             label_visibility="hidden",
             options=options,
-            format_func=lambda x: (
-                f"{'📈 [' + translate('emerging_topic') if selected_signal_type == translate('emerging_topics') else '🌟 [' + translate('strong_topic')} {x}] "
-                + (
-                    selected_df[selected_df["Topic"] == x][
-                        LLM_TOPIC_TITLE_COLUMN
-                    ].values[0]
-                    or translate("untitled_topic")
-                )
+            format_func=lambda topic: _format_source_topic_label(
+                topic,
+                selected_signal_type,
+                selected_df,
+                feedback,
             ),
         )
         if topic_id is None:
@@ -144,6 +163,25 @@ def explore_topic_sources(dfs_topics):
         )
 
 
+def _format_source_topic_label(
+    topic_id: int,
+    selected_signal_type: str,
+    selected_df: pd.DataFrame,
+    feedback: dict[int, TopicFeedback],
+) -> str:
+    is_emerging = selected_signal_type == translate("emerging_topics")
+    category_icon = "📈" if is_emerging else "🌟"
+    category_label = translate("emerging_topic" if is_emerging else "strong_topic")
+    title = selected_df.loc[
+        selected_df["Topic"] == topic_id, LLM_TOPIC_TITLE_COLUMN
+    ].iloc[0]
+    if pd.isna(title) or not title:
+        title = translate("untitled_topic")
+    feedback_icon = get_topic_feedback_icon(topic_id, feedback)
+    prefix = f"{feedback_icon} " if feedback_icon else ""
+    return f"{prefix}{category_icon} [{category_label} {topic_id}] {title}"
+
+
 def display_translated_signal_categories(
     noise_topics_df: pd.DataFrame,
     weak_signal_topics_df: pd.DataFrame,
@@ -152,18 +190,19 @@ def display_translated_signal_categories(
     columns=None,
     column_order=None,
     column_config=None,
+    feedback: dict[int, TopicFeedback] | None = None,
 ):
     """Wrapper around display_signal_categories_df that uses translated text."""
+    feedback = feedback or {}
     # Weak Signals
     with st.expander(
         f":orange[{WEAK_SIGNAL_ICON} {translate('weak_signals')}]", expanded=True
     ):
         st.subheader(f":orange[{translate('weak_signals')}]")
         if not weak_signal_topics_df.empty:
-            displayed_df = weak_signal_topics_df[columns].sort_values(
-                by=["Latest_Popularity"], ascending=False
+            displayed_df = _prepare_topics_for_display(
+                weak_signal_topics_df, columns, feedback
             )
-            displayed_df["Documents"] = displayed_df["Documents"].astype(str)
             st.dataframe(
                 displayed_df,
                 column_order=column_order if column_order else columns,
@@ -182,10 +221,9 @@ def display_translated_signal_categories(
     ):
         st.subheader(f":green[{translate('strong_signals')}]")
         if not strong_signal_topics_df.empty:
-            displayed_df = strong_signal_topics_df[columns].sort_values(
-                by=["Latest_Popularity"], ascending=False
+            displayed_df = _prepare_topics_for_display(
+                strong_signal_topics_df, columns, feedback
             )
-            displayed_df["Documents"] = displayed_df["Documents"].astype(str)
             st.dataframe(
                 displayed_df,
                 column_order=column_order if column_order else columns,
@@ -202,10 +240,9 @@ def display_translated_signal_categories(
     with st.expander(f":grey[{NOISE_ICON} {translate('noise')}]", expanded=True):
         st.subheader(f":grey[{translate('noise')}]")
         if not noise_topics_df.empty:
-            displayed_df = noise_topics_df[columns].sort_values(
-                by=["Latest_Popularity"], ascending=False
+            displayed_df = _prepare_topics_for_display(
+                noise_topics_df, columns, feedback
             )
-            displayed_df["Documents"] = displayed_df["Documents"].astype(str)
             st.dataframe(
                 displayed_df,
                 column_order=column_order if column_order else columns,
@@ -217,6 +254,35 @@ def display_translated_signal_categories(
                 translate("no_noise_signals").format(timestamp=window_end),
                 icon=WARNING_ICON,
             )
+
+
+def _prepare_topics_for_display(
+    topics: pd.DataFrame,
+    columns: list[str],
+    feedback: dict[int, TopicFeedback],
+) -> pd.DataFrame:
+    """Prepare a signal table while keeping promoted topics visible first.
+
+    Callers should pass raw (unfiltered) topic frames. Popularity is sorted first,
+    then apply_topic_feedback re-orders so promoted topics still float to the top
+    while relative popularity order is preserved within each feedback group.
+    """
+    displayed_topics = topics[columns].sort_values(
+        by=["Latest_Popularity"], ascending=False
+    )
+    displayed_topics = apply_topic_feedback(displayed_topics, feedback)
+    promoted_topic_ids = {
+        topic_id for topic_id, status in feedback.items() if status == PROMOTED_TOPIC
+    }
+    promoted = displayed_topics["Topic"].isin(promoted_topic_ids)
+    displayed_topics.loc[promoted, LLM_TOPIC_TITLE_COLUMN] = (
+        "⭐ "
+        + displayed_topics.loc[promoted, LLM_TOPIC_TITLE_COLUMN]
+        .fillna(translate("untitled_topic"))
+        .astype(str)
+    )
+    displayed_topics["Documents"] = displayed_topics["Documents"].astype(str)
+    return displayed_topics
 
 
 @st.dialog(translate("explore_sources"), width="large")
