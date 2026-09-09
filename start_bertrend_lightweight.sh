@@ -55,6 +55,15 @@ if [ -z "${EMBEDDING_SERVICE_URL:-}" ] && ! grep -qE '^[[:space:]]*EMBEDDING_SER
     exit 1
 fi
 
+# The external embedding server also requires client credentials (compose treats
+# BERTREND_CLIENT_SECRET as mandatory; an empty value only fails later as a 401).
+if [ -z "${BERTREND_CLIENT_SECRET:-}" ] && ! grep -qE '^[[:space:]]*BERTREND_CLIENT_SECRET=' .env 2>/dev/null; then
+    echo "error: BERTREND_CLIENT_SECRET is not set." >&2
+    echo "       Export it or add it to a .env file; it must match the client secret" >&2
+    echo "       registered for the 'bertrend' client on your embedding server." >&2
+    exit 1
+fi
+
 # Create the mounted host directories so they are owned by the current user.
 mkdir -p "$BERTREND_BASE_DIR" "$HF_HOME"
 

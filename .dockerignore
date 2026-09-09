@@ -1,0 +1,77 @@
+# Build context for the root Dockerfile and Dockerfile.embedding_server.
+#
+# Keep in sync with what those two files actually COPY:
+#   Dockerfile                 -> supervisord.conf, run_demos.sh
+#   Dockerfile.embedding_server -> bertrend/services/embedding_server/,
+#                                  bertrend/services/{key,cert}.pem
+# Everything else can be excluded. Without this file the context is ~8.8G
+# (.venv alone is ~8.5G) and is re-sent to the daemon on every build.
+
+# Virtual environments
+.venv
+venv/
+env/
+ENV/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/*.so
+.Python
+**/*.egg-info/
+dist/
+build/
+*.egg
+
+# Caches / test + lint artifacts
+.cache/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Local data, models and runtime state (not needed by any build)
+data/
+.bertrend/
+**/logs/
+**/*.log
+**/*.sqlite
+**/*.db
+
+# Environment files (never needed at build time; may hold credentials)
+.env
+.env.*
+.env_*
+
+# Docs and notebooks
+docs/
+getting_started/
+**/*.md
+**/*.ipynb
+
+# Tests
+**/tests/
+**/test_*.py
+**/*_test.py
+
+# IDE / OS
+.vscode/
+.idea/
+.junie/
+**/*.swp
+**/*.swo
+**/*~
+**/.DS_Store
+**/Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
