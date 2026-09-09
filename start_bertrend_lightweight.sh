@@ -64,8 +64,27 @@ if [ -z "${BERTREND_CLIENT_SECRET:-}" ] && ! grep -qE '^[[:space:]]*BERTREND_CLI
     exit 1
 fi
 
+# APScheduler job store. The scheduler resolves it as Path.home()/.bertrend/db,
+# so this is the invoking user's home -- the same file the service used before it
+# was containerised -- and not something under BERTREND_BASE_DIR.
+export SCHEDULER_DB_DIR=${SCHEDULER_DB_DIR:-"${HOME}/.bertrend/db"}
+
 # Create the mounted host directories so they are owned by the current user.
-mkdir -p "$BERTREND_BASE_DIR" "$HF_HOME"
+# SCHEDULER_DB_DIR matters in particular: it is a separate bind-mount target, so
+# if it does not exist Docker creates it as root and the scheduler -- which runs
+# as HOST_UID -- cannot open its SQLite job store ("unable to open database
+# file"), fails its healthcheck, and blocks the bertrend service depending on it.
+mkdir -p "$BERTREND_BASE_DIR" "$SCHEDULER_DB_DIR" "$HF_HOME"
+
+# A leftover root-owned job store from an earlier run cannot be fixed by
+# mkdir -p; flag it rather than failing later with an opaque SQLite error.
+if [ ! -w "$SCHEDULER_DB_DIR" ]; then
+    echo "error: $SCHEDULER_DB_DIR is not writable by $(id -un) (uid $HOST_UID)." >&2
+    echo "       It was probably created by Docker as root during a previous failed run." >&2
+    echo "       Fix it with:" >&2
+    echo "         sudo chown -R $HOST_UID:$HOST_GID $SCHEDULER_DB_DIR" >&2
+    exit 1
+fi
 
 # (Re)build and start the stack.
 docker compose -f "$COMPOSE_FILE" down

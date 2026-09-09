@@ -188,7 +188,13 @@ services:
       - "127.0.0.1:8882:8000"  # scheduler API / docs (optional)
     volumes:
       # Persist the APScheduler SQLite job store (host dir should be owned by HOST_UID).
-      - ${BERTREND_BASE_DIR:-.bertrend}/scheduler-db:/home/user/.bertrend/db
+      # The scheduler resolves its store as Path.home()/".bertrend"/"db" (see
+      # services/scheduling/routers/scheduling.py), and HOME is /home/user in the
+      # container -- so the host side must be the *invoking user's* ~/.bertrend/db,
+      # which is where the job store already lives from running the service without
+      # Docker. It is deliberately NOT under BERTREND_BASE_DIR (data/logs/config).
+      # Override with SCHEDULER_DB_DIR if the store lives elsewhere.
+      - ${SCHEDULER_DB_DIR:-${HOME}/.bertrend/db}:/home/user/.bertrend/db
     environment:
       - HTTP_PROXY=${HTTP_PROXY:-}
       - HTTPS_PROXY=${HTTPS_PROXY:-}
