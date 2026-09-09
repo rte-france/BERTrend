@@ -344,6 +344,10 @@ class EnhancedExtractiveSummarizer(ExtractiveSummarizer):
         super().__init__(model_name=model_name)
         self.api = OpenAI_Client(api_key=api_key, base_url=base_url)
 
+    def close(self):
+        """Close the underlying OpenAI client and release its pooled sockets."""
+        self.api.close()
+
     def generate_summary(
         self,
         text,

@@ -47,10 +47,12 @@ def fetch_text_from_url(url: str) -> str:
     stripping out ads, menus, and html clutter.
     """
     try:
-        g = Goose()
-        article = g.extract(url=url)
-        text = article.cleaned_text
-        g.close()
+        # Goose owns a persistent requests.Session that is never released by
+        # garbage collection (its weakref.finalize callback keeps the instance
+        # alive), so it must be closed on every path, including on error.
+        with Goose() as g:
+            article = g.extract(url=url)
+            text = article.cleaned_text
 
         if not text:
             return ""

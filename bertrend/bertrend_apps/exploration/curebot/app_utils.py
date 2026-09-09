@@ -149,33 +149,33 @@ def get_improved_topic_description(
     df: pd.DataFrame, _topics_info: pd.DataFrame
 ) -> list[str]:
     """Get improved topic description using LLM."""
-    # Get llm client
-    llm_client = OpenAI_Client(
-        api_key=LLM_CONFIG["api_key"],
-        base_url=LLM_CONFIG["base_url"],
-        model=LLM_CONFIG["model"],
-    )
-
     # List of improved topics description
     improved_descriptions = []
 
-    # Loop over topics
-    for topic_number in range(len(_topics_info)):
-        topic_df = df[df["topics"] == topic_number]
-        user_prompt = "\n\n".join(
-            topic_df.apply(
-                lambda row: (
-                    f"Titre : {row[TITLE_COLUMN]}\nArticle : {row[TEXT_COLUMN][0:2000]}..."
-                ),
-                axis=1,
+    # A single client (and therefore a single connection pool) is shared by all
+    # topics and closed at the end, so that no socket is left behind.
+    with OpenAI_Client(
+        api_key=LLM_CONFIG["api_key"],
+        base_url=LLM_CONFIG["base_url"],
+        model=LLM_CONFIG["model"],
+    ) as llm_client:
+        # Loop over topics
+        for topic_number in range(len(_topics_info)):
+            topic_df = df[df["topics"] == topic_number]
+            user_prompt = "\n\n".join(
+                topic_df.apply(
+                    lambda row: (
+                        f"Titre : {row[TITLE_COLUMN]}\nArticle : {row[TEXT_COLUMN][0:2000]}..."
+                    ),
+                    axis=1,
+                )
             )
-        )
-        response = llm_client.parse(
-            user_prompt=user_prompt,
-            system_prompt=TOPIC_DESCRIPTION_SYSTEM_PROMPT,
-            response_format=TopicDescription,
-        )
-        improved_descriptions.append(response.title)
+            response = llm_client.parse(
+                user_prompt=user_prompt,
+                system_prompt=TOPIC_DESCRIPTION_SYSTEM_PROMPT,
+                response_format=TopicDescription,
+            )
+            improved_descriptions.append(response.title)
 
     return improved_descriptions
 
@@ -224,51 +224,55 @@ def create_newsletter(
     )
 
     newsletter_dict["topics"] = []
-    for i in range(nb_topics):
-        # Dict to store topic info
-        topic_dict = {}
+    # One client (and one connection pool) for every topic, closed when the
+    # newsletter is complete, instead of a new pool leaked per topic.
+    with OpenAI_Client(
+        api_key=LLM_CONFIG["api_key"],
+        base_url=LLM_CONFIG["base_url"],
+        model=LLM_CONFIG["model"],
+    ) as llm_client:
+        for i in range(nb_topics):
+            # Dict to store topic info
+            topic_dict = {}
 
-        # Get title and key words
-        topic_dict["title"] = topics_info.iloc[i]["llm_description"]
-        topic_dict["keywords"] = (
-            "#" + " #".join(topics_info.iloc[i]["Representation"]).strip()
-        )
-
-        # Filter df to get articles for the topic
-        topic_df = df[df["topics"] == i]
-
-        # Get first `newsletter_nb_articles_per_topic` articles for the topic
-        topic_df = topic_df.head(min(nb_articles_per_topic, len(topic_df)))
-
-        # Get a summary of the topic
-        user_prompt = "\n\n".join(
-            topic_df.apply(
-                lambda row: (
-                    f"Titre : {row[TITLE_COLUMN]}\nArticle : {row[TEXT_COLUMN][0:2000]}..."
-                ),
-                axis=1,
+            # Get title and key words
+            topic_dict["title"] = topics_info.iloc[i]["llm_description"]
+            topic_dict["keywords"] = (
+                "#" + " #".join(topics_info.iloc[i]["Representation"]).strip()
             )
-        )
-        llm_client = OpenAI_Client(
-            api_key=LLM_CONFIG["api_key"],
-            base_url=LLM_CONFIG["base_url"],
-            model=LLM_CONFIG["model"],
-        )
-        response = llm_client.parse(
-            user_prompt=user_prompt,
-            system_prompt=TOPIC_SUMMARY_SYSTEM_PROMPT,
-            response_format=TopicSummary,
-        )
-        topic_dict["summary"] = response.summary
-        topic_dict["articles"] = []
-        for _, row in topic_df.iterrows():
-            article_dict = {}
-            article_dict["title"] = row[TITLE_COLUMN]
-            article_dict["url"] = row[URL_COLUMN]
-            article_dict["timestamp"] = row[TIMESTAMP_COLUMN].strftime("%A %d %B %Y")
-            article_dict["source"] = row[SOURCE_COLUMN]
-            topic_dict["articles"].append(article_dict)
-        newsletter_dict["topics"].append(topic_dict)
+
+            # Filter df to get articles for the topic
+            topic_df = df[df["topics"] == i]
+
+            # Get first `newsletter_nb_articles_per_topic` articles for the topic
+            topic_df = topic_df.head(min(nb_articles_per_topic, len(topic_df)))
+
+            # Get a summary of the topic
+            user_prompt = "\n\n".join(
+                topic_df.apply(
+                    lambda row: (
+                        f"Titre : {row[TITLE_COLUMN]}\nArticle : {row[TEXT_COLUMN][0:2000]}..."
+                    ),
+                    axis=1,
+                )
+            )
+            response = llm_client.parse(
+                user_prompt=user_prompt,
+                system_prompt=TOPIC_SUMMARY_SYSTEM_PROMPT,
+                response_format=TopicSummary,
+            )
+            topic_dict["summary"] = response.summary
+            topic_dict["articles"] = []
+            for _, row in topic_df.iterrows():
+                article_dict = {}
+                article_dict["title"] = row[TITLE_COLUMN]
+                article_dict["url"] = row[URL_COLUMN]
+                article_dict["timestamp"] = row[TIMESTAMP_COLUMN].strftime(
+                    "%A %d %B %Y"
+                )
+                article_dict["source"] = row[SOURCE_COLUMN]
+                topic_dict["articles"].append(article_dict)
+            newsletter_dict["topics"].append(topic_dict)
     return newsletter_dict
 
 

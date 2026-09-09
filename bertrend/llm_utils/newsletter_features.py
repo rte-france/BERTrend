@@ -92,121 +92,128 @@ def generate_newsletter(
     # Instantiates summarizer
     summarizer = summarizer_class()
 
-    # Ensure top_n_topics is smaller than number of topics
-    topics_info = topic_model.get_topic_info()[1:]
+    # Both the OpenAI client and the summarizer own HTTP connection pools;
+    # release them once the newsletter is built, otherwise every newsletter
+    # job leaves sockets behind in the long-running worker process.
+    try:
+        # Ensure top_n_topics is smaller than number of topics
+        topics_info = topic_model.get_topic_info()[1:]
 
-    if top_n_topics is None or top_n_topics > len(topics_info):
-        top_n_topics = len(topics_info)
+        if top_n_topics is None or top_n_topics > len(topics_info):
+            top_n_topics = len(topics_info)
 
-    # Create the Newsletter object
-    newsletter = Newsletter(
-        title=newsletter_title,
-        period_start_date=df.timestamp.min().date(),
-        period_end_date=df.timestamp.max().date(),
-        topics=[],
-    )
-
-    # Iterate over topics
-    for i in tqdm(range(top_n_topics), desc="Processing topics..."):
-        topic_keywords = topics_info["Representation"].iloc[i]
-
-        sub_df = get_most_representative_docs(
-            topic_model=topic_model,
-            df=df,
-            topics=topics,
-            mode=top_n_docs_mode,
-            df_split=df_split,
-            topic_number=i,
-            top_n_docs=top_n_docs,
+        # Create the Newsletter object
+        newsletter = Newsletter(
+            title=newsletter_title,
+            period_start_date=df.timestamp.min().date(),
+            period_end_date=df.timestamp.max().date(),
+            topics=[],
         )
 
-        topic_summary = None
+        # Iterate over topics
+        for i in tqdm(range(top_n_topics), desc="Processing topics..."):
+            topic_keywords = topics_info["Representation"].iloc[i]
 
-        # Compute summary according to summary_mode
-        if summary_mode == "document":
-            # Generates summaries for articles
-            texts = [doc.text for _, doc in sub_df.iterrows()]
-            summaries = summarizer.summarize_batch(
-                texts, prompt_language=prompt_language
-            )
-        elif summary_mode == "topic":
-            article_list = ""
-            for _, doc in sub_df.iterrows():
-                article_list += f"Titre : {doc.title}\nContenu : {doc.text}\n\n"
-
-            topic_summary = openai_api.generate(
-                (USER_SUMMARY_MULTIPLE_DOCS[prompt_language]).format(
-                    keywords=", ".join(topic_keywords),
-                    article_list=article_list,
-                    nb_sentences=nb_sentences,
-                ),
-                model=openai_model_name,
+            sub_df = get_most_representative_docs(
+                topic_model=topic_model,
+                df=df,
+                topics=topics,
+                mode=top_n_docs_mode,
+                df_split=df_split,
+                topic_number=i,
+                top_n_docs=top_n_docs,
             )
 
-        # Improve topic description
-        if improve_topic_description:
-            titles = [doc.title for _, doc in sub_df.iterrows()]
+            topic_summary = None
 
-            improved_topic_description_v2 = openai_api.generate(
-                (USER_GENERATE_TOPIC_LABEL_SUMMARIES[prompt_language]).format(
-                    newsletter_title=newsletter_title,
-                    title_list=(
-                        " ; ".join(summaries)
-                        if summary_mode == "document"
-                        else topic_summary
-                    ),
-                ),
-                model=openai_model_name,
-            ).replace('"', "")
-
-            improved_topic_description_v2 = improved_topic_description_v2.removesuffix(
-                "."
-            )
-
-            topic_title = improved_topic_description_v2
-        else:
-            topic_title = ", ".join(topic_keywords)
-
-        i = 0
-        article_list = []
-        for _, doc in sub_df.iterrows():
-            try:
-                domain = tldextract.extract(doc.url).domain
-            except Exception:
-                logger.warning(f"Cannot extract URL for {doc}")
-                domain = None
-            # Add the full text when no summarization is performed
-            article_summary = (
-                summaries[i]
-                if summary_mode == "document"
-                else doc.text
-                if summary_mode == "none"
-                else None
-            )
-            article_list.append(
-                Article(
-                    title=doc.title,
-                    url=doc.url,
-                    summary=article_summary,
-                    date=doc.timestamp.date(),
-                    source=domain,
+            # Compute summary according to summary_mode
+            if summary_mode == "document":
+                # Generates summaries for articles
+                texts = [doc.text for _, doc in sub_df.iterrows()]
+                summaries = summarizer.summarize_batch(
+                    texts, prompt_language=prompt_language
                 )
+            elif summary_mode == "topic":
+                article_list = ""
+                for _, doc in sub_df.iterrows():
+                    article_list += f"Titre : {doc.title}\nContenu : {doc.text}\n\n"
+
+                topic_summary = openai_api.generate(
+                    (USER_SUMMARY_MULTIPLE_DOCS[prompt_language]).format(
+                        keywords=", ".join(topic_keywords),
+                        article_list=article_list,
+                        nb_sentences=nb_sentences,
+                    ),
+                    model=openai_model_name,
+                )
+
+            # Improve topic description
+            if improve_topic_description:
+                titles = [doc.title for _, doc in sub_df.iterrows()]
+
+                improved_topic_description_v2 = openai_api.generate(
+                    (USER_GENERATE_TOPIC_LABEL_SUMMARIES[prompt_language]).format(
+                        newsletter_title=newsletter_title,
+                        title_list=(
+                            " ; ".join(summaries)
+                            if summary_mode == "document"
+                            else topic_summary
+                        ),
+                    ),
+                    model=openai_model_name,
+                ).replace('"', "")
+
+                improved_topic_description_v2 = (
+                    improved_topic_description_v2.removesuffix(".")
+                )
+
+                topic_title = improved_topic_description_v2
+            else:
+                topic_title = ", ".join(topic_keywords)
+
+            i = 0
+            article_list = []
+            for _, doc in sub_df.iterrows():
+                try:
+                    domain = tldextract.extract(doc.url).domain
+                except Exception:
+                    logger.warning(f"Cannot extract URL for {doc}")
+                    domain = None
+                # Add the full text when no summarization is performed
+                article_summary = (
+                    summaries[i]
+                    if summary_mode == "document"
+                    else doc.text
+                    if summary_mode == "none"
+                    else None
+                )
+                article_list.append(
+                    Article(
+                        title=doc.title,
+                        url=doc.url,
+                        summary=article_summary,
+                        date=doc.timestamp.date(),
+                        source=domain,
+                    )
+                )
+                i += 1
+
+            # Create topic object
+            topic = Topic(
+                title=topic_title,
+                hashtags=topic_keywords,
+                summary=topic_summary,
+                articles=article_list,
+                topic_type=STRONG_TOPIC_TYPE,
             )
-            i += 1
 
-        # Create topic object
-        topic = Topic(
-            title=topic_title,
-            hashtags=topic_keywords,
-            summary=topic_summary,
-            articles=article_list,
-            topic_type=STRONG_TOPIC_TYPE,
-        )
+            # Update newsletter object
+            newsletter.topics.append(topic)
 
-        # Update newsletter object
-        newsletter.topics.append(topic)
-
-    return newsletter
+        return newsletter
+    finally:
+        summarizer.close()
+        openai_api.close()
 
 
 def render_newsletter(

@@ -24,6 +24,10 @@ class GPTSummarizer(Summarizer):
         )
         logger.debug("GPTSummarizer initialized")
 
+    def close(self):
+        """Close the underlying OpenAI client and release its pooled sockets."""
+        self.api.close()
+
     def generate_summary(
         self,
         article_text: str,

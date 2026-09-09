@@ -1,3 +1,26 @@
+## v0.4.15 - 2026-09-09
+
+### Fixes
+
+- Fixed the remaining socket leak in the queue workers, which kept accumulating thousands
+  of `CLOSE-WAIT` connections towards the article-fetching proxy after v0.4.14. Root cause:
+  `goose3.Goose` registers `weakref.finalize(self, self.close)` in its constructor, and
+  because `weakref.finalize` holds a *strong* reference to its callback (a bound method),
+  every `Goose` instance stays alive for the whole life of the process and is never garbage
+  collected — so the persistent `requests.Session` it owns, and every socket pooled in it,
+  leaked. A new `Goose` was created per scraping job (one per `DataProvider`).
+  - `DataProvider` is now closeable (`close()` / context manager): it closes the Goose
+    parser and detaches its finalizer so the instance can actually be collected.
+  - `scrape()` and `auto_scrape()` (and therefore `scrape_feed_from_config()`) use the
+    provider as a context manager, so the session is released at the end of every job.
+  - The Goose session's connection pool is bounded (`GOOSE_POOL_CONNECTIONS`,
+    `GOOSE_POOL_MAXSIZE`), capping how many sockets a single scraping job can hold.
+  - The Goose parser in the geoviz backend is closed on error paths too.
+- Closed the remaining OpenAI clients that leaked a connection pool per call:
+  the BERTopic OpenAI representation model (one per fitted model), the newsletter
+  generator and its summarizer, the feed query generator, and the Curebot helpers
+  (which created one client *per topic*). Summarizers are now closeable.
+
 ## v0.4.14 - 2026-09-01
 
 ### Fixes

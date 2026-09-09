@@ -15,6 +15,7 @@ from goose3 import Goose
 from joblib import Parallel, delayed
 from loguru import logger
 from newspaper import Article
+from requests.adapters import HTTPAdapter
 
 from bertrend.article_scoring.article_scoring import QualityLevel
 from bertrend.bertrend_apps.data_provider.utils import (
@@ -43,13 +44,80 @@ BLACKLISTED_URL = [
 ]
 
 
+# Bounds for the HTTP connection pool used by the Goose3 article parser. Article
+# fetches usually go through an HTTP proxy, so every target host maps onto a
+# socket towards that single proxy; keeping the pool small caps how many sockets
+# a scraping job can hold at once.
+GOOSE_POOL_CONNECTIONS = int(os.getenv("GOOSE_POOL_CONNECTIONS", 10))
+GOOSE_POOL_MAXSIZE = int(os.getenv("GOOSE_POOL_MAXSIZE", 10))
+
+
 class DataProvider(ABC):
+    """Base class for all data providers.
+
+    A provider owns a Goose3 article parser, which itself owns a persistent
+    `requests.Session`. That session MUST be released when the provider is no
+    longer needed: use the provider as a context manager, or call `close()`
+    explicitly. Relying on garbage collection does not work - see `close()`.
+    """
+
     def __init__(self):
         self.article_parser = Goose()
         # set 'standard' user agent
         self.article_parser.config.browser_user_agent = (
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_2)"
         )
+        # Bound the underlying connection pool so that a single scraping job
+        # cannot hold an unbounded number of sockets towards the proxy.
+        # NB. `fetcher._connection` is private to goose3; degrade gracefully
+        # (unbounded pool, but still closed by close()) if it ever moves.
+        session = getattr(self.article_parser.fetcher, "_connection", None)
+        if session is None:
+            logger.warning(
+                "Cannot access the Goose3 HTTP session: its connection pool will "
+                "not be bounded."
+            )
+        else:
+            adapter = HTTPAdapter(
+                pool_connections=GOOSE_POOL_CONNECTIONS,
+                pool_maxsize=GOOSE_POOL_MAXSIZE,
+            )
+            session.mount("http://", adapter)
+            session.mount("https://", adapter)
+
+    def close(self):
+        """Release the HTTP connections held by the article parser.
+
+        Goose3 registers `weakref.finalize(self, self.close)` in its constructor.
+        Because `weakref.finalize` keeps a *strong* reference to its callback,
+        and that callback is a bound method, every `Goose` instance is kept alive
+        for the whole lifetime of the process and is never garbage collected. Its
+        `requests.Session` - and every socket pooled in it - therefore leaks: the
+        sockets pile up in CLOSE-WAIT once the peer times them out. Closing
+        explicitly (and detaching the finalizer, so that the instance can finally
+        be collected) is the only reliable way to release them.
+        """
+        # NB. local name kept distinct from the module-level dateutil `parser`
+        article_parser = getattr(self, "article_parser", None)
+        if article_parser is None:
+            return
+        try:
+            article_parser.close()
+        except Exception as e:
+            logger.debug(f"Error closing Goose article parser: {e}")
+        finally:
+            # Drop the finalizer's strong reference to the Goose instance so that
+            # it becomes collectable instead of living until process exit.
+            finalizer = getattr(article_parser, "finalizer", None)
+            if finalizer is not None:
+                finalizer.detach()
+            self.article_parser = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     @abstractmethod
     def get_articles(

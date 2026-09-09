@@ -23,10 +23,12 @@ def generate_google_news_query(brief: str, language: str) -> str:
     if not brief:
         raise ValueError("The monitoring brief cannot be empty.")
 
-    response = OpenAI_Client().generate(
-        f"Requested language: {language}\nMonitoring brief: {brief}",
-        system_prompt=SYSTEM_PROMPT,
-    )
+    # Close the client (and its connection pool) as soon as the call is done.
+    with OpenAI_Client() as client:
+        response = client.generate(
+            f"Requested language: {language}\nMonitoring brief: {brief}",
+            system_prompt=SYSTEM_PROMPT,
+        )
     if not isinstance(response, str) or response.startswith("OpenAI API fatal error:"):
         raise RuntimeError("The LLM did not generate a query.")
 

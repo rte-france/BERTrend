@@ -146,3 +146,57 @@ def test_process_entries(provider):
         assert len(results) == 2
         titles = {res["title"] for res in results}
         assert titles == {"Parsed 1", "Parsed 2"}
+
+
+def test_close_releases_article_parser_session():
+    """The Goose3 parser owns a persistent requests.Session that must be closed.
+
+    Goose3 registers `weakref.finalize(self, self.close)`, which keeps a strong
+    reference to the instance, so the session is never released by garbage
+    collection: closing must be explicit.
+    """
+    provider = ConcreteDataProvider()
+    parser = provider.article_parser
+    assert parser.fetcher._connection is not None
+
+    provider.close()
+
+    # The Goose fetcher (and therefore its requests.Session) is released...
+    assert parser.fetcher is None
+    # ...and the finalizer no longer holds a strong reference to the instance,
+    # so it can finally be garbage collected instead of living until exit.
+    assert not parser.finalizer.alive
+    assert provider.article_parser is None
+
+
+def test_close_is_idempotent():
+    provider = ConcreteDataProvider()
+    provider.close()
+    provider.close()  # must not raise
+    assert provider.article_parser is None
+
+
+def test_provider_usable_as_context_manager():
+    with ConcreteDataProvider() as provider:
+        assert provider.article_parser is not None
+    assert provider.article_parser is None
+
+
+def test_close_does_not_leak_file_descriptors():
+    """Repeatedly creating and closing providers must not accumulate sockets."""
+    import gc
+    import os
+
+    def fd_count() -> int:
+        return len(os.listdir("/proc/self/fd"))
+
+    # warm-up, so that lazily-created resources are not counted as a leak
+    ConcreteDataProvider().close()
+    gc.collect()
+
+    before = fd_count()
+    for _ in range(20):
+        ConcreteDataProvider().close()
+    gc.collect()
+
+    assert fd_count() <= before

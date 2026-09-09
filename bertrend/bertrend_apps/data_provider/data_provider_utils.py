@@ -45,12 +45,15 @@ def scrape(
 ):
     """Scrape data from Arxiv, ATOM/RSS feeds, Google, Bing or NewsCatcher news (single request)."""
     provider_class = PROVIDERS.get(provider)
-    provider_instance = provider_class()
-    results = provider_instance.get_articles(
-        keywords, after, before, max_results, language
-    )
-    provider_instance.store_articles(results, save_path)
-    return results
+    # The provider owns a persistent HTTP session (Goose3 article parser); close
+    # it when the job is done, otherwise its sockets leak for the whole lifetime
+    # of the (long-running) worker process.
+    with provider_class() as provider_instance:
+        results = provider_instance.get_articles(
+            keywords, after, before, max_results, language
+        )
+        provider_instance.store_articles(results, save_path)
+        return results
 
 
 def auto_scrape(
@@ -64,9 +67,9 @@ def auto_scrape(
 ):
     """Scrape data from Arxiv, ATOM/RSS feeds, Google, Bing news or NewsCatcher (multiple requests)."""
     provider_class = PROVIDERS.get(provider)
-    provider_instance = provider_class()
     logger.info(f"Opening query file: {requests_file}")
-    with open(requests_file) as file:
+    # See scrape(): the provider must be closed to release its HTTP session.
+    with provider_class() as provider_instance, open(requests_file) as file:
         try:
             requests = [line.rstrip().split(";") for line in file]
         except Exception:

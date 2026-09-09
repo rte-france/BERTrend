@@ -14,6 +14,7 @@ from bertrend.bertrend_apps.prospective_demo.feed_query_generator import (
 
 @patch("bertrend.bertrend_apps.prospective_demo.feed_query_generator.OpenAI_Client")
 def test_generate_google_news_query(mock_client):
+    mock_client.return_value.__enter__.return_value = mock_client.return_value
     mock_client.return_value.generate.return_value = (
         '("offshore wind" OR "floating wind") AND France'
     )
@@ -23,6 +24,8 @@ def test_generate_google_news_query(mock_client):
     )
 
     assert query == '("offshore wind" OR "floating wind") AND France'
+    # The client is closed so its HTTP connection pool is released.
+    mock_client.return_value.__exit__.assert_called_once()
     user_prompt = mock_client.return_value.generate.call_args.args[0]
     assert "English" in user_prompt
     assert "offshore and floating wind projects" in user_prompt
@@ -30,6 +33,7 @@ def test_generate_google_news_query(mock_client):
 
 @patch("bertrend.bertrend_apps.prospective_demo.feed_query_generator.OpenAI_Client")
 def test_generate_google_news_query_removes_markdown_fence(mock_client):
+    mock_client.return_value.__enter__.return_value = mock_client.return_value
     mock_client.return_value.generate.return_value = (
         '```\n"hydrogène vert" AND France\n```'
     )
@@ -49,6 +53,7 @@ def test_generate_google_news_query_rejects_empty_brief():
 @patch("bertrend.bertrend_apps.prospective_demo.feed_query_generator.OpenAI_Client")
 @pytest.mark.parametrize("response", ["", "OpenAI API fatal error: unavailable"])
 def test_generate_google_news_query_rejects_failed_response(mock_client, response):
+    mock_client.return_value.__enter__.return_value = mock_client.return_value
     mock_client.return_value.generate.return_value = response
 
     with pytest.raises(RuntimeError, match="generate|empty"):

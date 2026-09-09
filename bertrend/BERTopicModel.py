@@ -2,6 +2,7 @@
 #  See AUTHORS.txt
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
@@ -171,22 +172,35 @@ class BERTopicModel:
 
         self.mmr_model = MaximalMarginalRelevance(**self.config["mmr_model"])
 
-    def _initialize_openai_representation(self):
-        return OpenAI(
-            client=OpenAI_Client(
-                api_key=LLM_CONFIG["api_key"],
-                base_url=LLM_CONFIG["base_url"],
-                model=LLM_CONFIG["model"],
-            ).llm_client,
+    @contextmanager
+    def _openai_representation(self):
+        """Yield an OpenAI representation model, closing its HTTP client on exit.
+
+        The representation model wraps a dedicated OpenAI client with its own
+        connection pool. It is only needed for the duration of a single
+        `update_topics` call, so the client is closed as soon as that call
+        returns - otherwise every fitted model would leave a pool of sockets
+        behind in the (long-running) worker process.
+        """
+        openai_client = OpenAI_Client(
+            api_key=LLM_CONFIG["api_key"],
+            base_url=LLM_CONFIG["base_url"],
             model=LLM_CONFIG["model"],
-            nr_docs=OPENAI_NR_DOCS,
-            prompt=(
-                BERTOPIC_FRENCH_TOPIC_REPRESENTATION_PROMPT
-                if self.config["global"]["language"] == "French"
-                else None
-            ),
-            chat=True,
         )
+        try:
+            yield OpenAI(
+                client=openai_client.llm_client,
+                model=LLM_CONFIG["model"],
+                nr_docs=OPENAI_NR_DOCS,
+                prompt=(
+                    BERTOPIC_FRENCH_TOPIC_REPRESENTATION_PROMPT
+                    if self.config["global"]["language"] == "French"
+                    else None
+                ),
+                chat=True,
+            )
+        finally:
+            openai_client.close()
 
     @classmethod
     def _initialize_keybert_representation(cls):
@@ -306,11 +320,12 @@ class BERTopicModel:
             if self.use_openai_representation:
                 logger.info("\tApplying OpenAI representation model...")
                 backup_representation_model = topic_model.representation_model
-                topic_model.update_topics(
-                    docs=docs,
-                    topics=new_topics,
-                    representation_model=self._initialize_openai_representation(),
-                )
+                with self._openai_representation() as openai_representation:
+                    topic_model.update_topics(
+                        docs=docs,
+                        topics=new_topics,
+                        representation_model=openai_representation,
+                    )
                 topic_model.representation_model = backup_representation_model
 
             topic_model.topic_labels_.update(zeroshot_labels)

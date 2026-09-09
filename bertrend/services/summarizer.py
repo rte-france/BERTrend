@@ -13,6 +13,19 @@ DEFAULT_MAX_WORDS = 50
 class Summarizer(ABC):
     """Abstract class common to all summarizer implementations."""
 
+    def close(self):
+        """Release any resource held by the summarizer.
+
+        No-op by default; implementations backed by an HTTP client (e.g. the
+        LLM-based summarizers) override it to close their connection pool.
+        """
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     @abstractmethod
     def generate_summary(
         self,
