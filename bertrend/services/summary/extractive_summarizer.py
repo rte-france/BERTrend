@@ -30,7 +30,24 @@ DEFAULT_SUMMARIZER_MODEL = "almanach/camembert-base"
 
 DEFAULT_CHUNKS_NUMBER_SUMMARY = 6
 
-nltk.download("punkt")
+
+def _ensure_punkt() -> None:
+    """Make sure the punkt tokenizer is available, without a needless download.
+
+    Called at import time, so it must not hit the network when the corpus is
+    already there: `nltk.download()` probes its remote index even for an
+    up-to-date package, which behind an HTTP proxy prints a "Security Violation"
+    (NLTK refuses fetches it cannot IP-pin, CWE-918). The corpora are baked into
+    the Docker image, so this normally resolves from disk.
+    """
+    for resource in ("tokenizers/punkt", "tokenizers/punkt_tab"):
+        try:
+            nltk.data.find(resource)
+        except LookupError:
+            nltk.download(resource.split("/", 1)[1])
+
+
+_ensure_punkt()
 
 
 def _summarize_based_on_cos_scores(cos_scores, summary_size: int) -> list[int]:

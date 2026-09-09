@@ -1,7 +1,9 @@
 # Build context for the root Dockerfile and Dockerfile.embedding_server.
 #
 # Keep in sync with what those two files actually COPY:
-#   Dockerfile                 -> supervisord.conf, run_demos.sh
+#   Dockerfile                 -> supervisord.conf, run_demos.sh, and the project
+#                                  itself: pyproject.toml, uv.lock, README.md,
+#                                  LICENSE.md, AUTHORS.txt, bertrend/
 #   Dockerfile.embedding_server -> bertrend/services/embedding_server/,
 #                                  bertrend/services/{key,cert}.pem
 # Everything else can be excluded. Without this file the context is ~8.8G
@@ -50,11 +52,21 @@ data/
 .env.*
 .env_*
 
+# Streamlit secrets. The Dockerfile now COPYs bertrend/ into the build context,
+# and /src is not a git checkout -- so the build backend cannot fall back on
+# .gitignore to keep these out and would bake real passwords into the image.
+# They are bind-mounted at runtime instead (see docker-compose.yml).
+**/.streamlit/secrets.toml
+
 # Docs and notebooks
 docs/
 getting_started/
 **/*.md
 **/*.ipynb
+# ...except these two: pyproject.toml references them as `readme` and `license`,
+# so the wheel build fails without them in the context.
+!README.md
+!LICENSE.md
 
 # Tests
 **/tests/
