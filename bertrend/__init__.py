@@ -19,7 +19,10 @@ if not _initialized:
         if load_dotenv(override=True):
             logger.info("Loaded .env file")
         else:
-            logger.warning("Failed to load .env file")
+            # Not an error: load_dotenv() returns False simply when there is no
+            # .env to find. That is the normal case in the container, where the
+            # configuration is injected as environment variables by Compose.
+            logger.debug("No .env file found; relying on the environment")
 
     except Exception:
         pass
