@@ -58,6 +58,30 @@ TRANSLATIONS = {
         "fr": "Sélection de la date d'analyse parmi celles disponibles",
         "en": "Selection of the analysis date from those available",
     },
+    "topic_feedback": {
+        "fr": "Préférence pour ce sujet",
+        "en": "Topic preference",
+    },
+    "topic_feedback_help": {
+        "fr": "Cette préférence s'applique à cette veille. Elle modifie l'affichage et la sélection des rapports, sans réentraîner le modèle.",
+        "en": "This preference applies to this monitoring model. It changes dashboard and report selection without retraining the model.",
+    },
+    "topic_feedback_none": {
+        "fr": "Aucune",
+        "en": "None",
+    },
+    "topic_feedback_promoted": {
+        "fr": "⭐ Prioriser",
+        "en": "⭐ Prioritize",
+    },
+    "topic_feedback_hidden": {
+        "fr": "🚫 Masquer",
+        "en": "🚫 Hide",
+    },
+    "topic_feedback_saved": {
+        "fr": "Préférence enregistrée.",
+        "en": "Preference saved.",
+    },
     # dashboard_comparative.py translations
     "comparative_analysis_title": {
         "fr": "Analyse Comparative entre Périodes",
