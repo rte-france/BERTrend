@@ -88,7 +88,10 @@ services:
       - "8886:8886"  # Summary service
       - "8887:8887"  # Article scoring service
     volumes:
-      - ${BERTREND_BASE_DIR:-.bertrend}:/bertrend
+      # Mounted at BERTREND_CONTAINER_BASE_DIR (default /bertrend). Set it to the host
+      # path itself to keep host and container paths identical: scheduler jobs store
+      # absolute config paths, so jobs registered outside Docker only resolve then.
+      - ${BERTREND_BASE_DIR:-.bertrend}:${BERTREND_CONTAINER_BASE_DIR:-/bertrend}
       - ${HF_HOME:-.cache/huggingface}:/app/.cache/huggingface
       # Streamlit secrets for the prospective demo's login (st.secrets["passwords"]).
       # They are gitignored, so they are absent both from the repo tarball and from
@@ -132,8 +135,8 @@ services:
       # nltk.download() still probes its index; allow it rather than have that
       # probe print a "Security Violation" on every service start.
       - NLTK_ALLOW_PROXIED_URLOPEN=1
-      # BERTrend base dir
-      - BERTREND_BASE_DIR=/bertrend/
+      # BERTrend base dir (container side of the volume mounted above)
+      - BERTREND_BASE_DIR=${BERTREND_CONTAINER_BASE_DIR:-/bertrend}/
       - BERTREND_CLIENT_SECRET=bd76aa472dd91aed4a56bf1935dbb802583c119824380d8567086579c0ef3324
       # Configure to use the embedding server
       - EMBEDDING_SERVICE_URL=https://embedding_server:6464
