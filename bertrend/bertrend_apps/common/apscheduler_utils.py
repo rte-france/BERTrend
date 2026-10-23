@@ -18,6 +18,10 @@ from loguru import logger
 from requests.adapters import HTTPAdapter
 
 from bertrend import load_toml_config
+from bertrend.bertrend_apps.common.portable_paths import (
+    resolve_portable_path,
+    to_portable_path,
+)
 from bertrend.bertrend_apps.common.scheduler_utils import SchedulerUtils
 
 # Note: .env is already loaded in bertrend/__init__.py
@@ -219,6 +223,7 @@ class APSchedulerUtils(SchedulerUtils):
 
     def schedule_scrapping(self, feed_cfg: Path, user: str | None = None):
         """Schedule data scrapping based on a feed configuration file using the service."""
+        feed_cfg = resolve_portable_path(feed_cfg)
         data_feed_cfg = load_toml_config(feed_cfg)
         schedule = data_feed_cfg["data-feed"]["update_frequency"]
         id = data_feed_cfg["data-feed"]["id"].removeprefix("feed_")
@@ -226,7 +231,7 @@ class APSchedulerUtils(SchedulerUtils):
         command_kwargs = {
             "method": "POST",
             "json_data": {
-                "feed_cfg": feed_cfg.resolve().as_posix(),
+                "feed_cfg": to_portable_path(feed_cfg),
                 "user": user,
                 "model_id": id,
             },
@@ -242,14 +247,16 @@ class APSchedulerUtils(SchedulerUtils):
         data_feed_cfg_path: Path,
     ):
         """Schedule newsletter generation based on configuration using the service."""
+        newsletter_cfg_path = resolve_portable_path(newsletter_cfg_path)
+        data_feed_cfg_path = resolve_portable_path(data_feed_cfg_path)
         newsletter_cfg = load_toml_config(newsletter_cfg_path)
         schedule = newsletter_cfg["newsletter"]["update_frequency"]
         command = GENERATE_NEWSLETTERS
         command_kwargs = {
             "method": "POST",
             "json_data": {
-                "newsletter_toml_path": newsletter_cfg_path.resolve().as_posix(),
-                "data_feed_toml_path": data_feed_cfg_path.resolve().as_posix(),
+                "newsletter_toml_path": to_portable_path(newsletter_cfg_path),
+                "data_feed_toml_path": to_portable_path(data_feed_cfg_path),
             },
         }
         self.add_job_to_crontab(

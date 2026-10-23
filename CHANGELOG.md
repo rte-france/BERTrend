@@ -1,3 +1,17 @@
+## Unreleased
+
+### Fixes
+
+- Scheduled scrape and newsletter jobs no longer break when run in another environment
+  than the one that registered them (e.g. jobs registered on the host, run by a worker
+  in the Docker container): config paths are stored relative to `BERTREND_BASE_DIR` or
+  to the `bertrend` package, and resolved by the worker. Absolute paths stored by older
+  versions are remapped onto the local `BERTREND_BASE_DIR` / package when they do not
+  exist, and `python -m bertrend.bertrend_apps.migrate_scheduled_job_paths [--apply]`
+  rewrites them in the job store.
+- The scheduler service's `PUT /jobs/{job_id}` answered every successful update with an
+  error (its response lacked required fields); it can now also rename a job.
+
 ## v0.4.15 - 2026-09-09
 
 ### Fixes

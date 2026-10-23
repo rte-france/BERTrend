@@ -61,6 +61,7 @@ class JobCreate(BaseModel):
 
 
 class JobUpdate(BaseModel):
+    job_name: Optional[str] = None
     job_type: Optional[str] = None
     function_name: Optional[str] = None
     args: Optional[List[Any]] = None

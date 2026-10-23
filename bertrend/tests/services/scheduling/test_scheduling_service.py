@@ -200,6 +200,25 @@ def test_run_job_now_executes(client):
     assert executed["ok"] is True
 
 
+def test_update_job_kwargs_and_name(client):
+    scheduling.scheduler.jobs["j"] = FakeJob(
+        "j", name="old name", kwargs={"json_data": {"feed_cfg": "/abs/feed.toml"}}
+    )
+    new_kwargs = {"json_data": {"feed_cfg": "config/feed.toml"}}
+
+    r = client.put("/jobs/j", json={"kwargs": new_kwargs, "job_name": "new name"})
+
+    assert r.status_code == 200
+    assert r.json()["kwargs"] == new_kwargs
+    assert r.json()["name"] == "new name"
+    assert scheduling.scheduler.jobs["j"].kwargs == new_kwargs
+
+
+def test_update_job_not_found(client):
+    r = client.put("/jobs/missing", json={"kwargs": {}})
+    assert r.status_code == 404
+
+
 def test_validate_cron_valid(client):
     r = client.post("/cron/validate", json={"expression": "0 9 * * *"})
     assert r.status_code == 200

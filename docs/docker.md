@@ -162,35 +162,71 @@ schedulers sharing one SQLite store will both claim and run the same jobs.
 Use the standard `docker-compose.yml` instead when you also want the embedding
 server running locally.
 
-### Jobs registered outside Docker
+### Config paths in scheduled jobs
 
-Scheduled jobs store **absolute paths** to their config files: the feed TOML of a
-`/scrape-feed` job, the newsletter and feed TOMLs of a `/generate-newsletters`
-job. Since the job store is reused as-is (see above), jobs registered before the
-stack was containerised still point at host paths, which do not exist inside the
-`bertrend` container. They fail in the queue dashboard (8091) with
-`FileNotFoundError: [Errno 2] No such file or directory: '<host path>'`.
+Scrape and newsletter jobs store the paths of their config files (`feed_cfg`,
+`newsletter_toml_path`, `data_feed_toml_path` in the job's `json_data`). They are
+stored **relative**, so that a job registered in one environment runs in another
+(host and container, or two hosts sharing the job store):
 
-Two kinds of host paths show up, and each has a mount that makes it resolve:
+- relative to `BERTREND_BASE_DIR` for user configs, e.g.
+  `config/users/<user>/<model_id>_feed.toml`;
+- relative to the `bertrend` package for the configs it ships, e.g.
+  `bertrend_apps/config/feeds/rte_feed.toml`.
 
-- **Paths under the host `BERTREND_BASE_DIR`** (e.g.
-  `/DSIA/nlp/bertrend/config/users/<user>/<model>_feed.toml`), registered by the
-  prospective demo. By default the base dir is mounted at `/bertrend` in the
-  container. Set `BERTREND_CONTAINER_BASE_DIR` to the host path itself to mount it
-  at the same location; the container's `BERTREND_BASE_DIR` follows, so jobs
-  registered from now on use that path too, and stay valid if you go back to
-  running outside Docker:
+The worker resolves them against its own `BERTREND_BASE_DIR` and installed
+package (`bertrend/bertrend_apps/common/portable_paths.py`).
+
+#### Jobs registered outside Docker
+
+Jobs registered by older versions store **absolute paths**, valid only in the
+environment that registered them: `/DSIA/nlp/bertrend/config/users/...` (host
+`BERTREND_BASE_DIR`) or `/home/<user>/dev/BERTrend/bertrend/bertrend_apps/config/...`
+(source checkout, registered by `install_feeds_and_newsletters.py`). Since the job
+store is reused as-is (see above), they reach the container, where these paths do
+not exist.
+
+The worker still runs them: an absolute path that does not exist is looked up
+under the local `BERTREND_BASE_DIR` and package by its trailing components
+(`config/users/...`, `bertrend_apps/config/...`), with a warning in the logs.
+To rewrite them once and for all, run the migration script where `bertrend` is
+installed and the scheduler is reachable. It is a dry run by default:
+
+```bash
+docker exec bertrend python -m bertrend.bertrend_apps.migrate_scheduled_job_paths
+docker exec bertrend python -m bertrend.bertrend_apps.migrate_scheduled_job_paths --apply
+```
+
+- Outside the container, point it at the scheduler with
+  `SCHEDULER_SERVICE_URL=http://<host>:8882/`.
+- A path is rewritten when its file is found under the local `BERTREND_BASE_DIR`
+  or package; otherwise it is reported and left unchanged. When the files are not
+  reachable from where the script runs, pass the `BERTREND_BASE_DIR` of the
+  environment that registered the jobs: `--legacy-base-dir /DSIA/nlp/bertrend`
+  (repeatable).
+- Job ids, triggers and next run times are kept. Job names, which embed the
+  paths, are updated too by a scheduler image built from this version; older ones
+  keep the old names, which is cosmetic.
+- Once migrated, newsletter jobs read the configs shipped in the **installed**
+  package, not the checkout's copies: keep customised configs under
+  `BERTREND_BASE_DIR` instead.
+- The app image installs `bertrend` from PyPI (see below): the script and the
+  relative paths reach the container with the release that contains them.
+
+Until then, two mounts make the legacy absolute paths resolve as they are:
+
+- **Paths under the host `BERTREND_BASE_DIR`**: by default the base dir is
+  mounted at `/bertrend` in the container. Set `BERTREND_CONTAINER_BASE_DIR` to
+  the host path itself to mount it at the same location; the container's
+  `BERTREND_BASE_DIR` follows:
 
   ```
   BERTREND_BASE_DIR=/DSIA/nlp/bertrend
   BERTREND_CONTAINER_BASE_DIR=/DSIA/nlp/bertrend
   ```
 
-- **Paths into the source checkout** (e.g.
-  `/home/<user>/dev/BERTrend/bertrend/bertrend_apps/config/newsletters/rte_newsletter_from_last.toml`),
-  registered by `install_feeds_and_newsletters.py`. The image installs the package
-  from PyPI, so the checkout is not in the container. Compose mounts the
-  checkout's `bertrend/bertrend_apps/config` read-only at
+- **Paths into the source checkout**: Compose mounts the checkout's
+  `bertrend/bertrend_apps/config` read-only at
   `${BERTREND_SOURCE_DIR}/bertrend/bertrend_apps/config`, `BERTREND_SOURCE_DIR`
   defaulting to the directory Compose is run from (`$PWD`). Run Compose from the
   checkout the jobs were registered from (`./run_compose_script.sh` does), or set
@@ -380,8 +416,9 @@ The images are published to:
    `docker exec bertrend-job-viewer env | grep SCHEDULER_JOBS_URL`.
 
 7. **Queue jobs fail with `FileNotFoundError` on a host path**
-   (`/DSIA/...`, `/home/<user>/dev/BERTrend/...`): the job was registered outside
-   Docker and stores an absolute host path. See
+   (`/DSIA/...`, `/home/<user>/dev/BERTrend/...`): the job was registered by an
+   older version, outside Docker, and stores an absolute host path. Migrate it, or
+   mount the paths: see
    [Jobs registered outside Docker](#jobs-registered-outside-docker).
 
 8. **Scrape jobs fail with `PermissionError: [Errno 13]` on a `.jsonl` under

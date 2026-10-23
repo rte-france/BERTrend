@@ -10,7 +10,9 @@ import pytest
 
 from bertrend.bertrend_apps.services.queue_management.bertrend_worker import (
     BertrendWorker,
+    handle_generate_newsletters,
     handle_scrape,
+    handle_scrape_feed,
 )
 from bertrend.bertrend_apps.services.queue_management.rabbitmq_config import (
     RabbitMQConfig,
@@ -174,3 +176,79 @@ async def test_handle_scrape_direct_call():
 
         assert result == [{"title": "test"}]
         mock_to_thread.assert_called_once()
+
+
+@pytest.fixture
+def base_dir(tmp_path, monkeypatch):
+    from bertrend.bertrend_apps.common import portable_paths
+
+    monkeypatch.setattr(portable_paths, "BASE_PATH", tmp_path)
+    return tmp_path
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "stored",
+    ["config/users/u/abc_feed.toml", "{legacy}/config/users/u/abc_feed.toml"],
+    ids=["portable", "legacy-absolute"],
+)
+async def test_handle_scrape_feed_resolves_stored_path(base_dir, tmp_path, stored):
+    from bertrend.bertrend_apps.services.bertrend.models.data_provider_models import (
+        ScrapeFeedRequest,
+    )
+
+    feed = base_dir / "config" / "users" / "u" / "abc_feed.toml"
+    feed.parent.mkdir(parents=True)
+    feed.write_text("")
+    # An absolute path from the environment that registered the job
+    stored = stored.format(legacy=tmp_path / "old-host")
+    req = ScrapeFeedRequest(feed_cfg=stored, user="u", model_id="abc")
+
+    with (
+        patch(
+            "bertrend.bertrend_apps.services.queue_management.bertrend_worker.get_file_logger",
+            return_value=None,
+        ),
+        patch(
+            "bertrend.bertrend_apps.services.queue_management.bertrend_worker.logger"
+        ),
+        patch(
+            "bertrend.bertrend_apps.services.queue_management.bertrend_worker.scrape_feed_from_config"
+        ) as mock_scrape,
+    ):
+        await handle_scrape_feed(req)
+
+    mock_scrape.assert_called_once_with(feed)
+
+
+@pytest.mark.asyncio
+async def test_handle_generate_newsletters_resolves_stored_paths(base_dir):
+    from bertrend.bertrend_apps.services.bertrend.models.newsletters_models import (
+        NewsletterRequest,
+    )
+
+    newsletter = base_dir / "config" / "newsletter.toml"
+    feed = base_dir / "config" / "feed.toml"
+    newsletter.parent.mkdir(parents=True)
+    newsletter.write_text('[newsletter]\nid = "n"\n')
+    feed.write_text("")
+    req = NewsletterRequest(
+        newsletter_toml_path="config/newsletter.toml",
+        data_feed_toml_path="config/feed.toml",
+    )
+
+    with (
+        patch(
+            "bertrend.bertrend_apps.services.queue_management.bertrend_worker.get_file_logger",
+            return_value=None,
+        ),
+        patch(
+            "bertrend.bertrend_apps.services.queue_management.bertrend_worker.logger"
+        ),
+        patch(
+            "bertrend.bertrend_apps.services.queue_management.bertrend_worker.process_newsletter"
+        ) as mock_process,
+    ):
+        await handle_generate_newsletters(req)
+
+    mock_process.assert_called_once_with(newsletter, feed)
