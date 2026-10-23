@@ -162,6 +162,47 @@ schedulers sharing one SQLite store will both claim and run the same jobs.
 Use the standard `docker-compose.yml` instead when you also want the embedding
 server running locally.
 
+### Jobs registered outside Docker
+
+Scheduled jobs store **absolute paths** to their config files: the feed TOML of a
+`/scrape-feed` job, the newsletter and feed TOMLs of a `/generate-newsletters`
+job. Since the job store is reused as-is (see above), jobs registered before the
+stack was containerised still point at host paths, which do not exist inside the
+`bertrend` container. They fail in the queue dashboard (8091) with
+`FileNotFoundError: [Errno 2] No such file or directory: '<host path>'`.
+
+Two kinds of host paths show up, and each has a mount that makes it resolve:
+
+- **Paths under the host `BERTREND_BASE_DIR`** (e.g.
+  `/DSIA/nlp/bertrend/config/users/<user>/<model>_feed.toml`), registered by the
+  prospective demo. By default the base dir is mounted at `/bertrend` in the
+  container. Set `BERTREND_CONTAINER_BASE_DIR` to the host path itself to mount it
+  at the same location; the container's `BERTREND_BASE_DIR` follows, so jobs
+  registered from now on use that path too, and stay valid if you go back to
+  running outside Docker:
+
+  ```
+  BERTREND_BASE_DIR=/DSIA/nlp/bertrend
+  BERTREND_CONTAINER_BASE_DIR=/DSIA/nlp/bertrend
+  ```
+
+- **Paths into the source checkout** (e.g.
+  `/home/<user>/dev/BERTrend/bertrend/bertrend_apps/config/newsletters/rte_newsletter_from_last.toml`),
+  registered by `install_feeds_and_newsletters.py`. The image installs the package
+  from PyPI, so the checkout is not in the container. Compose mounts the
+  checkout's `bertrend/bertrend_apps/config` read-only at
+  `${BERTREND_SOURCE_DIR}/bertrend/bertrend_apps/config`, `BERTREND_SOURCE_DIR`
+  defaulting to the directory Compose is run from (`$PWD`). Run Compose from the
+  checkout the jobs were registered from (`./run_compose_script.sh` does), or set
+  `BERTREND_SOURCE_DIR` to that checkout's absolute path.
+
+After changing these variables, recreate the app container (the scheduler and its
+job store are left untouched):
+
+```bash
+./run_compose_script.sh up -d --no-deps --force-recreate bertrend
+```
+
 ## Building the Docker Images Locally
 
 > **The app image installs `bertrend` from PyPI** (`uv pip install -U bertrend`
@@ -227,7 +268,9 @@ docker run --gpus all \
 | `OPENAI_REASONING_EFFORT` | GPT-5 reasoning effort (`minimal`/`low`/`medium`/`high`); GPT-5 models only | `low` |
 | `OPENAI_REASONING_EFFORT_TOPIC_DESCRIPTION` | Per-task override for topic description | inherits `OPENAI_REASONING_EFFORT` |
 | `OPENAI_REASONING_EFFORT_SIGNAL_ANALYSIS` | Per-task override for signal analysis | inherits `OPENAI_REASONING_EFFORT` |
-| `BERTREND_BASE_DIR`           | Base directory for BERTrend data | `/bertrend/` |
+| `BERTREND_BASE_DIR`           | Host directory holding BERTrend data, models, logs and config, mounted into the container. Inside the container it is set to `BERTREND_CONTAINER_BASE_DIR` | `.bertrend` |
+| `BERTREND_CONTAINER_BASE_DIR` | Where the host `BERTREND_BASE_DIR` is mounted in the container. Set it to the host path to keep jobs registered outside Docker working — see [Jobs registered outside Docker](#jobs-registered-outside-docker) | `/bertrend` |
+| `BERTREND_SOURCE_DIR`         | Absolute path of the checkout whose `bertrend/bertrend_apps/config` is mounted read-only at the same path in the container | `$PWD` |
 | `EMBEDDING_SERVICE_URL`       | URL of the embedding server (required in the lightweight stack) | `https://embedding_server:6464` |
 | `EMBEDDING_SERVICE_USE_LOCAL` | Declared but unread — see the note above | `false` |
 | `BERTREND_CLIENT_SECRET`      | Client secret for the embedding server (required in the lightweight stack) | - |
@@ -262,6 +305,13 @@ Mount a directory to `/bertrend` to persist data:
 
 ```bash
 -v /path/on/host:/bertrend
+```
+
+To mount it elsewhere, mount it at that path and set `BERTREND_BASE_DIR` to match
+(Compose does both from `BERTREND_CONTAINER_BASE_DIR`):
+
+```bash
+-v /path/on/host:/path/on/host -e BERTREND_BASE_DIR=/path/on/host/
 ```
 
 #### Embedding Server
@@ -328,6 +378,26 @@ The images are published to:
    Under Compose this is `http://scheduler:8000/jobs`; run outside Compose it
    falls back to a hardcoded public URL. Check the value with
    `docker exec bertrend-job-viewer env | grep SCHEDULER_JOBS_URL`.
+
+7. **Queue jobs fail with `FileNotFoundError` on a host path**
+   (`/DSIA/...`, `/home/<user>/dev/BERTrend/...`): the job was registered outside
+   Docker and stores an absolute host path. See
+   [Jobs registered outside Docker](#jobs-registered-outside-docker).
+
+8. **Scrape jobs fail with `PermissionError: [Errno 13]` on a `.jsonl` under
+   `data/feeds`**: the scraper appends to the day's file, which was created by
+   another UID than the container's `HOST_UID` — typically the pre-Docker setup
+   running under another account, or a container that ran as root. List the files
+   the container user does not own, then take them back:
+
+   ```bash
+   find "$BERTREND_BASE_DIR" ! -uid $(id -u) -printf '%u:%g %p\n' | head
+   sudo chown -R $(id -u):$(id -g) "$BERTREND_BASE_DIR"
+   ```
+
+   Also check that nothing from the old setup still runs on the host
+   (`crontab -l`, `ps aux | grep -E 'bertrend_worker|scheduler'`), or it will keep
+   creating files with the wrong owner.
 
 ### Logs
 
