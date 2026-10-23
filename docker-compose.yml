@@ -92,6 +92,10 @@ services:
       # path itself to keep host and container paths identical: scheduler jobs store
       # absolute config paths, so jobs registered outside Docker only resolve then.
       - ${BERTREND_BASE_DIR:-.bertrend}:${BERTREND_CONTAINER_BASE_DIR:-/bertrend}
+      # Feed/newsletter configs shipped in the source tree, mounted read-only at the
+      # checkout's own absolute path: install_feeds_and_newsletters.py registers jobs
+      # with absolute paths into the checkout, which the installed package lacks.
+      - ./bertrend/bertrend_apps/config:${BERTREND_SOURCE_DIR:-${PWD}}/bertrend/bertrend_apps/config:ro
       - ${HF_HOME:-.cache/huggingface}:/app/.cache/huggingface
       # Streamlit secrets for the prospective demo's login (st.secrets["passwords"]).
       # They are gitignored, so they are absent both from the repo tarball and from
