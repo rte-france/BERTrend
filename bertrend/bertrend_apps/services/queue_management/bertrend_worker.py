@@ -20,6 +20,7 @@ import pandas as pd
 from loguru import logger
 
 from bertrend import load_toml_config
+from bertrend.bertrend_apps.common.portable_paths import resolve_portable_path
 from bertrend.bertrend_apps.data_provider.data_provider_utils import (
     auto_scrape,
     generate_query_file,
@@ -90,7 +91,9 @@ async def handle_scrape_feed(req: ScrapeFeedRequest):
     user = "" if not req.user else req.user
     model_id = "" if not req.model_id else req.model_id
     logger_id = get_file_logger(id="scrape_feed", user_name=user, model_id=model_id)
-    result = await asyncio.to_thread(scrape_feed_from_config, req.feed_cfg)
+    result = await asyncio.to_thread(
+        scrape_feed_from_config, resolve_portable_path(req.feed_cfg)
+    )
     # Remove the logger to prevent writing to this file for other calls
     logger.remove(logger_id)
     return result
@@ -154,14 +157,16 @@ async def handle_generate_report(req: GenerateReportRequest):
 
 
 async def handle_generate_newsletters(req: NewsletterRequest):
-    config = load_toml_config(req.newsletter_toml_path)
+    newsletter_toml_path = resolve_portable_path(req.newsletter_toml_path)
+    data_feed_toml_path = resolve_portable_path(req.data_feed_toml_path)
+    config = load_toml_config(newsletter_toml_path)
     model_id = config.get(NEWSLETTER_SECTION).get("id")
     # Create a unique log file for this call
     logger_id = get_file_logger(
         id="generate_newsletters", user_name="", model_id=model_id
     )
     result = await asyncio.to_thread(
-        process_newsletter, req.newsletter_toml_path, req.data_feed_toml_path
+        process_newsletter, newsletter_toml_path, data_feed_toml_path
     )
     # Remove the logger to prevent writing to this file for other calls
     logger.remove(logger_id)

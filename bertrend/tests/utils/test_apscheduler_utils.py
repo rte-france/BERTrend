@@ -390,6 +390,53 @@ class TestAPSchedulerUtils:
         assert command_kwargs["json_data"]["model_id"] == "abc"
 
     @patch("bertrend.bertrend_apps.common.apscheduler_utils.load_toml_config")
+    def test_schedule_scrapping_stores_path_relative_to_base_dir(
+        self, mock_load_config, tmp_path, monkeypatch
+    ):
+        """The job stores the feed config relative to BERTREND_BASE_DIR."""
+        from bertrend.bertrend_apps.common import portable_paths
+
+        monkeypatch.setattr(portable_paths, "BASE_PATH", tmp_path)
+        mock_load_config.return_value = {
+            "data-feed": {"update_frequency": "0 2 * * *", "id": "feed_abc"}
+        }
+        feed_cfg = tmp_path / "config" / "users" / "u" / "abc_feed.toml"
+
+        scheduler = APSchedulerUtils()
+        with patch.object(scheduler, "add_job_to_crontab") as mock_add:
+            scheduler.schedule_scrapping(feed_cfg, user="u")
+
+        json_data = mock_add.call_args.kwargs["command_kwargs"]["json_data"]
+        assert json_data["feed_cfg"] == "config/users/u/abc_feed.toml"
+
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.load_toml_config")
+    def test_schedule_newsletter_stores_paths_relative_to_package(
+        self, mock_load_config, tmp_path, monkeypatch
+    ):
+        """Configs shipped with the package are stored relative to it."""
+        from bertrend.bertrend_apps.common import portable_paths
+
+        monkeypatch.setattr(portable_paths, "BASE_PATH", tmp_path / "base")
+        monkeypatch.setattr(portable_paths, "PACKAGE_PATH", tmp_path / "bertrend")
+        mock_load_config.return_value = {
+            "newsletter": {"update_frequency": "0 8 * * *", "id": "rte"}
+        }
+        config_dir = tmp_path / "bertrend" / "bertrend_apps" / "config"
+
+        scheduler = APSchedulerUtils()
+        with patch.object(scheduler, "add_job_to_crontab") as mock_add:
+            scheduler.schedule_newsletter(
+                config_dir / "newsletters" / "rte_newsletter_from_last.toml",
+                config_dir / "feeds" / "rte_feed.toml",
+            )
+
+        json_data = mock_add.call_args.kwargs["command_kwargs"]["json_data"]
+        assert json_data == {
+            "newsletter_toml_path": "bertrend_apps/config/newsletters/rte_newsletter_from_last.toml",
+            "data_feed_toml_path": "bertrend_apps/config/feeds/rte_feed.toml",
+        }
+
+    @patch("bertrend.bertrend_apps.common.apscheduler_utils.load_toml_config")
     @patch("bertrend.bertrend_apps.common.apscheduler_utils._request")
     def test_schedule_newsletter(self, mock_request, mock_load_config):
         """Test scheduling a newsletter job."""

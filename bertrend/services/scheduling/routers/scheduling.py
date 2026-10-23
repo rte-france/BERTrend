@@ -317,6 +317,9 @@ def update_job(job_id: str, job_update: JobUpdate):
                 job_id, func=JOB_FUNCTIONS[update_data["function_name"]]
             )
 
+        if "job_name" in update_data:
+            scheduler.modify_job(job_id, name=update_data["job_name"])
+
         # Update args/kwargs if provided
         if "args" in update_data:
             scheduler.modify_job(job_id, args=update_data["args"])
@@ -338,6 +341,9 @@ def update_job(job_id: str, job_update: JobUpdate):
             name=updated_job.name,
             next_run_time=updated_job.next_run_time,
             trigger=str(updated_job.trigger),
+            kwargs=updated_job.kwargs,
+            args=updated_job.args,
+            func=updated_job.func_ref,
             executor=updated_job.executor,
             max_instances=updated_job.max_instances,
         )
