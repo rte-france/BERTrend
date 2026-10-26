@@ -16,6 +16,7 @@ from bertrend.bertrend_apps.prospective_demo import (
     STRONG_SIGNALS,
     URLS_COLUMN,
     WEAK_SIGNALS,
+    get_user_models_path,
 )
 from bertrend.bertrend_apps.prospective_demo.dashboard_common import choose_id_and_ts
 from bertrend.bertrend_apps.prospective_demo.data_model import (
@@ -27,6 +28,12 @@ from bertrend.bertrend_apps.prospective_demo.report_generation_utils import (
     MAXIMUM_NUMBER_OF_ARTICLES,
     create_temp_report,
     render_html_report,
+)
+from bertrend.bertrend_apps.prospective_demo.topic_feedback import (
+    PROMOTED_TOPIC,
+    TopicFeedback,
+    apply_topic_feedback,
+    load_topic_feedback,
 )
 from bertrend.bertrend_apps.prospective_demo.utils import is_valid_email
 from bertrend.demos.demos_utils.icons import (
@@ -60,6 +67,9 @@ def choose_topics():
     if model_id not in dfs_interpretation:
         st.error(f"{ERROR_ICON} {translate('no_data')}")
         st.stop()
+    feedback = load_topic_feedback(
+        get_user_models_path(st.session_state.username, model_id)
+    )
     cols = st.columns(2)
     with cols[0]:
         st.write(f"#### :orange[{translate('emerging_topics')}]")
@@ -68,8 +78,10 @@ def choose_topics():
             filtered_weak_signals = None
         else:
             df_w = dfs_interpretation[model_id][WEAK_SIGNALS]
-            weak_topics_list = choose_from_df(df_w)
-            filtered_weak_signals = df_w[df_w["Topic"].isin(weak_topics_list)]
+            weak_topics_list = choose_from_df(df_w, feedback)
+            filtered_weak_signals = apply_topic_feedback(
+                df_w[df_w["Topic"].isin(weak_topics_list)], feedback
+            )
 
     with cols[1]:
         st.write(f"#### :green[{translate('strong_topics')}]")
@@ -78,18 +90,29 @@ def choose_topics():
             filtered_strong_signals = None
         else:
             df_w = dfs_interpretation[model_id][STRONG_SIGNALS]
-            strong_topics_list = choose_from_df(df_w)
-            filtered_strong_signals = df_w[df_w["Topic"].isin(strong_topics_list)]
+            strong_topics_list = choose_from_df(df_w, feedback)
+            filtered_strong_signals = apply_topic_feedback(
+                df_w[df_w["Topic"].isin(strong_topics_list)], feedback
+            )
 
     return filtered_weak_signals, filtered_strong_signals
 
 
-def choose_from_df(df: pd.DataFrame):
-    df["A retenir"] = True
-    df["Sujet"] = df[LLM_TOPIC_TITLE_COLUMN]
-    df["Description"] = df[LLM_TOPIC_DESCRIPTION_COLUMN]
+def choose_from_df(df: pd.DataFrame, feedback: dict[int, TopicFeedback]):
+    displayed_topics = apply_topic_feedback(df, feedback)
+    displayed_topics["A retenir"] = True
+    displayed_topics["Sujet"] = displayed_topics[LLM_TOPIC_TITLE_COLUMN]
+    promoted = displayed_topics["Topic"].isin(
+        {topic_id for topic_id, status in feedback.items() if status == PROMOTED_TOPIC}
+    )
+    displayed_topics.loc[promoted, "Sujet"] = "⭐ " + displayed_topics.loc[
+        promoted, "Sujet"
+    ].fillna(translate("untitled_topic")).astype(str)
+    displayed_topics["Description"] = displayed_topics[LLM_TOPIC_DESCRIPTION_COLUMN]
     columns = ["Topic", "A retenir", "Sujet", "Description"]
-    edited_df = st.data_editor(df[columns], num_rows="dynamic", column_order=columns)
+    edited_df = st.data_editor(
+        displayed_topics[columns], num_rows="dynamic", column_order=columns
+    )
     selection = edited_df[edited_df["A retenir"]]["Topic"].tolist()
     return selection
 
