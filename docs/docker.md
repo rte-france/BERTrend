@@ -84,6 +84,9 @@ The easiest way to run BERTrend is using Docker Compose, which will start both t
 2. Create a `.env` file with your configuration (optional):
    - You can reuse the `.env` template at the repository root and fill in your values.
    - Note: When running outside Docker, BERTrend auto-loads the repo `.env` if `python-dotenv` is installed.
+   - `OPENAI_API_KEY`, `OPENAI_BASE_URL` and `OPENAI_DEFAULT_MODEL` are read from this
+     file only (`env_file`), so values exported in your shell for other tools do not
+     reach the containers. `OPENAI_DEFAULT_MODEL` has no default and must be set.
 ```
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_BASE_URL=your_openai_endpoint_or_base_url
@@ -298,9 +301,9 @@ docker run --gpus all \
 
 | Variable                      | Description | Default |
 |-------------------------------|-------------|---------|
-| `OPENAI_API_KEY`              | Your OpenAI API key | - |
-| `OPENAI_BASE_URL`     | OpenAI API endpoint | - |
-| `OPENAI_DEFAULT_MODEL`   | Default OpenAI model to use | `gpt-5.6-luna` |
+| `OPENAI_API_KEY`              | Your OpenAI API key — env file only, see below | - |
+| `OPENAI_BASE_URL`     | OpenAI API endpoint — env file only, see below | - |
+| `OPENAI_DEFAULT_MODEL`   | Default OpenAI model to use — env file only, required | - |
 | `OPENAI_REASONING_EFFORT` | GPT-5 reasoning effort (`minimal`/`low`/`medium`/`high`); GPT-5 models only | `low` |
 | `OPENAI_REASONING_EFFORT_TOPIC_DESCRIPTION` | Per-task override for topic description | inherits `OPENAI_REASONING_EFFORT` |
 | `OPENAI_REASONING_EFFORT_SIGNAL_ANALYSIS` | Per-task override for signal analysis | inherits `OPENAI_REASONING_EFFORT` |
@@ -314,6 +317,13 @@ docker run --gpus all \
 | `RABBITMQ_PASSWORD`           | Broker password; applied to both the broker and the workers | `guest` |
 | `HOST_UID`                    | User ID for file permissions — resolved by the start scripts from `id -u` | `1000` |
 | `HOST_GID`                    | Group ID for file permissions — resolved by the start scripts from `id -g` | `1000` |
+
+The `OPENAI_*` variables above are passed to the app container **only from the env
+file** (`BERTREND_ENV_FILE`, default `.env`), not through `environment:`. Compose
+fills `${VAR}` in the compose file from the invoking shell before `.env`, so a
+shell exporting `OPENAI_BASE_URL` for another tool (e.g. a direct Azure endpoint)
+would otherwise override the env file and send BERTrend's LLM calls there. Check
+what the container got with `docker exec bertrend printenv OPENAI_BASE_URL OPENAI_DEFAULT_MODEL`.
 
 #### Scheduler and Job Viewer
 
