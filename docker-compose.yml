@@ -105,7 +105,7 @@ services:
       # covers every streamlit app in the container regardless of its working dir.
       - ${STREAMLIT_SECRETS_FILE:-./bertrend/bertrend_apps/prospective_demo/.streamlit/secrets.toml}:/.streamlit/secrets.toml:ro
     # Supply the API keys / secrets / SMTP settings that live in .env but are not
-    # listed in `environment:` below (SEMANTIC_SCHOLAR_API_KEY, NEWSCATCHER_API_KEY,
+    # listed in `environment:` below (OPENAI_*, SEMANTIC_SCHOLAR_API_KEY, NEWSCATCHER_API_KEY,
     # BERTREND_SECRET_KEY, SMTP_*, GMAIL_*, ...). Compose applies env_file BEFORE
     # `environment:`, so every container-specific value below still wins -- which
     # matters, because a host .env legitimately points at host-facing addresses
@@ -156,10 +156,9 @@ services:
       - SCHEDULER_SERVICE_TYPE=apscheduler
       - SCHEDULER_SERVICE_URL=http://scheduler:8000/
       - BERTREND_APPS_SERVICE_URL=http://bertrend:8881/
-      # OpenAI environment variables (replace with your own values)
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
-      - OPENAI_DEFAULT_MODEL=${OPENAI_DEFAULT_MODEL:-gpt-5.6-luna}
+      # OPENAI_API_KEY, OPENAI_BASE_URL and OPENAI_DEFAULT_MODEL come from env_file
+      # only. Listing them here would fill ${...} from the invoking shell first, so an
+      # OPENAI_* exported for other tools would silently replace the env file's value.
     healthcheck:
       test: curl -f http://localhost:8081/_stcore/health && curl -f http://localhost:8083/_stcore/health && curl -f http://localhost:8084/_stcore/health || exit 1
       interval: 120s
