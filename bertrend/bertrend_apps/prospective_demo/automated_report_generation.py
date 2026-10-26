@@ -82,6 +82,26 @@ def send_email_automated(
         logger.error(f"Error sending email: {e}")
 
 
+def _merge_interpretation(
+    signals: pd.DataFrame, interpretation_file: Path
+) -> pd.DataFrame:
+    """Add to each signal the LLM interpretation (summary, analysis) of its topic.
+
+    The interpretation file holds one line per analysed topic. It is empty when there
+    was no signal in the period or every LLM analysis failed, and may be missing:
+    topics without interpretation get NaN and are reported without analysis.
+    """
+    interpretation_df = (
+        pd.read_json(interpretation_file, lines=True)
+        if interpretation_file.exists()
+        else pd.DataFrame()
+    )
+    interpretation_df = interpretation_df.rename(columns={"topic": "Topic"}).reindex(
+        columns=["Topic", "summary", "analysis"]
+    )
+    return pd.merge(signals, interpretation_df, on="Topic", how="left")
+
+
 def load_signal_data(
     user: str,
     model_id: str,
@@ -120,22 +140,11 @@ def load_signal_data(
     weak_signals = None
     strong_signals = None
 
-    # Try loading weak signals from parquet first, then JSONL as fallback
+    # Load signals from parquet, merged with their interpretation
     if weak_signals_path.exists():
-        weak_signals = pd.read_parquet(weak_signals_path)
-        # Merge with interpretation data if available
-        if weak_signals_jsonl_path.exists():
-            interpretation_df = pd.read_json(weak_signals_jsonl_path, lines=True)
-            # Rename 'topic' column to 'Topic' for consistency
-            if "topic" in interpretation_df.columns:
-                interpretation_df = interpretation_df.rename(columns={"topic": "Topic"})
-            # Merge interpretation data with parquet data
-            weak_signals = pd.merge(
-                weak_signals,
-                interpretation_df[["Topic", "summary", "analysis"]],
-                on="Topic",
-                how="left",
-            )
+        weak_signals = _merge_interpretation(
+            pd.read_parquet(weak_signals_path), weak_signals_jsonl_path
+        )
         logger.info(f"Loaded {len(weak_signals)} weak signals")
         if max_emerging_topics is not None and len(weak_signals) > max_emerging_topics:
             weak_signals = weak_signals.head(max_emerging_topics)
@@ -143,22 +152,10 @@ def load_signal_data(
     else:
         logger.warning(f"No weak signals found at {weak_signals_path}")
 
-    # Try loading strong signals from parquet first, then JSONL as fallback
     if strong_signals_path.exists():
-        strong_signals = pd.read_parquet(strong_signals_path)
-        # Merge with interpretation data if available
-        if strong_signals_jsonl_path.exists():
-            interpretation_df = pd.read_json(strong_signals_jsonl_path, lines=True)
-            # Rename 'topic' column to 'Topic' for consistency
-            if "topic" in interpretation_df.columns:
-                interpretation_df = interpretation_df.rename(columns={"topic": "Topic"})
-            # Merge interpretation data with parquet data
-            strong_signals = pd.merge(
-                strong_signals,
-                interpretation_df[["Topic", "summary", "analysis"]],
-                on="Topic",
-                how="left",
-            )
+        strong_signals = _merge_interpretation(
+            pd.read_parquet(strong_signals_path), strong_signals_jsonl_path
+        )
         logger.info(f"Loaded {len(strong_signals)} strong signals")
         if max_strong_topics is not None and len(strong_signals) > max_strong_topics:
             strong_signals = strong_signals.head(max_strong_topics)
@@ -185,6 +182,8 @@ def create_detailed_newsletter_automated(
         reference_period=reference_date.date(),
         topics=[],
     )
+    # Whether any topic has an LLM interpretation (before the options remove parts of it)
+    has_interpretation = False
 
     for df, topic_type in zip(
         [weak_signals, strong_signals], [WEAK_TOPIC_TYPE, STRONG_TOPIC_TYPE]
@@ -198,6 +197,7 @@ def create_detailed_newsletter_automated(
             ]
 
             # Handle nan values for summary and analysis
+            has_interpretation |= pd.notna(row["summary"]) or pd.notna(row["analysis"])
             topic_evolution = None
             if pd.notna(row["summary"]):
                 topic_evolution = TopicSummaryList.model_validate_json(row["summary"])
@@ -229,6 +229,9 @@ def create_detailed_newsletter_automated(
 
             detailed_newsletter.topics.append(topic)
 
+    detailed_newsletter.analysis_unavailable = (
+        bool(detailed_newsletter.topics) and not has_interpretation
+    )
     return detailed_newsletter
 
 

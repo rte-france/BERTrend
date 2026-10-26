@@ -17,3 +17,6 @@ class DetailedNewsletter(Newsletter):
     """Newsletter model with detailed information about topic evolution over time."""
 
     topics: list[TopicOverTime]
+    # True when the report has topics but none of them has an LLM analysis, i.e. the
+    # analysis of every signal failed: the report then shows a warning
+    analysis_unavailable: bool = False
