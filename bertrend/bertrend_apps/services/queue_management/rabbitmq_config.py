@@ -45,3 +45,15 @@ class RabbitMQConfig:
     # job cannot block the single-slot queue for an extended period; raise via
     # env var for genuinely long-running jobs.
     job_timeout: int = int(os.getenv("RABBITMQ_JOB_TIMEOUT", 900))
+
+    # Job timeout for /regenerate, which retrains a model over all its periods and
+    # therefore runs much longer than an incremental training (default: 4 h).
+    regenerate_job_timeout: int = int(
+        os.getenv("RABBITMQ_REGENERATE_JOB_TIMEOUT", 14400)
+    )
+
+    def job_timeout_for(self, endpoint: str | None) -> int:
+        """Return the job timeout (in seconds) that applies to an endpoint."""
+        if endpoint == "/regenerate":
+            return self.regenerate_job_timeout
+        return self.job_timeout

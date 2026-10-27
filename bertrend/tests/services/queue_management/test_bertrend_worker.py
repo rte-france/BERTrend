@@ -53,8 +53,12 @@ def _make_message(
     return msg
 
 
-def _make_worker(job_timeout: int = 5) -> BertrendWorker:
-    config = RabbitMQConfig(job_timeout=job_timeout)
+def _make_worker(
+    job_timeout: int = 5, regenerate_job_timeout: int = 5
+) -> BertrendWorker:
+    config = RabbitMQConfig(
+        job_timeout=job_timeout, regenerate_job_timeout=regenerate_job_timeout
+    )
     worker = BertrendWorker(config)
     # Replace queue_manager with a mock so no real RabbitMQ connection is needed
     worker.queue_manager = MagicMock()
@@ -336,3 +340,62 @@ async def test_timeout_rejects_at_max_retries():
     worker.queue_manager.republish_with_retry.assert_not_awaited()
     msg.reject.assert_awaited_once_with(requeue=False)
     msg.nack.assert_not_awaited()
+
+
+# ---------------------------------------------------------------------------
+# Test 6 — /regenerate has its own, longer, job timeout
+# ---------------------------------------------------------------------------
+
+
+def test_job_timeout_for_regenerate_uses_its_own_timeout():
+    config = RabbitMQConfig(job_timeout=900, regenerate_job_timeout=14400)
+
+    assert config.job_timeout_for("/regenerate") == 14400
+    assert config.job_timeout_for("/train-new-model") == 900
+    assert config.job_timeout_for(None) == 900
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "endpoint, timed_out",
+    [("/regenerate", False), ("/train-new-model", True)],
+)
+async def test_callback_applies_endpoint_job_timeout(endpoint, timed_out):
+    """
+    A job lasting longer than job_timeout but less than regenerate_job_timeout
+    completes for /regenerate, and still times out for the other endpoints.
+    """
+    worker = _make_worker(job_timeout=1, regenerate_job_timeout=5)
+
+    async def slow_handler(request_data):
+        await asyncio.sleep(1.5)
+        return {"status": "success", "response": {}}
+
+    msg = _make_message({"endpoint": endpoint, "method": "POST", "json_data": {}})
+
+    with patch.object(worker, "process_request", side_effect=slow_handler):
+        await worker.callback(msg)
+
+    if timed_out:
+        msg.reject.assert_awaited_once_with(requeue=False)
+        msg.ack.assert_not_awaited()
+    else:
+        msg.ack.assert_awaited_once()
+        msg.reject.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_callback_dead_letters_regenerate_beyond_its_timeout():
+    worker = _make_worker(job_timeout=5, regenerate_job_timeout=1)
+
+    async def slow_handler(request_data):
+        await asyncio.sleep(10)
+        return {"status": "success", "response": {}}
+
+    msg = _make_message({"endpoint": "/regenerate", "method": "POST", "json_data": {}})
+
+    with patch.object(worker, "process_request", side_effect=slow_handler):
+        await worker.callback(msg)
+
+    msg.reject.assert_awaited_once_with(requeue=False)
+    msg.ack.assert_not_awaited()

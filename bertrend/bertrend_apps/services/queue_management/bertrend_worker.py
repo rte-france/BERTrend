@@ -316,6 +316,7 @@ class BertrendWorker:
     ):
         """Callback function for processing messages from the queue_management"""
         correlation_id = message.correlation_id
+        job_timeout = self.config.job_timeout
 
         try:
             logger.info(f"Received request: {correlation_id}")
@@ -326,9 +327,10 @@ class BertrendWorker:
             logger.info(f"Request endpoint: {request_data.get('endpoint')}")
 
             # Process request with a timeout to avoid blocking the queue indefinitely
+            job_timeout = self.config.job_timeout_for(request_data.get("endpoint"))
             response_data = await asyncio.wait_for(
                 self.process_request(request_data),
-                timeout=self.config.job_timeout,
+                timeout=job_timeout,
             )
 
             # Add metadata
@@ -345,7 +347,7 @@ class BertrendWorker:
             # The timeout only stops waiting: the job thread cannot be killed and
             # keeps running, so a retry would start a concurrent duplicate run.
             logger.error(
-                f"Message {correlation_id} timed out after {self.config.job_timeout}s "
+                f"Message {correlation_id} timed out after {job_timeout}s "
                 f"— sending to DLQ without retry (the job may still be running)"
             )
             await message.reject(requeue=False)
