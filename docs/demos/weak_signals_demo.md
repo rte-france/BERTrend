@@ -202,13 +202,10 @@ The plotting helpers used by the demo live in
 produced above (signal classification and popularity evolution) to build the
 figures.
 
-> **Note:** the repository ships the BERTrend *method* and the notebooks above,
-> but not a one-click script for a specific paper figure nor a frozen copy of
-> the arXiv corpus used in the paper. An arXiv data provider is available
-> (`bertrend/bertrend_apps/data_provider/arxiv_provider.py`, with
-> `bertrend/bertrend_apps/config/feeds/arxiv_feed.toml`) to fetch data, but
-> exact reproduction requires matching the original query, date range,
-> `granularity`, and `window_size`.
+> **Note:** to run BERTrend on the arXiv corpus used in the paper with the
+> paper's hyperparameters, and to build the data behind its arXiv figures
+> (Figures 2(b) and 3(b)), see
+> [Reproducing the paper results on arXiv](../reproducing_paper_results.md).
 
 ## Dependencies
 

@@ -40,6 +40,7 @@ Index of the documentation available in this folder.
 - [Automated report generation](automated_report_generation.md)
 - [Article scoring](article_scoring.md)
 - [Outputs of `process_new_data`](process_new_data_outputs.md)
+- [Reproducing the paper results on arXiv](reproducing_paper_results.md)
 
 ## API reference
 
