@@ -20,6 +20,7 @@ import pytest
 from bertrend.bertrend_apps.services.queue_management.bertrend_worker import (
     BertrendWorker,
 )
+from bertrend.bertrend_apps.services.queue_management.queue_manager import QueueManager
 from bertrend.bertrend_apps.services.queue_management.rabbitmq_config import (
     RabbitMQConfig,
 )
@@ -70,7 +71,8 @@ def _make_worker(job_timeout: int = 5) -> BertrendWorker:
 async def test_callback_nacks_on_timeout():
     """
     When process_request takes longer than job_timeout, the message must be
-    republished with incremented retry count and the original rejected (not acked).
+    republished with incremented retry count and the original acked (not
+    rejected, which would also dead-letter it).
     """
     worker = _make_worker(job_timeout=1)  # 1-second timeout for fast test
     worker.queue_manager.republish_with_retry = AsyncMock(return_value=True)
@@ -87,8 +89,8 @@ async def test_callback_nacks_on_timeout():
         await worker.callback(msg)
 
     worker.queue_manager.republish_with_retry.assert_awaited_once_with(msg, 0)
-    msg.reject.assert_awaited_once_with(requeue=False)
-    msg.ack.assert_not_awaited()
+    msg.ack.assert_awaited_once()
+    msg.reject.assert_not_awaited()
     msg.nack.assert_not_awaited()
 
 
@@ -214,7 +216,8 @@ async def test_prefetch_1_blocks_second_message_until_first_acked():
 async def test_nack_or_discard_requeues_below_max_retries():
     """
     When retry_count < max_retries, a failing message must be republished with
-    an incremented x-retry-count header and the original rejected (requeue=False).
+    an incremented x-retry-count header and the original acked, so that only
+    the final failed attempt reaches the DLQ.
     """
     worker = _make_worker(job_timeout=5)
     worker.config.max_retries = 2
@@ -233,8 +236,49 @@ async def test_nack_or_discard_requeues_below_max_retries():
         await worker.callback(msg)
 
     worker.queue_manager.republish_with_retry.assert_awaited_once_with(msg, 0)
-    msg.reject.assert_awaited_once_with(requeue=False)
+    msg.ack.assert_awaited_once()
+    msg.reject.assert_not_awaited()
     msg.nack.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_failing_job_reaches_dlq_only_once():
+    """
+    A job failing on every attempt must leave a single copy in the DLQ, not
+    one per attempt. Drives the real QueueManager.republish_with_retry and
+    feeds each republished copy back to the worker, as RabbitMQ would.
+    """
+    worker = _make_worker(job_timeout=5)
+    worker.config.max_retries = 2
+    queue_manager = QueueManager(worker.config)
+    queue_manager.channel = MagicMock()
+    queue_manager.channel.is_closed = False
+    queue_manager.channel.default_exchange.publish = AsyncMock()
+    worker.queue_manager = queue_manager
+
+    async def failing_handler(request_data):
+        raise RuntimeError("persistent error")
+
+    body = {"endpoint": "/scrape", "method": "POST", "json_data": {}}
+    msg = _make_message(body, headers={})
+    delivered = [msg]
+
+    with patch.object(worker, "process_request", side_effect=failing_handler):
+        while True:
+            await worker.callback(msg)
+            publish = queue_manager.channel.default_exchange.publish
+            if publish.await_count < len(delivered):
+                break
+            republished = publish.await_args.args[0]
+            msg = _make_message(body, headers=republished.headers)
+            delivered.append(msg)
+
+    assert len(delivered) == worker.config.max_retries + 1
+    dead_lettered = [m for m in delivered if m.reject.await_count]
+    assert dead_lettered == [delivered[-1]]
+    delivered[-1].reject.assert_awaited_once_with(requeue=False)
+    for m in delivered[:-1]:
+        m.ack.assert_awaited_once()
 
 
 @pytest.mark.asyncio

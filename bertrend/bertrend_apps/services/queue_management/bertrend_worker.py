@@ -278,8 +278,8 @@ class BertrendWorker:
 
         Delegates the retry-limit check to republish_with_retry(), which
         returns False when the limit is reached (and skips publishing).
-        The original message is always rejected with requeue=False so that
-        RabbitMQ does not re-deliver the same copy.
+        When a copy has been republished, the original is acked: rejecting it
+        would dead-letter it too, leaving one DLQ entry per attempt.
         """
         retry_count = self._get_retry_count(message)
         republished = await self.queue_manager.republish_with_retry(
@@ -290,12 +290,13 @@ class BertrendWorker:
                 f"Message {correlation_id} failed (attempt {retry_count + 1}/{self.config.max_retries}) "
                 f"— republished with incremented retry count. Reason: {reason}"
             )
+            await message.ack()
         else:
             logger.warning(
                 f"Message {correlation_id} exceeded max retries ({self.config.max_retries}) "
                 f"— sending to DLQ. Reason: {reason}"
             )
-        await message.reject(requeue=False)
+            await message.reject(requeue=False)
 
     async def callback(
         self,
