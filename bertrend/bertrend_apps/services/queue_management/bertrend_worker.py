@@ -330,11 +330,13 @@ class BertrendWorker:
             return
 
         except asyncio.TimeoutError:
-            await self._nack_or_discard(
-                message,
-                reason=f"job timed out after {self.config.job_timeout}s",
-                correlation_id=correlation_id,
+            # The timeout only stops waiting: the job thread cannot be killed and
+            # keeps running, so a retry would start a concurrent duplicate run.
+            logger.error(
+                f"Message {correlation_id} timed out after {self.config.job_timeout}s "
+                f"— sending to DLQ without retry (the job may still be running)"
             )
+            await message.reject(requeue=False)
             return
 
         except Exception as e:
