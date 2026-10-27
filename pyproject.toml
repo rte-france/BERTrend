@@ -1,6 +1,6 @@
 [project]
 name = "bertrend"
-version = "0.4.24"
+version = "0.4.25"
 description = "BERTrend analyses topic evolution over time using state-of-the-art transformer models: topic modelling and LLM"
 license = "LICENSE.md"
 readme = "README.md"
@@ -39,7 +39,7 @@ dependencies = [
     "loguru (>=0.7.3)",
     "lxml-html-clean (>=0.4.3)",
     "markdown (>=3.10.1)",
-    "nltk (>=3.9.2)",
+    "nltk (>=3.10.4)",
     "openai (>=2.18.0)",
     "openai-agents[litellm] (>=0.8.3)",
     "openpyxl (>=3.1.5)",
