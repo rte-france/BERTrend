@@ -3,16 +3,23 @@
 #  SPDX-License-Identifier: MPL-2.0
 #  This file is part of BERTrend.
 
+import asyncio
 import json
+import threading
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from loguru import logger
 
+from bertrend.bertrend_apps.services.bertrend.models.bertrend_app_models import (
+    TrainNewModelRequest,
+)
 from bertrend.bertrend_apps.services.queue_management.bertrend_worker import (
     BertrendWorker,
     handle_generate_newsletters,
     handle_scrape,
     handle_scrape_feed,
+    handle_train_new,
 )
 from bertrend.bertrend_apps.services.queue_management.rabbitmq_config import (
     RabbitMQConfig,
@@ -252,3 +259,80 @@ async def test_handle_generate_newsletters_resolves_stored_paths(base_dir):
         await handle_generate_newsletters(req)
 
     mock_process.assert_called_once_with(newsletter, feed)
+
+
+WORKER_MODULE = "bertrend.bertrend_apps.services.queue_management.bertrend_worker"
+
+
+@pytest.fixture
+def job_file_logger():
+    """A real loguru sink standing for the per-job log file."""
+    captured: list[str] = []
+    sink_id = logger.add(captured.append, format="{message}")
+    with patch(f"{WORKER_MODULE}.get_file_logger", return_value=sink_id):
+        yield captured
+    try:
+        logger.remove(sink_id)
+    except ValueError:
+        pass  # already removed by the handler
+
+
+@pytest.mark.asyncio
+async def test_handle_train_new_forwards_request_and_returns_result(job_file_logger):
+    req = TrainNewModelRequest(user="nemo", model_id="IA_google")
+
+    with patch(
+        f"{WORKER_MODULE}.train_new_model", return_value="trained"
+    ) as mock_train:
+        result = await handle_train_new(req)
+
+    assert result == "trained"
+    mock_train.assert_called_once_with(model_id="IA_google", user_name="nemo")
+
+
+@pytest.mark.asyncio
+async def test_handle_train_new_removes_file_logger_when_job_fails(job_file_logger):
+    req = TrainNewModelRequest(user="nemo", model_id="IA_google")
+
+    with (
+        patch(f"{WORKER_MODULE}.train_new_model", side_effect=RuntimeError("boom")),
+        pytest.raises(RuntimeError, match="boom"),
+    ):
+        await handle_train_new(req)
+
+    logger.info("log from another job")
+    assert not any("log from another job" in m for m in job_file_logger)
+
+
+@pytest.mark.asyncio
+async def test_handle_train_new_keeps_file_logger_until_timed_out_job_ends(
+    job_file_logger,
+):
+    """
+    After a job timeout the training thread keeps running: its logs must still
+    reach the job log file, and the file logger must be removed once it ends.
+    """
+    req = TrainNewModelRequest(user="nemo", model_id="IA_google")
+    release = threading.Event()
+    removed = threading.Event()
+    real_remove = logger.remove
+
+    def slow_train(model_id, user_name):
+        release.wait(5)
+        logger.info("still training after the timeout")
+
+    def tracking_remove(handler_id=None):
+        real_remove(handler_id)
+        removed.set()
+
+    with (
+        patch(f"{WORKER_MODULE}.train_new_model", side_effect=slow_train),
+        patch.object(logger, "remove", side_effect=tracking_remove),
+    ):
+        with pytest.raises(TimeoutError):
+            await asyncio.wait_for(handle_train_new(req), timeout=0.1)
+        assert not removed.is_set()
+        release.set()
+        assert await asyncio.to_thread(removed.wait, 5)
+
+    assert any("still training after the timeout" in m for m in job_file_logger)
