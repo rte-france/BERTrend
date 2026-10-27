@@ -59,6 +59,31 @@ from bertrend.bertrend_apps.services.queue_management.rabbitmq_config import (
 from bertrend.bertrend_apps.services.utils.logging_utils import get_file_logger
 
 
+async def _run_with_file_logger(
+    log_id: str, user_name: str, model_id: str, func, /, *args, **kwargs
+):
+    """
+    Run func in a thread, with its logs also written to a dedicated log file.
+
+    The leading parameters are positional-only so that func may itself take
+    `user_name` or `model_id` keyword arguments.
+
+    The file logger is removed when func really ends, not when the caller stops
+    waiting: after a job timeout the thread keeps running (and logging), and an
+    exception or a cancellation must not leave the file logger behind.
+    """
+    logger_id = get_file_logger(id=log_id, user_name=user_name, model_id=model_id)
+
+    def run():
+        try:
+            return func(*args, **kwargs)
+        finally:
+            # Remove the logger to prevent writing to this file for other calls
+            logger.remove(logger_id)
+
+    return await asyncio.to_thread(run)
+
+
 # Wrapper functions to match the core logic with the request models
 async def handle_scrape(req: ScrapeRequest):
     return await asyncio.to_thread(
@@ -87,16 +112,15 @@ async def handle_auto_scrape(req: AutoScrapeRequest):
 
 
 async def handle_scrape_feed(req: ScrapeFeedRequest):
-    # Create a unique log file for this call
     user = "" if not req.user else req.user
     model_id = "" if not req.model_id else req.model_id
-    logger_id = get_file_logger(id="scrape_feed", user_name=user, model_id=model_id)
-    result = await asyncio.to_thread(
-        scrape_feed_from_config, resolve_portable_path(req.feed_cfg)
+    return await _run_with_file_logger(
+        "scrape_feed",
+        user,
+        model_id,
+        scrape_feed_from_config,
+        resolve_portable_path(req.feed_cfg),
     )
-    # Remove the logger to prevent writing to this file for other calls
-    logger.remove(logger_id)
-    return result
 
 
 async def handle_generate_query_file(req: GenerateQueryFileRequest):
@@ -111,49 +135,39 @@ async def handle_generate_query_file(req: GenerateQueryFileRequest):
 
 
 async def handle_train_new(req: TrainNewModelRequest):
-    # Create a unique log file for this call
-    logger_id = get_file_logger(
-        id="train_new_model", user_name=req.user, model_id=req.model_id
+    return await _run_with_file_logger(
+        "train_new_model",
+        req.user,
+        req.model_id,
+        train_new_model,
+        model_id=req.model_id,
+        user_name=req.user,
     )
-    result = await asyncio.to_thread(
-        train_new_model, model_id=req.model_id, user_name=req.user
-    )
-    # Remove the logger to prevent writing to this file for other calls
-    logger.remove(logger_id)
-    return result
 
 
 async def handle_regenerate(req: RegenerateRequest):
-    # Create a unique log file for this call
-    logger_id = get_file_logger(
-        id="regenerate", user_name=req.user, model_id=req.model_id
-    )
-    result = await asyncio.to_thread(
+    return await _run_with_file_logger(
+        "regenerate",
+        req.user,
+        req.model_id,
         regenerate_models,
         model_id=req.model_id,
         user=req.user,
         with_analysis=req.with_analysis,
         since=pd.Timestamp(req.since) if req.since else None,
     )
-    # Remove the logger to prevent writing to this file for other calls
-    logger.remove(logger_id)
-    return result
 
 
 async def handle_generate_report(req: GenerateReportRequest):
-    # Create a unique log file for this call
-    logger_id = get_file_logger(
-        id="generate_report", user_name=req.user, model_id=req.model_id
-    )
-    result = await asyncio.to_thread(
+    return await _run_with_file_logger(
+        "generate_report",
+        req.user,
+        req.model_id,
         generate_automated_report,
         user=req.user,
         model_id=req.model_id,
         reference_date=req.reference_date,
     )
-    # Remove the logger to prevent writing to this file for other calls
-    logger.remove(logger_id)
-    return result
 
 
 async def handle_generate_newsletters(req: NewsletterRequest):
@@ -161,16 +175,14 @@ async def handle_generate_newsletters(req: NewsletterRequest):
     data_feed_toml_path = resolve_portable_path(req.data_feed_toml_path)
     config = load_toml_config(newsletter_toml_path)
     model_id = config.get(NEWSLETTER_SECTION).get("id")
-    # Create a unique log file for this call
-    logger_id = get_file_logger(
-        id="generate_newsletters", user_name="", model_id=model_id
+    return await _run_with_file_logger(
+        "generate_newsletters",
+        "",
+        model_id,
+        process_newsletter,
+        newsletter_toml_path,
+        data_feed_toml_path,
     )
-    result = await asyncio.to_thread(
-        process_newsletter, newsletter_toml_path, data_feed_toml_path
-    )
-    # Remove the logger to prevent writing to this file for other calls
-    logger.remove(logger_id)
-    return result
 
 
 # Mapping of endpoints to their handler functions and request models
@@ -278,8 +290,8 @@ class BertrendWorker:
 
         Delegates the retry-limit check to republish_with_retry(), which
         returns False when the limit is reached (and skips publishing).
-        The original message is always rejected with requeue=False so that
-        RabbitMQ does not re-deliver the same copy.
+        When a copy has been republished, the original is acked: rejecting it
+        would dead-letter it too, leaving one DLQ entry per attempt.
         """
         retry_count = self._get_retry_count(message)
         republished = await self.queue_manager.republish_with_retry(
@@ -290,12 +302,13 @@ class BertrendWorker:
                 f"Message {correlation_id} failed (attempt {retry_count + 1}/{self.config.max_retries}) "
                 f"— republished with incremented retry count. Reason: {reason}"
             )
+            await message.ack()
         else:
             logger.warning(
                 f"Message {correlation_id} exceeded max retries ({self.config.max_retries}) "
                 f"— sending to DLQ. Reason: {reason}"
             )
-        await message.reject(requeue=False)
+            await message.reject(requeue=False)
 
     async def callback(
         self,
@@ -329,11 +342,13 @@ class BertrendWorker:
             return
 
         except asyncio.TimeoutError:
-            await self._nack_or_discard(
-                message,
-                reason=f"job timed out after {self.config.job_timeout}s",
-                correlation_id=correlation_id,
+            # The timeout only stops waiting: the job thread cannot be killed and
+            # keeps running, so a retry would start a concurrent duplicate run.
+            logger.error(
+                f"Message {correlation_id} timed out after {self.config.job_timeout}s "
+                f"— sending to DLQ without retry (the job may still be running)"
             )
+            await message.reject(requeue=False)
             return
 
         except Exception as e:
