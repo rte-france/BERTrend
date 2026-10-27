@@ -52,6 +52,7 @@ newsletters
 automated_report_generation
 article_scoring
 process_new_data_outputs
+reproducing_paper_results
 ```
 
 ```{toctree}
