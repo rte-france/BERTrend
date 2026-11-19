@@ -27,14 +27,14 @@ jobs:
 
       - name: Bump version
         run: |
-          uv version --bump patch
-          NEW_VERSION=$(uv version)
+          uv version --bump patch --no-sync
+          NEW_VERSION=$(uv version --short)
           echo "Version upgraded to: $NEW_VERSION"
 
       - name: Commit and push changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add pyproject.toml
+          git add pyproject.toml uv.lock
           git commit -m "chore: bump version [skip ci]"
           git push
