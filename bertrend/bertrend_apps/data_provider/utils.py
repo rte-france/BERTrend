@@ -10,7 +10,6 @@ import time
 from urllib.parse import urlsplit
 
 import requests
-from googlenewsdecoder import new_decoderv1
 from loguru import logger
 
 # Ref: https://stackoverflow.com/a/59023463/
@@ -153,9 +152,15 @@ def decode_google_news_url(
     url: str,
 ) -> str:  # Not cached because not all Google News URLs are encoded.
     """Return Google News entry URLs after decoding their encoding as applicable."""
+    if not url.startswith(_ENCODED_URL_PREFIX):
+        return url
+
+    # Imported here so that a broken decoder does not prevent the other data providers from loading
+    from googlenewsdecoder import new_decoderv1
+
     time.sleep(0.5)  # to avoid being banned
 
-    decoded_content = new_decoderv1(url) if url.startswith(_ENCODED_URL_PREFIX) else url
+    decoded_content = new_decoderv1(url)
     if decoded_content["status"]:
         # decoding was ok
         return decoded_content["decoded_url"]
