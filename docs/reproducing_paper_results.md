@@ -76,7 +76,12 @@ from bertrend import DATA_PATH, MODELS_DIR
 from bertrend.BERTopicModel import BERTopicModel
 from bertrend.BERTrend import BERTrend
 from bertrend.services.embedding_service import EmbeddingService
-from bertrend.utils.data_loading import TEXT_COLUMN, group_by_days, load_data, split_data
+from bertrend.utils.data_loading import (
+    TEXT_COLUMN,
+    group_by_days,
+    load_data,
+    split_data,
+)
 
 ARXIV_SNAPSHOT = Path("arxiv-metadata-oai-snapshot.json")
 DATASET = DATA_PATH / "arxiv_cs_2017_2023.jsonl"
@@ -177,7 +182,9 @@ records = []
 for ts in sorted(bertrend.doc_groups):
     noise_df, weak_df, strong_df = bertrend.classify_signals(WINDOW_SIZE, ts)
     n_topics = (
-        topic_models[ts].topic_info_df["Topic"].max() + 1 if ts in topic_models else None
+        topic_models[ts].topic_info_df["Topic"].max() + 1
+        if ts in topic_models
+        else None
     )
     records.append(
         {
@@ -245,7 +252,9 @@ for keyword in ["attention", "imagenet", "lstm"]:
 # Pick one topic per keyword from the lists above (e.g. the most popular one)
 selected_topics = [...]
 
-fig = create_topic_size_evolution_figure(bertrend.topic_sizes, topic_ids=selected_topics)
+fig = create_topic_size_evolution_figure(
+    bertrend.topic_sizes, topic_ids=selected_topics
+)
 fig.update_yaxes(type="log", title_text="Popularity (Log Scale)")
 fig.update_xaxes(range=["2017-06-01", "2019-10-31"])
 fig.show()
